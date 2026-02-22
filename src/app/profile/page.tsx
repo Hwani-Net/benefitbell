@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
-import { addKakaoChannel } from '@/lib/kakao'
+import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import PushToggle from '@/components/pwa/PushToggle'
@@ -270,11 +270,7 @@ export default function ProfilePage() {
               </div>
               <button
                 className={`toggle ${profile.kakaoAlerts ? 'on' : ''}`}
-                onClick={() => {
-                  const next = !profile.kakaoAlerts
-                  update('kakaoAlerts', next)
-                  if (next) addKakaoChannel()
-                }}
+                onClick={() => update('kakaoAlerts', !profile.kakaoAlerts)}
               />
             </div>
             {/* 알림 시점 */}
@@ -334,12 +330,15 @@ export default function ProfilePage() {
           <div className={styles.coffeeCard} style={{ background: 'linear-gradient(135deg, #FEF9C3 0%, #FEF3C7 100%)', border: '1px solid #FDE68A' }}>
             <p className={styles.coffeeTitle}>💬 카카오톡 채널 추가하기</p>
             <p className={styles.coffeeDesc}>혜택알리미 채널을 추가하면 최신 혜택 소식을 카카오톡으로 받을 수 있습니다</p>
-            <button
+            <a
+              href={`https://pf.kakao.com/${KAKAO_CHANNEL_ID}/friend`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`btn btn-kakao w-full mt-12`}
-              onClick={addKakaoChannel}
+              style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
             >
               카카오톡 채널 추가 @hyetack-alimi
-            </button>
+            </a>
           </div>
         </section>
 
