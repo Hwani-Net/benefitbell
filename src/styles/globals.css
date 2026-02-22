@@ -292,7 +292,12 @@ ul, ol { list-style: none; }
 }
 .scroll-x:active { cursor: grabbing; }
 .scroll-x::-webkit-scrollbar { display: none; }
-.scroll-x > * { flex-shrink: 0; }
+.scroll-x > * {
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+}
 
 /* ====================== */
 /* TOGGLE / SWITCH        */

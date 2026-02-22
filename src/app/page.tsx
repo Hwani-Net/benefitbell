@@ -118,7 +118,13 @@ export default function HomePage() {
           </div>
           <div ref={dragScrollRef} className={`scroll-x ${styles.urgentScroll}`}>
             {urgentBenefits.slice(0, 5).map((benefit, i) => (
-              <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.urgentCard} animate-fade-in stagger-${Math.min(i+1,5)}`}>
+              <Link
+                key={benefit.id}
+                href={`/detail/${benefit.id}`}
+                className={`${styles.urgentCard} animate-fade-in stagger-${Math.min(i+1,5)}`}
+                draggable={false}
+                onDragStart={e => e.preventDefault()}
+              >
                 <div className={styles.urgentCardTop}>
                   <span className={`badge ${getDDayColor(benefit.dDay)}`}>
                     {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
