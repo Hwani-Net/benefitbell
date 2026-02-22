@@ -51,7 +51,7 @@ function useDragScroll() {
 }
 
 export default function HomePage() {
-  const { t, lang, toggleBookmark, isBookmarked } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, kakaoUser } = useApp()
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
   const dragScrollRef = useDragScroll()
@@ -94,7 +94,9 @@ export default function HomePage() {
         {/* 인사 배너 */}
         <div className={styles.greetingBanner}>
           <div className={styles.greetingText}>
-            <p className={styles.greeting}>{t.greeting('김민수')}</p>
+            <p className={styles.greeting}>
+              {kakaoUser ? t.greeting(kakaoUser.nickname) : t.guestGreeting}
+            </p>
             <p className={styles.subGreeting}>
               {loading
                 ? '혜택 정보를 불러오는 중...'
@@ -107,7 +109,12 @@ export default function HomePage() {
               </p>
             )}
           </div>
-          <div className={styles.greetingEmoji}>🔔</div>
+          <div className={styles.greetingEmoji}>
+            {kakaoUser?.profile_image
+              ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.4)' }} />
+              : '🔔'
+            }
+          </div>
         </div>
 
         {/* 마감 임박 혜택 */}

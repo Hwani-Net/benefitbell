@@ -18,6 +18,7 @@ export const translations = {
 
     // Home
     greeting: (name: string) => `안녕하세요, ${name}님 👋`,
+    guestGreeting: '혜택을 찾아드릴게요! 👋',
     urgentSubtitle: (count: number) => `맞춤 혜택 ${count}건이 곧 마감됩니다!`,
     urgentBenefits: '마감 임박 혜택',
     viewAll: '전체보기',
@@ -146,6 +147,7 @@ export const translations = {
     calendar: 'Calendar',
     myPage: 'My Page',
     greeting: (name: string) => `Hello, ${name}! 👋`,
+    guestGreeting: 'Find your benefits! 👋',
     urgentSubtitle: (count: number) => `${count} of your benefits are closing soon!`,
     urgentBenefits: 'Closing Soon',
     viewAll: 'See All',
@@ -267,6 +269,8 @@ interface AppContextType {
   isBookmarked: (id: string) => boolean
   userProfile: UserProfile
   setUserProfile: (p: UserProfile) => void
+  kakaoUser: { nickname: string; profile_image?: string } | null
+  setKakaoUser: (u: { nickname: string; profile_image?: string } | null) => void
 }
 
 export interface UserProfile {
@@ -284,7 +288,7 @@ export interface UserProfile {
 }
 
 const defaultProfile: UserProfile = {
-  name: '김민수',
+  name: '',
   birthYear: 1995,
   gender: 'male',
   region: '서울특별시 강남구',
@@ -304,6 +308,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [bookmarks, setBookmarks] = useState<string[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile)
+  const [kakaoUser, setKakaoUser] = useState<{ nickname: string; profile_image?: string } | null>(null)
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
@@ -314,6 +319,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (savedLang) setLang(savedLang)
     if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks))
     if (savedProfile) setUserProfile(JSON.parse(savedProfile))
+    // Load kakao user from session storage (set by kakao login callback)
+    const kakaoStr = sessionStorage.getItem('kakaoUser')
+    if (kakaoStr) setKakaoUser(JSON.parse(kakaoStr))
   }, [])
 
   useEffect(() => {
@@ -345,7 +353,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       lang, setLang, t, theme, toggleTheme,
       bookmarks, toggleBookmark, isBookmarked,
-      userProfile, setUserProfile
+      userProfile, setUserProfile,
+      kakaoUser, setKakaoUser,
     }}>
       {children}
     </AppContext.Provider>
