@@ -42,8 +42,13 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true },
   },
+  verification: {
+    other: {
+      'naver-site-verification': ['77bb139cd8883a0afdea543a3fa80b0307edbe5a'],
+    },
+  },
   other: {
-    'naver-site-verification': 'placeholder',
+    'naver-site-verification': '77bb139cd8883a0afdea543a3fa80b0307edbe5a',
   },
 }
 
