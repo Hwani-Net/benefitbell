@@ -1,0 +1,258 @@
+.profileHero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px 20px;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--gradient-coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-coral);
+}
+
+.profileInfo { display: flex; flex-direction: column; gap: 4px; }
+
+.profileName {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.profileSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Form */
+.formCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.formRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+
+.formRow:last-child { border-bottom: none; }
+
+.formRowFull {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.formRowFull:last-child { border-bottom: none; }
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.input {
+  flex: 1;
+  text-align: right;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.toggleGroup {
+  display: flex;
+  gap: 6px;
+}
+
+/* Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stepBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  border: 1px solid var(--border-color);
+}
+
+.stepBtn:active { background: var(--color-coral-light); }
+
+.stepValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Slider */
+.sliderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sliderValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-coral);
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--color-coral);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.sliderLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+/* Chip Row */
+.chipRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Notification */
+.notifCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.notifRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.notifRow:last-child { border-bottom: none; }
+
+.notifLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.notifDesc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.alertDays {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Premium Banner */
+.premiumBanner {
+  background: var(--gradient-premium);
+  border-radius: var(--border-radius-xl);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.premiumLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.premiumTitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.premiumRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.premiumPrice {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.premiumPrice small {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Coffee */
+.coffeeCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.coffeeTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.coffeeDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}

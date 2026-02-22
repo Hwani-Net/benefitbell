@@ -1,0 +1,230 @@
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100dvh;
+  color: var(--text-secondary);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-top: 4px;
+}
+
+.backBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bookmarkBtn { font-size: 22px; }
+
+/* Hero Card */
+.heroCard {
+  margin: 0 16px 20px;
+  background: var(--gradient-coral);
+  border-radius: var(--border-radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-coral);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heroTop { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.heroTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.heroAmount {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+
+.heroMinistry {
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+}
+
+/* Info Grid */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.infoIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.infoLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.infoValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* Eligibility */
+.eligCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.eligHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.eligCount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-green);
+}
+
+.checkList { display: flex; flex-direction: column; gap: 10px; }
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.checkPass, .checkFail { font-size: 18px; flex-shrink: 0; }
+
+.checkLabel {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.checkBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.passBadge { background: var(--color-green-light); color: var(--color-green); }
+.failBadge { background: #FFF7ED; color: var(--color-orange); }
+
+/* Steps */
+.stepList { display: flex; flex-direction: column; gap: 12px; }
+
+.stepItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gradient-coral);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(255,107,74,0.3);
+}
+
+.stepContent { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+.stepTitle { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.stepDesc { font-size: 13px; color: var(--text-secondary); }
+
+/* Documents */
+.docList {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.docItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.docItem:last-child { border-bottom: none; }
+.docIcon { font-size: 18px; }
+.docName { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+
+/* CTA */
+.ctaArea {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+.kakaoBtn {
+  flex: 1;
+  font-size: 13px;
+  padding: 14px 10px;
+}
+
+.applyBtn {
+  flex: 1.5;
+  font-size: 14px;
+}
