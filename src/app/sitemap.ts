@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://benefitbell.kr'
+  const baseUrl = 'https://naedon-finder.vercel.app'
 
   return [
     {

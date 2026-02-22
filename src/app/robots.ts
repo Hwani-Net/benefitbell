@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/profile'],
       },
     ],
-    sitemap: 'https://benefitbell.kr/sitemap.xml',
+    sitemap: 'https://naedon-finder.vercel.app/sitemap.xml',
   }
 }
