@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
 import { addKakaoChannel } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
@@ -11,6 +11,33 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [saved, setSaved] = useState(false)
   const [isPremium] = useState(false)
+  const [isKakaoLinked, setIsKakaoLinked] = useState(false)
+
+  // 카카오 로그인 후 리다이렉트되어 돌아왔을 때 쿠키 확인
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`
+      const parts = value.split(`; ${name}=`)
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '')
+      return null
+    }
+
+    const kakaoProfile = getCookie('kakao_profile')
+    if (kakaoProfile) {
+      try {
+        const data = JSON.parse(kakaoProfile)
+        if (data.name && !isKakaoLinked) {
+          setProfile(prev => ({ ...prev, name: data.name }))
+          setIsKakaoLinked(true)
+          
+          // 전역 상태에도 즉각 반영 (선택적)
+          setUserProfile({ ...userProfile, name: data.name })
+        }
+      } catch (e) {
+        console.error('Failed to parse kakao profile cookie', e)
+      }
+    }
+  }, [isKakaoLinked, userProfile, setUserProfile])
 
   const update = (key: keyof UserProfile, value: unknown) => {
     setProfile(prev => ({ ...prev, [key]: value }))
@@ -71,6 +98,25 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* SNS 연동 */}
+        <section className="section">
+          <h2 className="section-title mb-12">소셜 계정 연결</h2>
+          {isKakaoLinked ? (
+            <div className={styles.coffeeCard} style={{ background: '#FEE500', color: '#000000', border: 'none' }}>
+              <p className={styles.coffeeTitle}>✅ 카카오 계정 연동 완료</p>
+              <p className={styles.coffeeDesc} style={{ color: '#333333' }}>카카오 계정으로 안전하게 연결되었습니다.</p>
+            </div>
+          ) : (
+            <div className={styles.coffeeCard}>
+              <p className={styles.coffeeTitle}>🔐 카카오 간편 로그인</p>
+              <p className={styles.coffeeDesc}>로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.</p>
+              <a href="/api/auth/kakao" className="btn btn-kakao w-full mt-12" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
+                1초 만에 카카오로 시작하기
+              </a>
+            </div>
+          )}
+        </section>
 
         {/* 개인정보 */}
         <section className="section">
