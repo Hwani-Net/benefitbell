@@ -37,6 +37,10 @@ export default function HomePage() {
     { key: 'youth', ...CATEGORY_INFO['youth'] },
     { key: 'middle-aged', ...CATEGORY_INFO['middle-aged'] },
     { key: 'senior', ...CATEGORY_INFO['senior'] },
+    { key: 'housing', ...CATEGORY_INFO['housing'] },
+    { key: 'medical', ...CATEGORY_INFO['medical'] },
+    { key: 'education', ...CATEGORY_INFO['education'] },
+    { key: 'employment', ...CATEGORY_INFO['employment'] },
   ]
 
   return (

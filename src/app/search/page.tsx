@@ -31,7 +31,7 @@ function SearchContent() {
   const [recentSearches] = useState(['기초연금 신청', '서울시 청년지원', '차상위 의료비'])
   const recommendedTags = ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
 
-  const categories = Object.entries(CATEGORY_INFO).slice(0, 8)
+  const categories = Object.entries(CATEGORY_INFO)
 
   useEffect(() => {
     if (defaultCategory) {
