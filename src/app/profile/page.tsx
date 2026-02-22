@@ -8,7 +8,7 @@ import PushToggle from '@/components/pwa/PushToggle'
 import styles from './page.module.css'
 
 export default function ProfilePage() {
-  const { t, lang, userProfile, setUserProfile } = useApp()
+  const { t, lang, userProfile, setUserProfile, kakaoUser } = useApp()
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [saved, setSaved] = useState(false)
   const [isPremium] = useState(false)
@@ -86,19 +86,32 @@ export default function ProfilePage() {
     <>
       <TopBar />
       <main className="page-content">
-        {/* 프로필 헤더 */}
-        <div className={styles.profileHero}>
-          <div className={styles.avatar}>{profile.name.charAt(0)}</div>
-          <div className={styles.profileInfo}>
-            <h1 className={styles.profileName}>{profile.name}</h1>
-            <p className={styles.profileSub}>
-              {profile.birthYear}년생 · {lang === 'ko' ? (profile.gender === 'male' ? '남성' : '여성') : (profile.gender === 'male' ? 'Male' : 'Female')} · {profile.region}
-            </p>
-            {!isPremium && (
-              <span className={`badge badge-coral-soft`}>{t.currentPlan}</span>
-            )}
+        {/* 프로필 헤더 - 로그인 시에만 표시 */}
+        {kakaoUser ? (
+          <div className={styles.profileHero}>
+            {kakaoUser.profile_image
+              ? <img src={kakaoUser.profile_image} alt="프로필" className={styles.avatarImg} />
+              : <div className={styles.avatar}>{kakaoUser.nickname.charAt(0)}</div>
+            }
+            <div className={styles.profileInfo}>
+              <h1 className={styles.profileName}>{kakaoUser.nickname}</h1>
+              <p className={styles.profileSub}>
+                {profile.birthYear}년생 · {lang === 'ko' ? (profile.gender === 'male' ? '남성' : '여성') : (profile.gender === 'male' ? 'Male' : 'Female')} · {profile.region}
+              </p>
+              {!isPremium && (
+                <span className={`badge badge-coral-soft`}>{t.currentPlan}</span>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className={styles.profileHero}>
+            <div className={styles.avatarGuest}>👤</div>
+            <div className={styles.profileInfo}>
+              <h1 className={styles.profileName} style={{ fontSize: 16 }}>로그인이 필요합니다</h1>
+              <p className={styles.profileSub}>카카오로 로그인하면 맞춤 혜택을 받아볼 수 있어요</p>
+            </div>
+          </div>
+        )}
 
         {/* SNS 연동 */}
         <section className="section">

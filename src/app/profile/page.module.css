@@ -20,6 +20,29 @@
   box-shadow: var(--shadow-coral);
 }
 
+.avatarImg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-coral);
+}
+
+.avatarGuest {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
 .profileInfo { display: flex; flex-direction: column; gap: 4px; }
 
 .profileName {
