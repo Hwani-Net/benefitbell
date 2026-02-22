@@ -26,7 +26,7 @@ const MoonIcon = () => (
 )
 
 export default function TopBar() {
-  const { t, theme, toggleTheme, lang, setLang } = useApp()
+  const { t, theme, toggleTheme, lang, setLang, kakaoUser } = useApp()
 
   return (
     <header className={styles.topBar}>
@@ -55,7 +55,10 @@ export default function TopBar() {
         </button>
         {/* 프로필 아바타 */}
         <div className={styles.avatar}>
-          <span>김</span>
+          {kakaoUser?.profile_image
+            ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            : <span>{kakaoUser ? kakaoUser.nickname.charAt(0) : '👤'}</span>
+          }
         </div>
       </div>
     </header>
