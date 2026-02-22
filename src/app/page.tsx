@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
@@ -7,10 +7,29 @@ import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
 import styles from './page.module.css'
 
+function useDragScroll() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let isDown = false, startX = 0, scrollLeft = 0
+    const onDown = (e: MouseEvent) => { isDown = true; el.style.userSelect = 'none'; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft }
+    const onUp = () => { isDown = false; el.style.userSelect = '' }
+    const onMove = (e: MouseEvent) => { if (!isDown) return; e.preventDefault(); el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) }
+    el.addEventListener('mousedown', onDown)
+    el.addEventListener('mouseleave', onUp)
+    el.addEventListener('mouseup', onUp)
+    el.addEventListener('mousemove', onMove)
+    return () => { el.removeEventListener('mousedown', onDown); el.removeEventListener('mouseleave', onUp); el.removeEventListener('mouseup', onUp); el.removeEventListener('mousemove', onMove) }
+  }, [])
+  return ref
+}
+
 export default function HomePage() {
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
+  const dragScrollRef = useDragScroll()
 
   useEffect(() => {
     async function loadBenefits() {
@@ -72,7 +91,7 @@ export default function HomePage() {
             <h2 className="section-title">{t.urgentBenefits}</h2>
             <Link href="/search" className="section-link">{t.viewAll}</Link>
           </div>
-          <div className={`scroll-x ${styles.urgentScroll}`}>
+          <div ref={dragScrollRef} className={`scroll-x ${styles.urgentScroll}`}>
             {urgentBenefits.slice(0, 5).map((benefit, i) => (
               <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.urgentCard} animate-fade-in stagger-${Math.min(i+1,5)}`}>
                 <div className={styles.urgentCardTop}>

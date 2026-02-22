@@ -117,8 +117,6 @@ ul, ol { list-style: none; }
   min-height: 100dvh;
   background: var(--bg-primary);
   position: relative;
-  overflow-x: clip;
-  overflow-y: visible;
 }
 
 .page-content {
@@ -287,11 +285,13 @@ ul, ol { list-style: none; }
   padding: 4px 16px 12px;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  cursor: grab;
 }
+.scroll-x:active { cursor: grabbing; }
 .scroll-x::-webkit-scrollbar { display: none; }
-.scroll-x > * { scroll-snap-align: start; }
+.scroll-x > * { scroll-snap-align: start; flex-shrink: 0; }
 
 /* ====================== */
 /* TOGGLE / SWITCH        */
