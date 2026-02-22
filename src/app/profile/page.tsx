@@ -311,15 +311,14 @@ export default function ProfilePage() {
               </div>
               <div className={styles.premiumRight}>
                 <p className={styles.premiumPrice}>₩1,900<small>{t.perMonth}</small></p>
-                <a
-                  href={process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_LINK || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
                   className={`btn btn-primary`}
-                  style={{ padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}
+                  style={{ padding: '8px 16px', fontSize: 13, opacity: 0.6, cursor: 'not-allowed' }}
+                  disabled
+                  title="토스페이먼츠 연동 준비 중"
                 >
-                  {t.subscribe}
-                </a>
+                  준비 중 🔜
+                </button>
               </div>
             </div>
           </section>
@@ -347,15 +346,34 @@ export default function ProfilePage() {
           <div className={styles.coffeeCard}>
             <p className={styles.coffeeTitle}>{t.coffeeSupport}</p>
             <p className={styles.coffeeDesc}>{t.supportDesc}</p>
-            <a
-              href={process.env.NEXT_PUBLIC_STRIPE_DONATION_LINK || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`btn btn-outline w-full mt-12`}
-              style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
-            >
-              ☕ 커피 한 잔 선물하기
-            </a>
+            {/* 카카오페이 송금 링크 */}
+            {process.env.NEXT_PUBLIC_KAKAOPAY_LINK && (
+              <a
+                href={process.env.NEXT_PUBLIC_KAKAOPAY_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`btn w-full mt-12`}
+                style={{ background: '#FFE812', color: '#000', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12 }}
+              >
+                💳 카카오페이로 후원하기
+              </a>
+            )}
+            {/* Buy Me a Coffee 링크 */}
+            {process.env.NEXT_PUBLIC_BMC_LINK && (
+              <a
+                href={process.env.NEXT_PUBLIC_BMC_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`btn btn-outline w-full mt-8`}
+                style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
+              >
+                ☕ Buy Me a Coffee
+              </a>
+            )}
+            {/* 둘 다 없으면 임시 메시지 */}
+            {!process.env.NEXT_PUBLIC_KAKAOPAY_LINK && !process.env.NEXT_PUBLIC_BMC_LINK && (
+              <p style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>준비 중입니다 🙏</p>
+            )}
           </div>
         </section>
 
