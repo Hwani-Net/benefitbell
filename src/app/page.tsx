@@ -12,15 +12,40 @@ function useDragScroll() {
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    let isDown = false, startX = 0, scrollLeft = 0
-    const onDown = (e: MouseEvent) => { isDown = true; el.style.userSelect = 'none'; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft }
+    let isDown = false, startX = 0, scrollLeft = 0, moved = false
+
+    const onDown = (e: MouseEvent) => {
+      isDown = true
+      moved = false
+      el.style.userSelect = 'none'
+      startX = e.pageX - el.offsetLeft
+      scrollLeft = el.scrollLeft
+    }
     const onUp = () => { isDown = false; el.style.userSelect = '' }
-    const onMove = (e: MouseEvent) => { if (!isDown) return; e.preventDefault(); el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) }
+    const onMove = (e: MouseEvent) => {
+      if (!isDown) return
+      const dx = e.pageX - el.offsetLeft - startX
+      if (Math.abs(dx) > 5) {
+        moved = true
+        e.preventDefault()
+        el.scrollLeft = scrollLeft - dx
+      }
+    }
+    // Block link clicks after drag
+    const onClick = (e: MouseEvent) => { if (moved) { e.preventDefault(); e.stopPropagation() } }
+
     el.addEventListener('mousedown', onDown)
     el.addEventListener('mouseleave', onUp)
     el.addEventListener('mouseup', onUp)
     el.addEventListener('mousemove', onMove)
-    return () => { el.removeEventListener('mousedown', onDown); el.removeEventListener('mouseleave', onUp); el.removeEventListener('mouseup', onUp); el.removeEventListener('mousemove', onMove) }
+    el.addEventListener('click', onClick, true)
+    return () => {
+      el.removeEventListener('mousedown', onDown)
+      el.removeEventListener('mouseleave', onUp)
+      el.removeEventListener('mouseup', onUp)
+      el.removeEventListener('mousemove', onMove)
+      el.removeEventListener('click', onClick, true)
+    }
   }, [])
   return ref
 }
