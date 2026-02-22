@@ -159,18 +159,22 @@
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+  padding: 0 16px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0 -16px;
 }
 
 .notifRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 16px 0;
   gap: 12px;
-  border-bottom: 1px solid var(--border-color);
 }
-
-.notifRow:last-child { border-bottom: none; }
 
 .notifLabel {
   font-size: 14px;

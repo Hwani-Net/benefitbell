@@ -4,6 +4,7 @@ import { useApp, UserProfile } from '@/lib/context'
 import { addKakaoChannel } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
+import PushToggle from '@/components/pwa/PushToggle'
 import styles from './page.module.css'
 
 export default function ProfilePage() {
@@ -245,6 +246,9 @@ export default function ProfilePage() {
         <section className="section">
           <h2 className="section-title mb-12">{t.notificationSettings}</h2>
           <div className={styles.notifCard}>
+            {/* 푸시 알림 */}
+            <PushToggle />
+            <div className={styles.divider} />
             {/* 카카오 알림 */}
             <div className={styles.notifRow}>
               <div>
