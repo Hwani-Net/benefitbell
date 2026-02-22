@@ -51,7 +51,17 @@ export default function HomePage() {
         <div className={styles.greetingBanner}>
           <div className={styles.greetingText}>
             <p className={styles.greeting}>{t.greeting('김민수')}</p>
-            <p className={styles.subGreeting}>{t.urgentSubtitle(urgentBenefits.filter(b => b.dDay <= 14).length)}</p>
+            <p className={styles.subGreeting}>
+              {loading
+                ? '혜택 정보를 불러오는 중...'
+                : t.urgentSubtitle(urgentBenefits.filter(b => b.dDay <= 14).length)
+              }
+            </p>
+            {!loading && benefits.length > 0 && (
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+                📊 실시간 복지서비스 {benefits.length}건 연동
+              </p>
+            )}
           </div>
           <div className={styles.greetingEmoji}>🔔</div>
         </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { AppProvider } from '@/lib/context'
 import Script from 'next/script'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         strategy="afterInteractive"
       />
       <body>
+        <GoogleAnalytics />
         <AppProvider>
           <div className="app-container">
             {children}
