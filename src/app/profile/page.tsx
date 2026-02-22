@@ -298,9 +298,15 @@ export default function ProfilePage() {
               </div>
               <div className={styles.premiumRight}>
                 <p className={styles.premiumPrice}>₩1,900<small>{t.perMonth}</small></p>
-                <button className={`btn btn-primary`} style={{ padding: '8px 16px', fontSize: 13 }}>
+                <a
+                  href={process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_LINK || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`btn btn-primary`}
+                  style={{ padding: '8px 16px', fontSize: 13, textDecoration: 'none', display: 'inline-block' }}
+                >
                   {t.subscribe}
-                </button>
+                </a>
               </div>
             </div>
           </section>
@@ -325,9 +331,15 @@ export default function ProfilePage() {
           <div className={styles.coffeeCard}>
             <p className={styles.coffeeTitle}>{t.coffeeSupport}</p>
             <p className={styles.coffeeDesc}>{t.supportDesc}</p>
-            <button className={`btn btn-outline w-full mt-12`} style={{ borderColor: '#F97316', color: '#F97316' }}>
+            <a
+              href={process.env.NEXT_PUBLIC_STRIPE_DONATION_LINK || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`btn btn-outline w-full mt-12`}
+              style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
+            >
               ☕ 커피 한 잔 선물하기
-            </button>
+            </a>
           </div>
         </section>
 
