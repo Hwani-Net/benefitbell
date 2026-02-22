@@ -228,3 +228,14 @@
   flex: 1.5;
   font-size: 14px;
 }
+
+/* API Detail Text Block */
+.textBlock {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}

@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useApp } from '@/lib/context'
-import { BENEFITS, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import styles from './page.module.css'
 
 type SortType = 'popular' | 'deadline' | 'new'
@@ -16,21 +17,49 @@ const SearchFieldIcon = () => (
   </svg>
 )
 
-export default function SearchPage() {
+function SearchContent() {
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
+  const searchParams = useSearchParams()
+  const defaultCategory = searchParams.get('category')
+  
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortType>('popular')
   const [persona, setPersona] = useState<PersonaType>('all')
+  const [benefits, setBenefits] = useState<Benefit[]>([])
+  const [loading, setLoading] = useState(true)
+
   const [recentSearches] = useState(['기초연금 신청', '서울시 청년지원', '차상위 의료비'])
   const recommendedTags = ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
 
   const categories = Object.entries(CATEGORY_INFO).slice(0, 8)
 
-  const filtered = BENEFITS.filter(b => {
+  useEffect(() => {
+    if (defaultCategory) {
+      const catLabel = CATEGORY_INFO[defaultCategory as keyof typeof CATEGORY_INFO]?.label
+      if (catLabel) setQuery(catLabel)
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/benefits')
+        if (!res.ok) throw new Error('API return not ok')
+        const json = await res.json()
+        setBenefits(json.data)
+      } catch (err) {
+        console.error('Failed to load search benefits', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [defaultCategory])
+
+  const filtered = benefits.filter(b => {
     const matchQuery = query === '' ||
       b.title.includes(query) ||
       b.titleEn.toLowerCase().includes(query.toLowerCase()) ||
       b.categoryLabel.includes(query)
+
 
     const matchPersona =
       persona === 'all' ? true :
@@ -185,5 +214,13 @@ export default function SearchPage() {
       </main>
       <BottomNav />
     </>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '80px 20px', textAlign: 'center' }}>데이터를 불러오는 중입니다...</div>}>
+      <SearchContent />
+    </Suspense>
   )
 }

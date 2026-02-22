@@ -1,6 +1,7 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { BENEFITS, getUrgentBenefits, getPopularBenefits, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -8,8 +9,27 @@ import styles from './page.module.css'
 
 export default function HomePage() {
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
-  const urgentBenefits = getUrgentBenefits(30)
-  const popularBenefits = getPopularBenefits()
+  const [benefits, setBenefits] = useState<Benefit[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadBenefits() {
+      try {
+        const res = await fetch('/api/benefits')
+        if (!res.ok) throw new Error('API return not ok')
+        const json = await res.json()
+        setBenefits(json.data)
+      } catch (err) {
+        console.error('Failed to load benefits', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBenefits()
+  }, [])
+
+  const urgentBenefits = benefits.filter(b => b.dDay >= 0 && b.dDay <= 30 && b.status === 'open').sort((a, b) => a.dDay - b.dDay)
+  const popularBenefits = benefits.filter(b => b.popular)
 
   const categories = [
     { key: 'basic-living', ...CATEGORY_INFO['basic-living'] },

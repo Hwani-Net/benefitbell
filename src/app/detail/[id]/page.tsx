@@ -1,42 +1,125 @@
 'use client'
 import { useApp } from '@/lib/context'
-import { getBenefitById, getDDayColor, getDDayText } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
 import { shareKakaoBenefit } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import styles from './page.module.css'
+
+// Extended detail from the public API
+interface ApiDetail {
+  title: string
+  ministry: string
+  phone: string
+  year: string
+  supportCycle: string
+  supportType: string
+  overview: string
+  targetDetail: string
+  selectionCriteria: string
+  supportContent: string
+  lifeStages: string
+  targetGroups: string
+  themes: string
+  applicationMethods: string[]
+  applicationLinks: string[]
+  contacts: { name: string; address: string }[]
+  requiredDocs: string[]
+  relatedLaws: string[]
+  homepages: { name: string; url: string }[]
+}
 
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
-  const benefit = getBenefitById(id)
+  const [benefit, setBenefit] = useState<Benefit | null>(null)
+  const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // 1. Load basic benefit from list API
+        const listRes = await fetch('/api/benefits')
+        if (listRes.ok) {
+          const listJson = await listRes.json()
+          const found = (listJson.data as Benefit[]).find(b => b.id === id)
+          if (found) setBenefit(found)
+        }
+
+        // 2. Load detailed info from detail API
+        const detailRes = await fetch(`/api/benefits/${id}`)
+        if (detailRes.ok) {
+          const detailJson = await detailRes.json()
+          if (detailJson.success && detailJson.source === 'api') {
+            setApiDetail(detailJson.data)
+          } else if (detailJson.success && detailJson.source === 'mock') {
+            // mock detail returned the Benefit directly
+            setBenefit(detailJson.data)
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [id])
+
+  if (loading) {
+    return (
+      <>
+        <TopBar />
+        <main className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <div className="shimmer" style={{ width: 40, height: 40, borderRadius: '50%', margin: '0 auto 12px' }} />
+            <p>혜택 정보를 불러오고 있습니다...</p>
+          </div>
+        </main>
+        <BottomNav />
+      </>
+    )
+  }
 
   if (!benefit) {
     return (
-      <div className={styles.notFound}>
-        <span style={{ fontSize: 48 }}>🔍</span>
-        <p>혜택 정보를 찾을 수 없습니다</p>
-        <Link href="/" className="btn btn-primary">홈으로</Link>
-      </div>
+      <>
+        <TopBar />
+        <div className={styles.notFound}>
+          <span style={{ fontSize: 48 }}>🔍</span>
+          <p>혜택 정보를 찾을 수 없습니다</p>
+          <Link href="/" className="btn btn-primary">홈으로</Link>
+        </div>
+        <BottomNav />
+      </>
     )
   }
 
   const title = lang === 'ko' ? benefit.title : benefit.titleEn
   const amount = lang === 'ko' ? benefit.amount : benefit.amountEn
   const category = lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn
-  const ministry = lang === 'ko' ? benefit.ministry : benefit.ministryEn
+  const ministry = apiDetail?.ministry || (lang === 'ko' ? benefit.ministry : benefit.ministryEn)
   const steps = benefit.steps.map(s => lang === 'ko' ? { title: s.title, desc: s.desc } : { title: s.titleEn, desc: s.descEn })
-  const docs = lang === 'ko' ? benefit.documents : benefit.documentsEn
+  const docs = apiDetail?.requiredDocs?.length ? apiDetail.requiredDocs : (lang === 'ko' ? benefit.documents : benefit.documentsEn)
   const checks = benefit.eligibilityChecks
   const fulfilled = checks.filter(c => c.pass).length
+
+  // Helper: render multi-line text as paragraphs
+  const renderText = (text: string) => {
+    if (!text) return null
+    return text.split('\n').filter(l => l.trim()).map((line, i) => (
+      <p key={i} style={{ margin: '4px 0', lineHeight: 1.6, color: 'var(--text-secondary)', fontSize: 14 }}>{line}</p>
+    ))
+  }
 
   return (
     <>
       <TopBar />
       <main className="page-content">
-        {/* 헤더 */}
+        {/* Header */}
         <div className={styles.detailHeader}>
           <Link href="/search" className={styles.backBtn}>‹</Link>
           <span className={styles.headerTitle}>{t.benefitDetail}</span>
@@ -49,20 +132,77 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </button>
         </div>
 
-        {/* 히어로 카드 */}
+        {/* Hero Card */}
         <div className={styles.heroCard}>
           <div className={styles.heroTop}>
             <span className="badge badge-purple-soft">{category}</span>
-            <span className={`badge ${getDDayColor(benefit.dDay)}`}>
-              {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')} 마감 임박!
-            </span>
+            {benefit.dDay >= 0 && benefit.dDay <= 30 && (
+              <span className={`badge ${getDDayColor(benefit.dDay)}`}>
+                {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
+              </span>
+            )}
+            {apiDetail?.supportType && (
+              <span className="badge badge-coral-soft">{apiDetail.supportType}</span>
+            )}
           </div>
           <h1 className={styles.heroTitle}>{title}</h1>
           <p className={styles.heroAmount}>{amount}</p>
           <p className={styles.heroMinistry}>📌 {ministry}</p>
+          {apiDetail?.phone && (
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+              📞 {apiDetail.phone}
+            </p>
+          )}
         </div>
 
-        {/* 핵심 정보 */}
+        {/* API Detailed Content Sections */}
+        {apiDetail?.overview && (
+          <section className="section">
+            <h2 className="section-title mb-12">📋 서비스 개요</h2>
+            <div className={styles.textBlock}>{renderText(apiDetail.overview)}</div>
+          </section>
+        )}
+
+        {apiDetail?.targetDetail && (
+          <section className="section">
+            <h2 className="section-title mb-12">👤 지원 대상</h2>
+            <div className={styles.textBlock}>{renderText(apiDetail.targetDetail)}</div>
+          </section>
+        )}
+
+        {apiDetail?.selectionCriteria && (
+          <section className="section">
+            <h2 className="section-title mb-12">📊 선정 기준</h2>
+            <div className={styles.textBlock}>{renderText(apiDetail.selectionCriteria)}</div>
+          </section>
+        )}
+
+        {apiDetail?.supportContent && (
+          <section className="section">
+            <h2 className="section-title mb-12">💰 지원 내용</h2>
+            <div className={styles.textBlock}>{renderText(apiDetail.supportContent)}</div>
+          </section>
+        )}
+
+        {/* Tags */}
+        {(apiDetail?.lifeStages || apiDetail?.targetGroups || apiDetail?.themes) && (
+          <section className="section">
+            <h2 className="section-title mb-12">🏷️ 관련 태그</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {apiDetail?.lifeStages?.split(',').map((tag, i) => (
+                <span key={`life-${i}`} className="badge badge-purple-soft">{tag.trim()}</span>
+              ))}
+              {apiDetail?.targetGroups?.split(',').map((tag, i) => (
+                <span key={`target-${i}`} className="badge badge-coral-soft">{tag.trim()}</span>
+              ))}
+              {apiDetail?.themes?.split(',').map((tag, i) => (
+                <span key={`theme-${i}`} className="badge badge-green-soft">{tag.trim()}</span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Key Information */}
         <section className="section">
           <h2 className="section-title mb-12">{t.mainInfo}</h2>
           <div className={styles.infoGrid}>
@@ -73,21 +213,23 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
                 <p className={styles.infoValue}>{benefit.applicationStart} ~ {benefit.applicationEnd}</p>
               </div>
             </div>
-            {benefit.targetAge && (
+            {(benefit.targetAge || apiDetail?.lifeStages) && (
               <div className={styles.infoItem}>
                 <span className={styles.infoIcon} style={{ background: '#FAF5FF' }}>👤</span>
                 <div>
                   <p className={styles.infoLabel}>{t.targetPerson}</p>
-                  <p className={styles.infoValue}>{benefit.targetAge}</p>
+                  <p className={styles.infoValue}>{benefit.targetAge || apiDetail?.lifeStages}</p>
                 </div>
               </div>
             )}
-            {benefit.incomeLevel && (
+            {(benefit.incomeLevel || apiDetail?.selectionCriteria) && (
               <div className={styles.infoItem}>
                 <span className={styles.infoIcon} style={{ background: '#F0FDF4' }}>💰</span>
                 <div>
                   <p className={styles.infoLabel}>{t.incomeLevel}</p>
-                  <p className={styles.infoValue}>{benefit.incomeLevel}</p>
+                  <p className={styles.infoValue} style={{ fontSize: 13 }}>
+                    {benefit.incomeLevel || (apiDetail?.selectionCriteria?.substring(0, 80) + '...')}
+                  </p>
                 </div>
               </div>
             )}
@@ -95,13 +237,22 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
               <span className={styles.infoIcon} style={{ background: '#FFF0ED' }}>🏦</span>
               <div>
                 <p className={styles.infoLabel}>{t.paymentMethod}</p>
-                <p className={styles.infoValue}>{t.monthlyTransfer}</p>
+                <p className={styles.infoValue}>{apiDetail?.supportType || t.monthlyTransfer}</p>
               </div>
             </div>
+            {apiDetail?.supportCycle && (
+              <div className={styles.infoItem}>
+                <span className={styles.infoIcon} style={{ background: '#FFFBEB' }}>🔄</span>
+                <div>
+                  <p className={styles.infoLabel}>지원 주기</p>
+                  <p className={styles.infoValue}>{apiDetail.supportCycle}</p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* 자격 확인 */}
+        {/* Eligibility Check */}
         <section className="section">
           <div className={styles.eligCard}>
             <div className={styles.eligHeader}>
@@ -130,23 +281,49 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </div>
         </section>
 
-        {/* 신청 방법 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.howToApply}</h2>
-          <div className={styles.stepList}>
-            {steps.map((step, i) => (
-              <div key={i} className={styles.stepItem}>
-                <div className={styles.stepNum}>{i + 1}</div>
-                <div className={styles.stepContent}>
-                  <p className={styles.stepTitle}>{step.title}</p>
-                  <p className={styles.stepDesc}>{step.desc}</p>
+        {/* Application Methods (from API) */}
+        {apiDetail?.applicationMethods && apiDetail.applicationMethods.length > 0 ? (
+          <section className="section">
+            <h2 className="section-title mb-12">📝 신청 방법</h2>
+            <div className={styles.stepList}>
+              {apiDetail.applicationMethods.map((method, i) => (
+                <div key={i} className={styles.stepItem}>
+                  <div className={styles.stepNum}>{i + 1}</div>
+                  <div className={styles.stepContent}>
+                    <p className={styles.stepTitle}>{method}</p>
+                    {apiDetail.applicationLinks[i] && (
+                      <a
+                        href={apiDetail.applicationLinks[i]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 13, color: 'var(--primary)' }}
+                      >
+                        바로가기 →
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <section className="section">
+            <h2 className="section-title mb-12">{t.howToApply}</h2>
+            <div className={styles.stepList}>
+              {steps.map((step, i) => (
+                <div key={i} className={styles.stepItem}>
+                  <div className={styles.stepNum}>{i + 1}</div>
+                  <div className={styles.stepContent}>
+                    <p className={styles.stepTitle}>{step.title}</p>
+                    <p className={styles.stepDesc}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* 필요 서류 */}
+        {/* Required Documents */}
         <section className="section">
           <h2 className="section-title mb-12">{t.requiredDocuments}</h2>
           <div className={styles.docList}>
@@ -159,7 +336,39 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </div>
         </section>
 
-        {/* 하단 버튼 */}
+        {/* Related Laws (API only) */}
+        {apiDetail?.relatedLaws && apiDetail.relatedLaws.length > 0 && (
+          <section className="section">
+            <h2 className="section-title mb-12">⚖️ 관련 법령</h2>
+            <div className={styles.docList}>
+              {apiDetail.relatedLaws.map((law, i) => (
+                <div key={i} className={styles.docItem}>
+                  <span className={styles.docIcon}>📜</span>
+                  <span className={styles.docName}>{law}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Inquiry Contacts (API only) */}
+        {apiDetail?.homepages && apiDetail.homepages.length > 0 && (
+          <section className="section">
+            <h2 className="section-title mb-12">🔗 관련 홈페이지</h2>
+            <div className={styles.docList}>
+              {apiDetail.homepages.map((hp, i) => (
+                <div key={i} className={styles.docItem}>
+                  <span className={styles.docIcon}>🌐</span>
+                  <a href={hp.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontSize: 14 }}>
+                    {hp.name || hp.url}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CTA Buttons */}
         <div className={styles.ctaArea}>
           <button
             className={`btn btn-kakao ${styles.kakaoBtn}`}

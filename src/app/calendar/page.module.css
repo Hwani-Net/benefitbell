@@ -148,3 +148,17 @@
 }
 
 .monthSummary { margin-top: 4px; }
+
+.showMore {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-coral);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition);
+}
+
+.showMore:active { background: var(--color-coral-light); }
