@@ -10,6 +10,10 @@ declare global {
       Share: {
         sendDefault: (params: KakaoShareParams) => void
       }
+      Channel: {
+        addChannel: (params: { channelPublicId: string }) => void
+        chat: (params: { channelPublicId: string }) => void
+      }
     }
   }
 }
@@ -36,6 +40,8 @@ interface KakaoShareParams {
 
 const KAKAO_JS_KEY = 'd935363352a0781e5d6ff7fada8b5b3d'
 const APP_BASE_URL = 'https://naedon-finder-xuvwfo1la-stayicon-gmailcoms-projects.vercel.app'
+// 카카오톡 채널 ID (혜택알리미 @hyetack-alimi, 채널 내부 ID: _IdDIX)
+export const KAKAO_CHANNEL_ID = '_IdDIX'
 
 // SDK 초기화
 export function initKakao() {
@@ -117,4 +123,18 @@ export function shareKakaoApp() {
       },
     ],
   })
+}
+
+// 카카오톡 채널 추가하기 (친구 추가)
+export function addKakaoChannel() {
+  if (typeof window === 'undefined' || !window.Kakao) return
+  initKakao()
+  window.Kakao.Channel.addChannel({ channelPublicId: KAKAO_CHANNEL_ID })
+}
+
+// 카카오톡 채널 1:1 채팅
+export function chatKakaoChannel() {
+  if (typeof window === 'undefined' || !window.Kakao) return
+  initKakao()
+  window.Kakao.Channel.chat({ channelPublicId: KAKAO_CHANNEL_ID })
 }
