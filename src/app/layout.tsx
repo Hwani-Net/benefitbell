@@ -44,11 +44,11 @@ export const metadata: Metadata = {
   },
   verification: {
     other: {
-      'naver-site-verification': ['77bb139cd8883a0afdea543a3fa80b0307edbe5a'],
+      'naver-site-verification': ['a7b4dc9ca23e400c6c0caa02bfebabc2fa1b0055'],
     },
   },
   other: {
-    'naver-site-verification': '77bb139cd8883a0afdea543a3fa80b0307edbe5a',
+    'naver-site-verification': 'a7b4dc9ca23e400c6c0caa02bfebabc2fa1b0055',
   },
 }
 
