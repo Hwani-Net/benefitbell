@@ -1,7 +1,7 @@
 'use client'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
-import { shareKakaoBenefit } from '@/lib/kakao'
+import { addKakaoChannel } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -372,13 +372,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         <div className={styles.ctaArea}>
           <button
             className={`btn btn-kakao ${styles.kakaoBtn}`}
-            onClick={() => shareKakaoBenefit({
-              title,
-              amount,
-              categoryLabel: category,
-              dDay: benefit.dDay,
-              benefitId: benefit.id,
-            })}
+            onClick={() => addKakaoChannel()}
           >
             💬 {t.kakaoAlert}
           </button>
