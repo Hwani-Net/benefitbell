@@ -157,7 +157,7 @@ export default function HomePage() {
             {categories.map((cat, i) => (
               <Link
                 key={cat.key}
-                href={`/search?category=${cat.key}`}
+                href={`/search?cat=${cat.key}`}
                 className={`${styles.categoryItem} animate-fade-in stagger-${Math.min(i+1,5)}`}
               >
                 <div className={styles.categoryIcon} style={{ background: `${cat.color}18` }}>
