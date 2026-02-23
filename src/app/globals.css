@@ -35,8 +35,6 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+/* Note: color-scheme is NOT set here to avoid forcing dark OS styles on form elements.
+   Dark mode is controlled exclusively via [data-theme="dark"] data attribute.
+*/

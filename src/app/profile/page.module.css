@@ -114,6 +114,8 @@
   font-family: var(--font-family);
   cursor: pointer;
   appearance: auto;
+  /* Force light-mode styling for form elements on mobile dark mode */
+  color-scheme: light;
 }
 
 .selectRow {
