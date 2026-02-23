@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { BENEFITS, CATEGORY_INFO, getDDayColor, getDDayText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
@@ -35,12 +35,43 @@ export default function AiPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AiResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [usageCount, setUsageCount] = useState(0)
 
   const isKo = lang === 'ko'
   const examples = isKo ? EXAMPLE_PROMPTS_KO : EXAMPLE_PROMPTS_EN
+  const { userProfile } = useApp()
+
+  useEffect(() => {
+    if (!userProfile?.isPremium) {
+      const today = new Date().toDateString()
+      const usageStr = localStorage.getItem('ai_usage_limit')
+      let usage = usageStr ? JSON.parse(usageStr) : { date: today, count: 0 }
+      if (usage.date !== today) usage = { date: today, count: 0 }
+      setUsageCount(usage.count)
+    }
+  }, [userProfile?.isPremium])
 
   async function handleSubmit() {
     if (!input.trim() || loading) return
+
+    if (!userProfile?.isPremium) {
+      const today = new Date().toDateString()
+      const usageStr = localStorage.getItem('ai_usage_limit')
+      let usage = usageStr ? JSON.parse(usageStr) : { date: today, count: 0 }
+      if (usage.date !== today) usage = { date: today, count: 0 }
+
+      if (usage.count >= 3) {
+        if (confirm(isKo ? '무료 제공량(일 3회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?' : 'You have exhausted your free daily limit (3 times).\nWould you like to upgrade to Premium for unlimited analysis?')) {
+          window.location.href = '/premium'
+        }
+        return
+      }
+
+      const nextCount = usage.count + 1
+      localStorage.setItem('ai_usage_limit', JSON.stringify({ date: today, count: nextCount }))
+      setUsageCount(nextCount)
+    }
+
     setLoading(true)
     setResult(null)
     setError(null)
@@ -100,8 +131,13 @@ export default function AiPage() {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit()
             }}
           />
-          <div className={styles.inputFooter}>
+          <div className={styles.inputFooter} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
             <span className={styles.charCount}>{input.length}/500</span>
+            {!userProfile?.isPremium && (
+              <span className="badge badge-coral-soft">
+                {isKo ? `무료 ${3 - usageCount}회 남음` : `${3 - usageCount} free left`}
+              </span>
+            )}
             <button
               className={styles.submitBtn}
               onClick={handleSubmit}

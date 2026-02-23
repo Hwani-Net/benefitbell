@@ -41,11 +41,14 @@ export default function ProfilePage() {
   const { t, lang, userProfile, setUserProfile, kakaoUser } = useApp()
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [saved, setSaved] = useState(false)
-  const [isPremium] = useState(false)
+  const isPremium = userProfile?.isPremium || false
   const [isKakaoLinked, setIsKakaoLinked] = useState(false)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    () => JSON.parse(localStorage?.getItem('push_categories') || '[]')
-  )
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try { return JSON.parse(localStorage.getItem('push_categories') || '[]') } catch(e){}
+    }
+    return []
+  })
   const [categorySaving, setCategorySaving] = useState(false)
 
   const CATEGORY_CHIPS = [
@@ -470,15 +473,14 @@ export default function ProfilePage() {
                 <p className={styles.premiumTitle}>{t.premiumFeatures}</p>
               </div>
               <div className={styles.premiumRight}>
-                <p className={styles.premiumPrice}>₩1,900<small>{t.perMonth}</small></p>
-                <button
+                <p className={styles.premiumPrice}>₩4,900<small>{t.perMonth}</small></p>
+                <a
+                  href="/premium"
                   className={`btn btn-primary`}
-                  style={{ padding: '8px 16px', fontSize: 13, opacity: 0.6, cursor: 'not-allowed' }}
-                  disabled
-                  title="토스페이먼츠 연동 준비 중"
+                  style={{ padding: '8px 16px', fontSize: 13, display: 'inline-block', textDecoration: 'none' }}
                 >
-                  {t.comingSoon}
-                </button>
+                  기능 알아보기
+                </a>
               </div>
             </div>
           </section>

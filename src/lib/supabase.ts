@@ -35,5 +35,6 @@ export type UserProfile = {
   categories: string[]
   age_group?: string
   region?: string
+  is_premium?: boolean
   updated_at?: string
 }

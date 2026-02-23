@@ -1,5 +1,6 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 // =====================
 // i18n 딕셔너리
@@ -319,6 +320,7 @@ export interface UserProfile {
   specialStatus: string[]
   kakaoAlerts: boolean
   alertDays: number[]
+  isPremium?: boolean
 }
 
 const defaultProfile: UserProfile = {
@@ -333,6 +335,7 @@ const defaultProfile: UserProfile = {
   specialStatus: [],
   kakaoAlerts: true,
   alertDays: [7, 3],
+  isPremium: false,
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -365,7 +368,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         const data = JSON.parse(kakaoProfileCookie)
         if (data.name) {
-          setKakaoUser({ nickname: data.name, profile_image: data.profile_image })
+          setKakaoUser({ id: data.id, nickname: data.name, profile_image: data.profile_image })
         }
       } catch (e) {
         console.error('Failed to parse kakao_profile cookie', e)
@@ -373,6 +376,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
   }, [])
+
+  useEffect(() => {
+    if (kakaoUser?.id) {
+      supabase.from('user_profiles').select('is_premium').eq('kakao_id', String(kakaoUser.id)).single()
+        .then((res: any) => {
+          const { data, error } = res
+          if (data && !error) {
+            setUserProfile(prev => ({ ...prev, isPremium: data.is_premium }))
+          }
+        })
+    }
+  }, [kakaoUser?.id])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)

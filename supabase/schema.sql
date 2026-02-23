@@ -34,7 +34,7 @@ create policy "allow_update_own_subscription"
   on push_subscriptions for update
   using (true);
 
--- 2. 유저 프로필 테이블 (카카오 로그인 시 연동)
+-- 2. 유저 파이플 테이블 (카카오 로그인 시 연동)
 create table if not exists user_profiles (
   id          uuid primary key default gen_random_uuid(),
   kakao_id    text unique not null,
@@ -42,8 +42,13 @@ create table if not exists user_profiles (
   categories  text[] default '{}',
   age_group   text,
   region      text,
+  is_premium  boolean default false,
   updated_at  timestamptz default now()
 );
+
+-- 기존 테이블이 이미 있을 경우 is_premium 컬럼 추가 (안전 장치)
+alter table user_profiles add column if not exists is_premium boolean default false;
+
 
 create index if not exists user_profiles_kakao_id_idx
   on user_profiles(kakao_id);

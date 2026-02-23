@@ -67,6 +67,7 @@ export async function GET(request: Request) {
     
     // Set cookie with user data for the client to read
     const profileData = {
+      id: userData.id,
       name: nickname,
       profile_image: profileImage,
       isKakaoLinked: true,
