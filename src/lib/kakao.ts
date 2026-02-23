@@ -38,8 +38,8 @@ interface KakaoShareParams {
   }>
 }
 
-const KAKAO_JS_KEY = 'd935363352a0781e5d6ff7fada8b5b3d'
-const APP_BASE_URL = 'https://naedon-finder-xuvwfo1la-stayicon-gmailcoms-projects.vercel.app'
+const KAKAO_JS_KEY = 'c66527c2112a3c696c719e3fe0c9e108'
+const APP_BASE_URL = 'https://naedon-finder.vercel.app'
 // 카카오톡 채널 ID (혜택알리미 @hyetack-alimi, 채널 내부 ID: _IdDIX)
 export const KAKAO_CHANNEL_ID = '_IdDIX'
 
