@@ -319,9 +319,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (savedLang) setLang(savedLang)
     if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks))
     if (savedProfile) setUserProfile(JSON.parse(savedProfile))
-    // Load kakao user from session storage (set by kakao login callback)
-    const kakaoStr = sessionStorage.getItem('kakaoUser')
-    if (kakaoStr) setKakaoUser(JSON.parse(kakaoStr))
+    // Load kakao user from cookie (set by /api/auth/kakao/callback)
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`
+      const parts = value.split(`; ${name}=`)
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '')
+      return null
+    }
+    const kakaoProfileCookie = getCookie('kakao_profile')
+    if (kakaoProfileCookie) {
+      try {
+        const data = JSON.parse(kakaoProfileCookie)
+        if (data.name) {
+          setKakaoUser({ nickname: data.name, profile_image: data.profile_image })
+        }
+      } catch (e) {
+        console.error('Failed to parse kakao_profile cookie', e)
+      }
+    }
+
   }, [])
 
   useEffect(() => {

@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   }
 
   const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID || '2ea24765291ab5909d7c489615615b92'
-  const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || 'LvPP6vSNsLX1FViAxG9c3LSRMaMEYJWb'
+  const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || 'LvPP6vSNsLX1FVIAxG9c3LSRMaMEYJWb'
+
   const REDIRECT_URI = isDev
     ? 'http://localhost:3001/api/auth/kakao/callback'
     : 'https://naedon-finder.vercel.app/api/auth/kakao/callback'
@@ -34,9 +35,14 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json()
     
     if (!tokenResponse.ok) {
-      console.error('Kakao Token Error:', tokenData)
-      return NextResponse.redirect(new URL('/profile?error=token_failed', request.url))
+      const errCode = tokenData.error || 'unknown'
+      const errDesc = tokenData.error_description || JSON.stringify(tokenData)
+      console.error('Kakao Token Error:', JSON.stringify(tokenData))
+      return NextResponse.redirect(
+        new URL(`/profile?error=token_failed&code=${errCode}&msg=${encodeURIComponent(errDesc)}`, request.url)
+      )
     }
+
 
     // 2. Get User Profile Info
     const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
@@ -55,14 +61,17 @@ export async function GET(request: Request) {
     }
 
     const nickname = userData.kakao_account?.profile?.nickname || '카카오 사용자'
+    const profileImage = userData.kakao_account?.profile?.profile_image_url || null
     // Create response redirecting back to profile
     const response = NextResponse.redirect(new URL('/profile', request.url))
     
     // Set cookie with user data for the client to read
     const profileData = {
       name: nickname,
+      profile_image: profileImage,
       isKakaoLinked: true,
     }
+
     
     response.cookies.set('kakao_profile', JSON.stringify(profileData), {
       path: '/',
