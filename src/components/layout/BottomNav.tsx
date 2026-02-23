@@ -32,6 +32,17 @@ const ProfileIcon = () => (
   </svg>
 )
 
+const AiIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a2 2 0 012 2v1a2 2 0 01-2 2 2 2 0 01-2-2V4a2 2 0 012-2z"/>
+    <path d="M12 7v10M8 9l4-2 4 2M8 15l4 2 4-2"/>
+    <circle cx="5" cy="12" r="2"/>
+    <circle cx="19" cy="12" r="2"/>
+    <line x1="7" y1="12" x2="10" y2="12"/>
+    <line x1="14" y1="12" x2="17" y2="12"/>
+  </svg>
+)
+
 export default function BottomNav() {
   const { t } = useApp()
   const pathname = usePathname()
@@ -39,6 +50,7 @@ export default function BottomNav() {
   const tabs = [
     { href: '/', label: t.home, Icon: HomeIcon },
     { href: '/search', label: t.search, Icon: SearchIcon },
+    { href: '/ai', label: t.aiRecommend, Icon: AiIcon },
     { href: '/calendar', label: t.calendar, Icon: CalendarIcon },
     { href: '/profile', label: t.myPage, Icon: ProfileIcon },
   ]

@@ -3,6 +3,7 @@ import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
+import AiEligibilityCheck from '@/components/ai/AiEligibilityCheck'
 import Link from 'next/link'
 import { use, useEffect, useState, useCallback } from 'react'
 import styles from './page.module.css'
@@ -310,6 +311,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
         </section>
+
+        {/* AI Eligibility Check */}
+        <AiEligibilityCheck
+          benefitId={benefit.id}
+          benefitTitle={title}
+        />
 
         {/* Application Methods (from API) */}
         {apiDetail?.applicationMethods && apiDetail.applicationMethods.length > 0 ? (
