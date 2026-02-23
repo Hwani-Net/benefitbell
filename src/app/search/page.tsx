@@ -1,15 +1,14 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import styles from './page.module.css'
 
 type SortType = 'popular' | 'deadline' | 'new'
-type PersonaType = 'all' | 'youth' | 'middle' | 'senior'
 
 const SearchFieldIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,25 +19,26 @@ const SearchFieldIcon = () => (
 function SearchContent() {
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
   const searchParams = useSearchParams()
-  const defaultCategory = searchParams.get('category')
-  
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<SortType>('popular')
-  const [persona, setPersona] = useState<PersonaType>('all')
+  const router = useRouter()
+
+  // URL 쿼리 파라미터로 상태 관리 → 조건 선택 시 router.push() → 뒤로가기 시 /search 초기화면 복귀
+  const query = searchParams.get('q') ?? ''
+  const sort = (searchParams.get('sort') as SortType) ?? 'popular'
+
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
+  const [inputValue, setInputValue] = useState(query)
 
-  const [recentSearches] = useState(['기초연금 신청', '서울시 청년지원', '차상위 의료비'])
+  const recentSearches = ['기초연금 신청', '서울시 청년지원', '차상위 의료비']
   const recommendedTags = ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
-
   const categories = Object.entries(CATEGORY_INFO)
 
+  // URL 파라미터 변경 시 inputValue 동기화
   useEffect(() => {
-    if (defaultCategory) {
-      const catLabel = CATEGORY_INFO[defaultCategory as keyof typeof CATEGORY_INFO]?.label
-      if (catLabel) setQuery(catLabel)
-    }
+    setInputValue(query)
+  }, [query])
 
+  useEffect(() => {
     async function loadData() {
       try {
         const res = await fetch('/api/benefits')
@@ -52,22 +52,33 @@ function SearchContent() {
       }
     }
     loadData()
-  }, [defaultCategory])
+  }, [])
+
+  // 검색어 선택 → URL push (히스토리에 쌓임 → 뒤로가기로 초기화면 복귀 가능)
+  const applyQuery = useCallback((q: string) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (sort !== 'popular') params.set('sort', sort)
+    router.push(`/search${params.toString() ? '?' + params.toString() : ''}`)
+  }, [router, sort])
+
+  // 정렬 변경 → replace (히스토리 불필요)
+  const applySort = useCallback((s: SortType) => {
+    const params = new URLSearchParams()
+    if (query) params.set('q', query)
+    if (s !== 'popular') params.set('sort', s)
+    router.replace(`/search?${params.toString()}`)
+  }, [router, query])
+
+  const handleInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') applyQuery(inputValue)
+  }
 
   const filtered = benefits.filter(b => {
-    const matchQuery = query === '' ||
+    return query === '' ||
       b.title.includes(query) ||
       b.titleEn.toLowerCase().includes(query.toLowerCase()) ||
       b.categoryLabel.includes(query)
-
-
-    const matchPersona =
-      persona === 'all' ? true :
-      persona === 'youth' ? b.category === 'youth' :
-      persona === 'middle' ? b.category === 'middle-aged' || b.category === 'employment' :
-      persona === 'senior' ? b.category === 'senior' : true
-
-    return matchQuery && matchPersona
   }).sort((a, b) => {
     if (sort === 'deadline') return a.dDay - b.dDay
     if (sort === 'new') return (b.new ? 1 : 0) - (a.new ? 1 : 0)
@@ -85,42 +96,29 @@ function SearchContent() {
             <input
               className={styles.searchInput}
               placeholder={t.searchPlaceholder}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleInputSubmit}
+              onBlur={() => { if (inputValue !== query) applyQuery(inputValue) }}
             />
+            {inputValue && (
+              <button
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--text-tertiary)' }}
+                onClick={() => { setInputValue(''); applyQuery('') }}
+                aria-label="검색어 지우기"
+              >✕</button>
+            )}
           </div>
         </div>
 
         {query === '' ? (
           <>
-            {/* 페르소나 선택 */}
-            <section className="section">
-              <h2 className="section-title mb-12">{t.whoForBenefit}</h2>
-              <div className={styles.personaRow}>
-                {[
-                  { key: 'all', emoji: '🙋', label: t.allCategories },
-                  { key: 'youth', emoji: '🧑', label: t.youngAdult },
-                  { key: 'middle', emoji: '🧑‍💼', label: t.middleAge },
-                  { key: 'senior', emoji: '👴', label: t.olderAdult },
-                ].map(p => (
-                  <button
-                    key={p.key}
-                    className={`${styles.personaBtn} ${persona === p.key ? styles.personaActive : ''}`}
-                    onClick={() => setPersona(p.key as PersonaType)}
-                  >
-                    <span className={styles.personaEmoji}>{p.emoji}</span>
-                    <span className={styles.personaLabel}>{p.label}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
             {/* 카테고리 그리드 */}
             <section className="section">
               <h2 className="section-title mb-12">{t.searchByCategory}</h2>
               <div className={styles.catGrid}>
                 {categories.map(([key, cat]) => (
-                  <button key={key} className={styles.catItem} onClick={() => setQuery(cat.label)}>
+                  <button key={key} className={styles.catItem} onClick={() => applyQuery(cat.label)}>
                     <span className={styles.catEmoji}>{cat.icon}</span>
                     <span className={styles.catLabel}>{lang === 'ko' ? cat.label : cat.labelEn}</span>
                   </button>
@@ -133,7 +131,7 @@ function SearchContent() {
               <h2 className="section-title mb-12">{t.recommendedTags}</h2>
               <div className={styles.tagRow}>
                 {recommendedTags.map(tag => (
-                  <button key={tag} className={styles.tag} onClick={() => setQuery(tag.replace('#', ''))}>
+                  <button key={tag} className={styles.tag} onClick={() => applyQuery(tag.replace('#', ''))}>
                     {tag}
                   </button>
                 ))}
@@ -148,7 +146,7 @@ function SearchContent() {
               </div>
               <ul className={styles.recentList}>
                 {recentSearches.map(s => (
-                  <li key={s} className={styles.recentItem} onClick={() => setQuery(s)}>
+                  <li key={s} className={styles.recentItem} onClick={() => applyQuery(s)}>
                     <span className={styles.recentIcon}>🕐</span>
                     <span className={styles.recentText}>{s}</span>
                   </li>
@@ -158,7 +156,7 @@ function SearchContent() {
           </>
         ) : (
           <>
-            {/* 필터 탭 */}
+            {/* 정렬 필터 탭 */}
             <div className={`scroll-x ${styles.sortRow}`} style={{ padding: '0 16px 12px' }}>
               {[
                 { key: 'popular', label: t.sortByPopular },
@@ -168,7 +166,7 @@ function SearchContent() {
                 <button
                   key={s.key}
                   className={`chip ${sort === s.key ? 'active' : ''}`}
-                  onClick={() => setSort(s.key as SortType)}
+                  onClick={() => applySort(s.key as SortType)}
                 >
                   {s.label}
                 </button>
@@ -177,37 +175,43 @@ function SearchContent() {
 
             {/* 결과 리스트 */}
             <section className="section">
-              <p className={styles.resultCount}>{filtered.length}건</p>
-              <div className={styles.resultList}>
-                {filtered.map((b, i) => (
-                  <Link key={b.id} href={`/detail/${b.id}`} className={`${styles.resultItem} animate-fade-in`}>
-                    <div className={styles.resultLeft}>
-                      <div className={styles.resultMeta}>
-                        <span className={`badge badge-coral-soft`}>{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
-                        {b.dDay >= 0 && b.dDay <= 14 && (
-                          <span className={`badge ${getDDayColor(b.dDay)}`}>{getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}</span>
-                        )}
-                        {b.new && <span className="badge badge-coral text-xs">{t.newBadge}</span>}
+              {loading ? (
+                <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>불러오는 중...</p>
+              ) : (
+                <>
+                  <p className={styles.resultCount}>{filtered.length}건</p>
+                  <div className={styles.resultList}>
+                    {filtered.map(b => (
+                      <Link key={b.id} href={`/detail/${b.id}`} className={`${styles.resultItem} animate-fade-in`}>
+                        <div className={styles.resultLeft}>
+                          <div className={styles.resultMeta}>
+                            <span className="badge badge-coral-soft">{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
+                            {b.dDay >= 0 && b.dDay <= 14 && (
+                              <span className={`badge ${getDDayColor(b.dDay)}`}>{getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}</span>
+                            )}
+                            {b.new && <span className="badge badge-coral text-xs">{t.newBadge}</span>}
+                          </div>
+                          <h3 className={styles.resultTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
+                          <p className={styles.resultAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                          <p className={styles.resultPeriod}>📅 {b.applicationStart} ~ {b.applicationEnd}</p>
+                        </div>
+                        <button
+                          className={styles.resultBookmark}
+                          onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
+                        >
+                          {isBookmarked(b.id) ? '❤️' : '🤍'}
+                        </button>
+                      </Link>
+                    ))}
+                    {filtered.length === 0 && (
+                      <div className={styles.emptyState}>
+                        <span style={{ fontSize: 40 }}>🔍</span>
+                        <p>검색 결과가 없습니다</p>
                       </div>
-                      <h3 className={styles.resultTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
-                      <p className={styles.resultAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
-                      <p className={styles.resultPeriod}>📅 {b.applicationStart} ~ {b.applicationEnd}</p>
-                    </div>
-                    <button
-                      className={styles.resultBookmark}
-                      onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
-                    >
-                      {isBookmarked(b.id) ? '❤️' : '🤍'}
-                    </button>
-                  </Link>
-                ))}
-                {filtered.length === 0 && (
-                  <div className={styles.emptyState}>
-                    <span style={{ fontSize: 40 }}>🔍</span>
-                    <p>검색 결과가 없습니다</p>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </section>
           </>
         )}
