@@ -62,16 +62,27 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  /* overflow:hidden 제거: iOS Safari에서 flex 내 label이 수평 클리핑되는 버그 방지 */
+  overflow: visible;
+}
+
+/* 첫 번째/마지막 row의 border-radius 유지 */
+.formCard > *:first-child {
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+.formCard > *:last-child {
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+  border-bottom: none;
 }
 
 .formRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
   gap: 12px;
+  /* justify-content 제거: flex:1 input이 이미 남은 공간을 채우므로 space-between 불필요.
+     iOS에서 space-between + overflow:clip 조합이 label 위치 계산 오류를 유발할 수 있음 */
 }
 
 .formRow:last-child { border-bottom: none; }
@@ -86,9 +97,17 @@
 .label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  /* CSS 변수 대신 명시적 색상 — 다크모드 변수 해석 오류 방지 */
+  color: var(--text-primary, #111827);
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 72px;
+  white-space: nowrap;
+}
+
+/* formRowFull 내 label: block으로 분리 */
+.formRowFull .label {
+  display: block;
+  margin-bottom: 8px;
 }
 
 .input {
