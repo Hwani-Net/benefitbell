@@ -36,47 +36,37 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const [benefit, setBenefit] = useState<Benefit | null>(null)
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [pushStatus, setPushStatus] = useState<'idle' | 'subscribed' | 'denied' | 'unsupported'>('idle')
+  const [shared, setShared] = useState(false)
 
-  // Check push subscription status
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      setPushStatus('unsupported')
-      return
+  const handleShare = useCallback(async () => {
+    const url = window.location.href
+    // Use native Web Share API (Samsung Browser, Chrome, etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title,
+          text: `💡 ${benefit?.title ?? ''} — 혜택알리미에서 확인하세요!`,
+          url,
+        })
+        setShared(true)
+        setTimeout(() => setShared(false), 3000)
+      } catch (err) {
+        // AbortError = user cancelled — no-op
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          // Fallback: copy to clipboard
+          navigator.clipboard?.writeText(url).then(() => {
+            setShared(true)
+            setTimeout(() => setShared(false), 3000)
+          })
+        }
+      }
+    } else {
+      // Desktop fallback: copy link
+      await navigator.clipboard?.writeText(url)
+      setShared(true)
+      setTimeout(() => setShared(false), 3000)
     }
-    if (Notification.permission === 'denied') {
-      setPushStatus('denied')
-      return
-    }
-    navigator.serviceWorker.ready.then(reg => {
-      reg.pushManager.getSubscription().then(sub => {
-        setPushStatus(sub ? 'subscribed' : 'idle')
-      })
-    })
-  }, [])
-
-  const handlePushSubscribe = useCallback(async () => {
-    if (pushStatus === 'subscribed') return // already subscribed
-    try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') { setPushStatus('denied'); return }
-      const reg = await navigator.serviceWorker.ready
-      const padding = '='.repeat((4 - (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!.length % 4)) % 4)
-      const base64 = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY! + padding).replace(/-/g, '+').replace(/_/g, '/')
-      const rawData = atob(base64)
-      const key = Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub),
-      })
-      setPushStatus('subscribed')
-    } catch (err) {
-      console.error('[Push]', err)
-    }
-  }, [pushStatus])
+  }, [benefit])
 
   useEffect(() => {
     async function loadData() {
@@ -411,15 +401,10 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         {/* CTA Buttons */}
         <div className={styles.ctaArea}>
           <button
-            className={`btn ${pushStatus === 'subscribed' ? 'btn-success' : 'btn-kakao'} ${styles.kakaoBtn}`}
-            onClick={pushStatus === 'denied'
-              ? () => alert('알림이 차단되어 있습니다.\n\n📱 Android: 주소창 자물쇠 아이콘 → 사이트 설정 → 알림 → 허용\n🍎 iOS: 설정 → Safari → 알림 → 허용')
-              : handlePushSubscribe}
+            className={`btn ${shared ? 'btn-success' : 'btn-kakao'} ${styles.kakaoBtn}`}
+            onClick={handleShare}
           >
-            {pushStatus === 'subscribed' ? '✅ 알림 활성화됨' :
-             pushStatus === 'denied' ? '🔕 알림 차단됨 (탭하여 해제 방법 확인)' :
-             pushStatus === 'unsupported' ? '⚠️ 미지원 브라우저' :
-             `🔔 ${t.kakaoAlert}`}
+            {shared ? '✅ 링크 복사됨!' : '📤 공유하기'}
           </button>
           <a
             href={benefit.applyUrl}
