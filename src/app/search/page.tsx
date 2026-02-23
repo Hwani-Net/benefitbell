@@ -23,6 +23,7 @@ function SearchContent() {
 
   // URL 쿼리 파라미터로 상태 관리 → 조건 선택 시 router.push() → 뒤로가기 시 /search 초기화면 복귀
   const query = searchParams.get('q') ?? ''
+  const catKey = searchParams.get('cat') ?? ''
   const sort = (searchParams.get('sort') as SortType) ?? 'popular'
 
   const [benefits, setBenefits] = useState<Benefit[]>([])
@@ -54,7 +55,7 @@ function SearchContent() {
     loadData()
   }, [])
 
-  // 검색어 선택 → URL push (히스토리에 쌓임 → 뒤로가기로 초기화면 복귀 가능)
+  // 검색어 선택 → URL push
   const applyQuery = useCallback((q: string) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
@@ -62,23 +63,34 @@ function SearchContent() {
     router.push(`/search${params.toString() ? '?' + params.toString() : ''}`)
   }, [router, sort])
 
+  // 카테고리 키 선택 → URL push (?cat=basic-living)
+  const applyCategory = useCallback((key: string) => {
+    const params = new URLSearchParams()
+    if (key) params.set('cat', key)
+    if (sort !== 'popular') params.set('sort', sort)
+    router.push(`/search?${params.toString()}`)
+  }, [router, sort])
+
   // 정렬 변경 → replace (히스토리 불필요)
   const applySort = useCallback((s: SortType) => {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
+    if (catKey) params.set('cat', catKey)
     if (s !== 'popular') params.set('sort', s)
     router.replace(`/search?${params.toString()}`)
-  }, [router, query])
+  }, [router, query, catKey])
 
   const handleInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') applyQuery(inputValue)
   }
 
   const filtered = benefits.filter(b => {
-    return query === '' ||
+    const matchesQuery = query === '' ||
       b.title.includes(query) ||
       b.titleEn.toLowerCase().includes(query.toLowerCase()) ||
       b.categoryLabel.includes(query)
+    const matchesCat = catKey === '' || b.category === catKey
+    return matchesQuery && matchesCat
   }).sort((a, b) => {
     if (sort === 'deadline') return a.dDay - b.dDay
     if (sort === 'new') return (b.new ? 1 : 0) - (a.new ? 1 : 0)
@@ -111,14 +123,14 @@ function SearchContent() {
           </div>
         </div>
 
-        {query === '' ? (
+        {query === '' && catKey === '' ? (
           <>
             {/* 카테고리 그리드 */}
             <section className="section">
               <h2 className="section-title mb-12">{t.searchByCategory}</h2>
               <div className={styles.catGrid}>
                 {categories.map(([key, cat]) => (
-                  <button key={key} className={styles.catItem} onClick={() => applyQuery(cat.label)}>
+                  <button key={key} className={styles.catItem} onClick={() => applyCategory(key)}>
                     <span className={styles.catEmoji}>{cat.icon}</span>
                     <span className={styles.catLabel}>{lang === 'ko' ? cat.label : cat.labelEn}</span>
                   </button>
@@ -156,6 +168,22 @@ function SearchContent() {
           </>
         ) : (
           <>
+            {/* 카테고리 필터 헤더 (catKey 선택 시) */}
+            {catKey && CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO] && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px 4px' }}>
+                <span style={{ fontSize: 20 }}>{CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO].icon}</span>
+                <strong style={{ fontSize: 15, color: 'var(--text-primary)' }}>
+                  {lang === 'ko'
+                    ? CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO].label
+                    : CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO].labelEn}
+                </strong>
+                <button
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-tertiary)' }}
+                  onClick={() => router.push('/search')}
+                  aria-label="카테고리 필터 초기화"
+                >✕</button>
+              </div>
+            )}
             {/* 정렬 필터 탭 */}
             <div className={`scroll-x ${styles.sortRow}`} style={{ padding: '0 16px 12px' }}>
               {[
