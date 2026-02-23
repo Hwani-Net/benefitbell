@@ -129,6 +129,7 @@ export const translations = {
     perMonth: '월',
     subscribe: '구독하기',
     currentPlan: '현재 무료 플랜',
+    comingSoon: '준비 중 🔜',
 
     // Support
     coffeeSupport: '커피 한 잔 사주기 ☕',
@@ -262,6 +263,7 @@ export const translations = {
     perMonth: '/mo',
     subscribe: 'Subscribe',
     currentPlan: 'Free Plan',
+    comingSoon: 'Coming Soon 🔜',
     coffeeSupport: 'Buy Me a Coffee ☕',
     supportDesc: 'Found this app helpful? Support the developer with a coffee!',
     close: 'Close',

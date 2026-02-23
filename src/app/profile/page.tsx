@@ -382,7 +382,7 @@ export default function ProfilePage() {
                   disabled
                   title="토스페이먼츠 연동 준비 중"
                 >
-                  준비 중 🔜
+                  {t.comingSoon}
                 </button>
               </div>
             </div>
