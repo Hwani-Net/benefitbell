@@ -102,6 +102,17 @@
   font-family: var(--font-family);
 }
 
+/* select 요소는 left-align이 자연스러움 */
+select.input {
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  font-size: 14px;
+}
+
 .toggleGroup {
   display: flex;
   gap: 6px;
