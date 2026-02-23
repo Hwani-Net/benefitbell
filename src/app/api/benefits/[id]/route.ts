@@ -34,7 +34,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const PUBLIC_DATA_API_KEY = process.env.PUBLIC_DATA_API_KEY
+  const DATA_GO_KR_SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY
 
   // If it's a mock item (non-api ID), return from local data
   if (!id.startsWith('api-')) {
@@ -48,12 +48,12 @@ export async function GET(
   // Extract the actual servId from "api-WLF00000024" format
   const servId = id.replace('api-', '')
 
-  if (!PUBLIC_DATA_API_KEY || PUBLIC_DATA_API_KEY === 'placeholder') {
+  if (!DATA_GO_KR_SERVICE_KEY || DATA_GO_KR_SERVICE_KEY === 'placeholder') {
     return NextResponse.json({ success: false, error: 'API key not configured' }, { status: 500 })
   }
 
   try {
-    const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${PUBLIC_DATA_API_KEY}&servId=${servId}`
+    const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_SERVICE_KEY}&servId=${servId}`
     const response = await fetch(apiUrl, {
       next: { revalidate: 86400 }, // Cache for 24 hours (detail data changes rarely)
     })
