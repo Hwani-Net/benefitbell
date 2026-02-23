@@ -423,22 +423,16 @@ export default function ProfilePage() {
                 💳 카카오페이로 후원하기
               </a>
             )}
-            {/* Buy Me a Coffee 링크 */}
-            {process.env.NEXT_PUBLIC_BMC_LINK && (
-              <a
-                href={process.env.NEXT_PUBLIC_BMC_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`btn btn-outline w-full mt-8`}
-                style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
-              >
-                ☕ Buy Me a Coffee
-              </a>
-            )}
-            {/* 둘 다 없으면 임시 메시지 */}
-            {!process.env.NEXT_PUBLIC_KAKAOPAY_LINK && !process.env.NEXT_PUBLIC_BMC_LINK && (
-              <p style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>준비 중입니다 🙏</p>
-            )}
+            {/* Buy Me a Coffee 버튼 */}
+            <a
+              href="https://www.buymeacoffee.com/stayicond"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`btn btn-outline w-full mt-12`}
+              style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12, padding: '12px 0' }}
+            >
+              ☕ Buy Me a Coffee
+            </a>
           </div>
         </section>
 
