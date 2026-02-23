@@ -313,21 +313,35 @@ export const BENEFITS: Benefit[] = [
 ]
 
 // Helper functions
+import { calculateDDay } from '@/lib/welfare-api'
+
+/** Get benefit with live D-Day calculation */
+function withLiveDDay(b: Benefit): Benefit {
+  const dDay = calculateDDay(b.applicationEnd)
+  return { ...b, dDay, status: dDay < 0 ? 'closed' as BenefitStatus : 'open' as BenefitStatus }
+}
+
 export function getBenefitById(id: string): Benefit | undefined {
-  return BENEFITS.find(b => b.id === id)
+  const b = BENEFITS.find(b => b.id === id)
+  return b ? withLiveDDay(b) : undefined
 }
 
 export function getBenefitsByCategory(category: BenefitCategory): Benefit[] {
-  return BENEFITS.filter(b => b.category === category)
+  return BENEFITS.filter(b => b.category === category).map(withLiveDDay)
 }
 
 export function getUrgentBenefits(maxDays: number = 14): Benefit[] {
-  return BENEFITS.filter(b => b.dDay >= 0 && b.dDay <= maxDays && b.status === 'open')
+  return BENEFITS.map(withLiveDDay)
+    .filter(b => b.dDay >= 0 && b.dDay <= maxDays && b.status === 'open')
     .sort((a, b) => a.dDay - b.dDay)
 }
 
 export function getPopularBenefits(): Benefit[] {
-  return BENEFITS.filter(b => b.popular)
+  return BENEFITS.filter(b => b.popular).map(withLiveDDay)
+}
+
+export function getAllBenefitsLive(): Benefit[] {
+  return BENEFITS.map(withLiveDDay)
 }
 
 export function getDDayColor(dDay: number): string {
