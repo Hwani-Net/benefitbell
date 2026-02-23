@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server'
 import webpush from 'web-push'
-
-// Shared in-memory subscription store (same module reference as subscribe route)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const subscriptions: any[] = (globalThis as any).__pushSubs ?? []
-;(globalThis as any).__pushSubs = subscriptions
+import { getSubscriptions, removeSubscription } from '@/lib/push-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +13,7 @@ export async function POST(req: Request) {
     )
 
     const { title, body, url } = await req.json()
+    const subs = getSubscriptions()
 
     const payload = JSON.stringify({
       title: title || '혜택알리미 🔔',
@@ -26,13 +23,20 @@ export async function POST(req: Request) {
     })
 
     const results = await Promise.allSettled(
-      subscriptions.map((sub) => webpush.sendNotification(sub, payload))
+      subs.map((sub) => webpush.sendNotification(sub, payload))
     )
+
+    // Remove expired subscriptions
+    results.forEach((r, i) => {
+      if (r.status === 'rejected' && (r.reason as { statusCode?: number })?.statusCode === 410) {
+        removeSubscription(subs[i].endpoint)
+      }
+    })
 
     const sent = results.filter((r) => r.status === 'fulfilled').length
     const failed = results.filter((r) => r.status === 'rejected').length
 
-    return NextResponse.json({ sent, failed, total: subscriptions.length })
+    return NextResponse.json({ sent, failed, total: subs.length })
   } catch (err) {
     console.error('[Push Send]', err)
     return NextResponse.json({ error: 'Failed to send notifications' }, { status: 500 })

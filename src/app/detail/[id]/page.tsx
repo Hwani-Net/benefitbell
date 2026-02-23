@@ -1,11 +1,10 @@
 'use client'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
-import { addKakaoChannel } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useState, useCallback } from 'react'
 import styles from './page.module.css'
 
 // Extended detail from the public API
@@ -37,6 +36,47 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const [benefit, setBenefit] = useState<Benefit | null>(null)
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pushStatus, setPushStatus] = useState<'idle' | 'subscribed' | 'denied' | 'unsupported'>('idle')
+
+  // Check push subscription status
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushStatus('unsupported')
+      return
+    }
+    if (Notification.permission === 'denied') {
+      setPushStatus('denied')
+      return
+    }
+    navigator.serviceWorker.ready.then(reg => {
+      reg.pushManager.getSubscription().then(sub => {
+        setPushStatus(sub ? 'subscribed' : 'idle')
+      })
+    })
+  }, [])
+
+  const handlePushSubscribe = useCallback(async () => {
+    if (pushStatus === 'subscribed') return // already subscribed
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') { setPushStatus('denied'); return }
+      const reg = await navigator.serviceWorker.ready
+      const padding = '='.repeat((4 - (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!.length % 4)) % 4)
+      const base64 = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY! + padding).replace(/-/g, '+').replace(/_/g, '/')
+      const rawData = atob(base64)
+      const key = Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      })
+      setPushStatus('subscribed')
+    } catch (err) {
+      console.error('[Push]', err)
+    }
+  }, [pushStatus])
 
   useEffect(() => {
     async function loadData() {
@@ -371,10 +411,14 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         {/* CTA Buttons */}
         <div className={styles.ctaArea}>
           <button
-            className={`btn btn-kakao ${styles.kakaoBtn}`}
-            onClick={() => addKakaoChannel()}
+            className={`btn ${pushStatus === 'subscribed' ? 'btn-success' : 'btn-kakao'} ${styles.kakaoBtn}`}
+            onClick={handlePushSubscribe}
+            disabled={pushStatus === 'subscribed' || pushStatus === 'denied' || pushStatus === 'unsupported'}
           >
-            💬 {t.kakaoAlert}
+            {pushStatus === 'subscribed' ? '✅ 알림 활성화됨' :
+             pushStatus === 'denied' ? '🔕 알림 차단됨' :
+             pushStatus === 'unsupported' ? '⚠️ 미지원 브라우저' :
+             `🔔 ${t.kakaoAlert}`}
           </button>
           <a
             href={benefit.applyUrl}
