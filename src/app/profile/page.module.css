@@ -102,15 +102,28 @@
   font-family: var(--font-family);
 }
 
-/* select 요소는 left-align이 자연스러움 */
-select.input {
-  text-align: left;
-  cursor: pointer;
+/* Full-width select for formRowFull contexts (birthYear, region) */
+.selectField {
+  width: 100%;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--bg-secondary);
   font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.selectRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selectRow .selectField {
+  flex: 1;
 }
 
 .toggleGroup {

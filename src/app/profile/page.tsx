@@ -193,14 +193,13 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* 생년 — 드롭다운 선택 */}
-            <div className={styles.formRow}>
+            {/* 생년 — formRowFull로 이동하여 label과 select가 수직 정렬 */}
+            <div className={styles.formRowFull}>
               <label className={styles.label}>{t.birthDate}</label>
               <select
-                className={styles.input}
+                className={styles.selectField}
                 value={profile.birthYear}
                 onChange={e => update('birthYear', Number(e.target.value))}
-                style={{ cursor: 'pointer', appearance: 'auto' }}
               >
                 {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
                   const year = new Date().getFullYear() - i
@@ -226,23 +225,21 @@ export default function ProfilePage() {
 
             {/* 거주지역 — 2단계 select */}
             <div className={styles.formRowFull}>
-              <label className={styles.label} style={{ marginBottom: 8 }}>{t.region}</label>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <label className={styles.label}>{t.region}</label>
+              <div className={styles.selectRow}>
                 <select
-                  className={styles.input}
+                  className={styles.selectField}
                   value={selectedSido}
                   onChange={e => handleSidoChange(e.target.value)}
-                  style={{ flex: 1, cursor: 'pointer', appearance: 'auto' }}
                 >
                   {Object.keys(REGIONS).map(sido => (
                     <option key={sido} value={sido}>{sido}</option>
                   ))}
                 </select>
                 <select
-                  className={styles.input}
+                  className={styles.selectField}
                   value={selectedSigungu}
                   onChange={e => handleSigunguChange(e.target.value)}
-                  style={{ flex: 1, cursor: 'pointer', appearance: 'auto' }}
                 >
                   {(REGIONS[selectedSido] || []).map(sg => (
                     <option key={sg} value={sg}>{sg}</option>
