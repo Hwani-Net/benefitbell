@@ -412,11 +412,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         <div className={styles.ctaArea}>
           <button
             className={`btn ${pushStatus === 'subscribed' ? 'btn-success' : 'btn-kakao'} ${styles.kakaoBtn}`}
-            onClick={handlePushSubscribe}
-            disabled={pushStatus === 'subscribed' || pushStatus === 'denied' || pushStatus === 'unsupported'}
+            onClick={pushStatus === 'denied'
+              ? () => alert('알림이 차단되어 있습니다.\n\n📱 Android: 주소창 자물쇠 아이콘 → 사이트 설정 → 알림 → 허용\n🍎 iOS: 설정 → Safari → 알림 → 허용')
+              : handlePushSubscribe}
           >
             {pushStatus === 'subscribed' ? '✅ 알림 활성화됨' :
-             pushStatus === 'denied' ? '🔕 알림 차단됨' :
+             pushStatus === 'denied' ? '🔕 알림 차단됨 (탭하여 해제 방법 확인)' :
              pushStatus === 'unsupported' ? '⚠️ 미지원 브라우저' :
              `🔔 ${t.kakaoAlert}`}
           </button>
