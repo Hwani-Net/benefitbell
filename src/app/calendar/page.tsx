@@ -46,6 +46,14 @@ export default function CalendarPage() {
     return allBenefits.filter(b => b.applicationEnd === dateStr)
   }
 
+  // Get the minimum dDay for a specific calendar day (to determine urgency level)
+  const getMinDDayForDay = (day: number) => {
+    const dateStr = `${year}.${String(month + 1).padStart(2, '0')}.${String(day).padStart(2, '0')}`
+    const benefits = allBenefits.filter(b => b.applicationEnd === dateStr)
+    if (benefits.length === 0) return null
+    return Math.min(...benefits.map(b => b.dDay))
+  }
+
   const hasBenefits = (day: number) => {
     const dateStr = `${year}.${String(month + 1).padStart(2, '0')}.${String(day).padStart(2, '0')}`
     return allBenefits.some(b => b.applicationEnd === dateStr)
@@ -66,6 +74,10 @@ export default function CalendarPage() {
     return endYear === year && endMonth === month + 1
   })
 
+  // D-7 이하 임박 혜택 (오늘 기준)
+  const urgentBenefits = allBenefits.filter(b => b.dDay >= 0 && b.dDay <= 7 && b.status === 'open')
+    .sort((a, b) => a.dDay - b.dDay)
+
   const selectedBenefits = getBenefitsForDay(selectedDay)
   const isToday = (d: number) => {
     const today = new Date()
@@ -80,6 +92,18 @@ export default function CalendarPage() {
       <main className="page-content">
         <section className="section" style={{ paddingTop: 8 }}>
           <h1 className="section-title mb-12">{t.benefitCalendar}</h1>
+
+          {/* D-7 이하 임박 알림 배너 */}
+          {!loading && urgentBenefits.length > 0 && (
+            <div className={styles.urgentBanner}>
+              <span className={styles.urgentIcon}>⏰</span>
+              <div className={styles.urgentText}>
+                <strong>{urgentBenefits.length}개 혜택 마감 임박!</strong>
+                <span>{urgentBenefits[0].title} 외 {urgentBenefits.length - 1}건 — 놓치지 마세요</span>
+              </div>
+              <span className={`badge badge-red`}>D-{urgentBenefits[0].dDay}</span>
+            </div>
+          )}
 
           {loading && (
             <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)' }}>
@@ -110,8 +134,11 @@ export default function CalendarPage() {
             {Array(daysInMonth).fill(null).map((_, i) => {
               const day = i + 1
               const hasB = hasBenefits(day)
+              const minDDay = getMinDDayForDay(day)
               const isSelected = day === selectedDay
               const isTd = isToday(day)
+              const isUrgent = minDDay !== null && minDDay <= 3
+              const isSoon = minDDay !== null && minDDay > 3 && minDDay <= 7
               return (
                 <button
                   key={day}
@@ -119,6 +146,8 @@ export default function CalendarPage() {
                     ${styles.dayCell}
                     ${isSelected ? styles.selected : ''}
                     ${isTd ? styles.today : ''}
+                    ${isUrgent && !isSelected ? styles.urgentDay : ''}
+                    ${isSoon && !isSelected ? styles.soonDay : ''}
                   `}
                   onClick={() => setSelectedDay(day)}
                 >

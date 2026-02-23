@@ -162,3 +162,65 @@
 }
 
 .showMore:active { background: var(--color-coral-light); }
+
+/* D-7 임박 알림 배너 */
+.urgentBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fff5f3 0%, #fff0ed 100%);
+  border: 1.5px solid #ffcdc4;
+  border-radius: var(--border-radius-lg);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+[data-theme="dark"] .urgentBanner {
+  background: linear-gradient(135deg, rgba(255,107,74,0.12) 0%, rgba(255,107,74,0.08) 100%);
+  border-color: rgba(255,107,74,0.35);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,74,0.15); }
+  50% { box-shadow: 0 0 0 6px rgba(255,107,74,0); }
+}
+
+.urgentIcon { font-size: 22px; flex-shrink: 0; }
+
+.urgentText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.urgentText strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-coral);
+}
+
+.urgentText span {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* D-3 이하: 빨간 강조 */
+.urgentDay {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-weight: 700;
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
+}
+
+/* D-4~7: 주황 강조 */
+.soonDay {
+  background: rgba(251, 146, 60, 0.1);
+  color: #ea580c;
+  font-weight: 600;
+  border: 1.5px solid rgba(251, 146, 60, 0.25);
+}
