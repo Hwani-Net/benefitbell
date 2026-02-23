@@ -1,14 +1,6 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* 다크 모드는 [data-theme="dark"] data attribute로만 제어됩니다.
+   prefers-color-scheme 미디어 쿼리를 사용하면 시스템 설정이 토글 버튼을 덮어써서 버그 발생.
+   styles/globals.css의 [data-theme="dark"] 블록이 다크 모드를 담당합니다. */
 
 html,
 body {
