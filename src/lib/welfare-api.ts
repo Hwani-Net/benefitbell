@@ -54,6 +54,10 @@ const CATEGORY_KEYWORDS: Record<BenefitCategory, string[]> = {
   'medical': ['의료', '건강', '보건', '치료', '간병'],
   'education': ['교육', '장학', '학비', '학자금', '돌봄'],
   'employment': ['취업', '고용', '일자리', '직업훈련', '취창업'],
+  'small-biz': ['소상공인', '소공인', '자영업', '경영안정', '정책자금'],
+  'startup': ['창업', '예비창업', '스타트업', '벤처'],
+  'closure-restart': ['폐업', '재창업', '재기', '희망리턴'],
+  'debt-relief': ['채무', '회생', '파산', '신용회복', '새출발', '워크아웃'],
 }
 
 const CATEGORY_LABELS: Record<BenefitCategory, { ko: string; en: string }> = {
@@ -66,6 +70,10 @@ const CATEGORY_LABELS: Record<BenefitCategory, { ko: string; en: string }> = {
   'medical': { ko: '의료 지원', en: 'Medical' },
   'education': { ko: '교육 지원', en: 'Education' },
   'employment': { ko: '취업 지원', en: 'Employment' },
+  'small-biz': { ko: '소상공인 지원', en: 'Small Biz' },
+  'startup': { ko: '창업 지원', en: 'Startup' },
+  'closure-restart': { ko: '폐업·재창업', en: 'Closure & Restart' },
+  'debt-relief': { ko: '채무조정·회생', en: 'Debt Relief' },
 }
 
 /**
