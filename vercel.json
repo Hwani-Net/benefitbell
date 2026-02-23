@@ -3,6 +3,11 @@
     {
       "path": "/api/cron/notify",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/push/cron-deadline",
+      "schedule": "0 0 * * *",
+      "comment": "매일 오전 9시 KST — D-7/D-1 마감 임박 Push 알림"
     }
   ]
 }

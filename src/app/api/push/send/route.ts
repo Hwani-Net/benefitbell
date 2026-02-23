@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     )
 
     const { title, body, url } = await req.json()
-    const subs = getSubscriptions()
+    const subs = await getSubscriptions()
 
     const payload = JSON.stringify({
       title: title || '혜택알리미 🔔',
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     // Remove expired subscriptions
     results.forEach((r, i) => {
       if (r.status === 'rejected' && (r.reason as { statusCode?: number })?.statusCode === 410) {
-        removeSubscription(subs[i].endpoint)
+        removeSubscription(subs[i].endpoint).catch(() => {})
       }
     })
 

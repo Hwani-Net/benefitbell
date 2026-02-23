@@ -4,13 +4,15 @@ import { addSubscription, getSubscriptionCount } from '@/lib/push-store'
 export async function POST(req: Request) {
   try {
     const subscription = await req.json()
-    addSubscription(subscription)
-    return NextResponse.json({ success: true, total: getSubscriptionCount() })
+    await addSubscription(subscription)
+    const total = await getSubscriptionCount()
+    return NextResponse.json({ success: true, total })
   } catch {
     return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ count: getSubscriptionCount() })
+  const count = await getSubscriptionCount()
+  return NextResponse.json({ count })
 }

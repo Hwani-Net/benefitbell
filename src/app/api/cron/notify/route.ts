@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const subs = getSubscriptions()
+  const subs = await getSubscriptions()
 
   // If no subscriptions, skip
   if (subs.length === 0) {
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
   // Cleanup expired
   results.forEach((r, i) => {
     if (r.status === 'rejected' && (r.reason as { statusCode?: number })?.statusCode === 410) {
-      removeSubscription(subs[i].endpoint)
+      removeSubscription(subs[i].endpoint).catch(() => {})
     }
   })
 
