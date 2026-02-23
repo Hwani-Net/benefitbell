@@ -61,6 +61,18 @@ export const translations = {
     benefitCalendar: '혜택 캘린더',
     benefitsOnDate: (date: string) => `${date} 마감 혜택`,
     noBenefits: '해당 날짜에 마감되는 혜택이 없습니다.',
+    urgentBannerTitle: (count: number) => `${count}개 혜택 마감 임박!`,
+    urgentBannerSub: (name: string, extra: number) => `${name} 외 ${extra}건 — 놓치지 마세요`,
+    calMonthTitle: (year: number, month: number) => `${year}년 ${month}월`,
+    calHint: '마감일 기준으로 표시됩니다',
+    calDayNames: ['일', '월', '화', '수', '목', '금', '토'],
+    monthlyDeadlineTitle: (month: number, count: number) => `📋 ${month}월 마감 혜택 (${count}건)`,
+    noMonthlyDeadline: '이번 달 마감 혜택이 없습니다',
+    alwaysOpenTitle: (count: number) => `🟢 상시 신청 가능 (${count}건)`,
+    alwaysOpenBadge: '상시',
+    showMoreBenefits: (count: number) => `+${count}건 더 보기 →`,
+    deadlineLabel: '마감',
+    calLoading: '캘린더 데이터를 불러오는 중...',
 
     // Detail
     benefitDetail: '혜택 상세',
@@ -182,6 +194,24 @@ export const translations = {
     benefitCalendar: 'Benefit Calendar',
     benefitsOnDate: (date: string) => `Deadlines on ${date}`,
     noBenefits: 'No benefits closing on this date.',
+    urgentBannerTitle: (count: number) => `${count} benefit(s) closing soon!`,
+    urgentBannerSub: (name: string, extra: number) => `${name} and ${extra} more — don't miss out`,
+    calMonthTitle: (year: number, month: number) => {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      return `${months[month - 1]} ${year}`
+    },
+    calHint: 'Sorted by deadline',
+    calDayNames: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    monthlyDeadlineTitle: (month: number, count: number) => {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      return `📋 ${months[month - 1]} Deadlines (${count})`
+    },
+    noMonthlyDeadline: 'No deadlines this month',
+    alwaysOpenTitle: (count: number) => `🟢 Always Open (${count})`,
+    alwaysOpenBadge: 'Open',
+    showMoreBenefits: (count: number) => `+${count} more →`,
+    deadlineLabel: 'Deadline',
+    calLoading: 'Loading calendar...',
     benefitDetail: 'Benefit Detail',
     mainInfo: 'Key Information',
     appPeriod: 'Application Period',
