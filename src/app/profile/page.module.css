@@ -112,6 +112,7 @@
 
 .input {
   flex: 1;
+  min-width: 0; /* flex shrink 허용: 없으면 input 기본 min-width가 formRow 밖으로 overflow */
   text-align: right;
   border: none;
   outline: none;
@@ -124,6 +125,7 @@
 /* Full-width select for formRowFull contexts (birthYear, region) */
 .selectField {
   width: 100%;
+  min-width: 0; /* flex shrink 허용 */
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 10px 12px;
