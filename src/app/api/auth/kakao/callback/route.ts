@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || 'LvPP6vSNsLX1FViAxG9c3LSRMaMEYJWb'
   const REDIRECT_URI = isDev
     ? 'http://localhost:3001/api/auth/kakao/callback'
-    : `https://${host}/api/auth/kakao/callback`
+    : 'https://naedon-finder.vercel.app/api/auth/kakao/callback'
 
   try {
     // 1. Get Access Token
