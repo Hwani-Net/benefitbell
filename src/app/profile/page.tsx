@@ -5,6 +5,7 @@ import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import PushToggle from '@/components/pwa/PushToggle'
+import { supabase } from '@/lib/supabase'
 import styles from './page.module.css'
 
 // ─── 한국 행정구역 데이터 ───
@@ -42,6 +43,30 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false)
   const [isPremium] = useState(false)
   const [isKakaoLinked, setIsKakaoLinked] = useState(false)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    () => JSON.parse(localStorage?.getItem('push_categories') || '[]')
+  )
+  const [categorySaving, setCategorySaving] = useState(false)
+
+  const CATEGORY_CHIPS = [
+    { key: 'youth',          label: '청년' },
+    { key: 'small-biz',      label: '소상공인' },
+    { key: 'startup',        label: '창업' },
+    { key: 'closure-restart',label: '폐업·재창업' },
+    { key: 'debt-relief',    label: '채무조정' },
+    { key: 'employment',     label: '취업' },
+    { key: 'housing',        label: '주거' },
+    { key: 'medical',        label: '의료' },
+    { key: 'education',      label: '교육' },
+    { key: 'basic-living',   label: '기초생활' },
+    { key: 'senior',         label: '노인' },
+  ]
+
+  const toggleCategory = (key: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]
+    )
+  }
 
   // 지역 2단계 state
   const parsedRegion = parseRegion(profile.region || '')
@@ -103,8 +128,58 @@ export default function ProfilePage() {
     update('alertDays', next)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 1. 로컬 프로필 저장
     setUserProfile(profile)
+    localStorage.setItem('push_categories', JSON.stringify(selectedCategories))
+
+    // 2. Supabase user_profiles 동기화 (카카오 유저만)
+    if (kakaoUser?.id) {
+      try {
+        await supabase.from('user_profiles').upsert({
+          kakao_id: String(kakaoUser.id),
+          nickname: kakaoUser.nickname,
+          categories: selectedCategories,
+          age_group: profile.birthYear
+            ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
+              : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
+              : 'senior')
+            : undefined,
+          region: profile.region,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'kakao_id' })
+      } catch (e) {
+        console.warn('user_profiles sync failed:', e)
+      }
+    }
+
+    // 3. VAPID 구독 태그 업데이트 (구독 중인 경우)
+    try {
+      setCategorySaving(true)
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: sub.toJSON(),
+            categories: selectedCategories,
+            age_group: profile.birthYear
+              ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
+                : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
+                : 'senior')
+              : undefined,
+            region: profile.region,
+          }),
+        })
+      }
+    } catch (e) {
+      console.warn('push subscription update failed:', e)
+    } finally {
+      setCategorySaving(false)
+    }
+
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -277,6 +352,26 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* 관심 혜택 카테고리 */}
+        <section className="section">
+          <h2 className="section-title mb-12">📢 알림 받을 혜택 분야</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+            선택한 분야의 혜택이 오픈/마감 임박 시 푸시 알림을 보냅니다. (중복 선택 가능)
+          </p>
+          <div className={styles.chipGrid}>
+            {CATEGORY_CHIPS.map(({ key, label }) => (
+              <button
+                key={key}
+                className={`chip ${selectedCategories.includes(key) ? 'active' : ''}`}
+                onClick={() => toggleCategory(key)}
+              >
+                {selectedCategories.includes(key) ? '✓ ' : ''}{label}
+              </button>
+            ))}
+          </div>
+        </section>
+
 
         {/* 주거형태 */}
         <section className="section">

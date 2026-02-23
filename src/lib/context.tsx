@@ -303,7 +303,7 @@ interface AppContextType {
   isBookmarked: (id: string) => boolean
   userProfile: UserProfile
   setUserProfile: (p: UserProfile) => void
-  kakaoUser: { nickname: string; profile_image?: string } | null
+  kakaoUser: { id?: number; nickname: string; profile_image?: string } | null
   setKakaoUser: (u: { nickname: string; profile_image?: string } | null) => void
 }
 
@@ -342,7 +342,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [bookmarks, setBookmarks] = useState<string[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile)
-  const [kakaoUser, setKakaoUser] = useState<{ nickname: string; profile_image?: string } | null>(null)
+  const [kakaoUser, setKakaoUser] = useState<{ id?: number; nickname: string; profile_image?: string } | null>(null)
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
