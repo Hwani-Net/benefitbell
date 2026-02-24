@@ -555,16 +555,10 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            {/* 커피 후원 */}
             <section className="section">
               <div className={styles.coffeeCard}>
                 <p className={styles.coffeeTitle}>{t.coffeeSupport}</p>
                 <p className={styles.coffeeDesc}>{t.supportDesc}</p>
-                {process.env.NEXT_PUBLIC_KAKAOPAY_LINK && (
-                  <a href={process.env.NEXT_PUBLIC_KAKAOPAY_LINK} target="_blank" rel="noopener noreferrer" className={`btn w-full mt-12`} style={{ background: '#FFE812', color: '#000', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12 }}>
-                    💳 카카오페이로 후원하기
-                  </a>
-                )}
                 <a href="https://www.buymeacoffee.com/stayicond" target="_blank" rel="noopener noreferrer" className={`btn btn-outline w-full mt-12`} style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12, padding: '12px 0' }}>
                   ☕ Buy Me a Coffee
                 </a>
