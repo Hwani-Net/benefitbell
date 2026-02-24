@@ -56,7 +56,7 @@ export default function PremiumPage() {
               여러분의 후원이 서비스 운영에 큰 힘이 됩니다. 🙏
             </p>
             <a
-              href="https://buymeacoffee.com/benefitbell"
+              href="https://www.buymeacoffee.com/stayicond"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-primary btn-full btn-lg"
