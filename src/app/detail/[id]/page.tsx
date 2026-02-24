@@ -7,6 +7,7 @@ import AiEligibilityCheck from '@/components/ai/AiEligibilityCheck'
 import Link from 'next/link'
 import { use, useEffect, useState, useCallback } from 'react'
 import styles from './page.module.css'
+import AdBanner from '@/components/ads/AdBanner'
 
 // Extended detail from the public API
 interface ApiDetail {
@@ -404,6 +405,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             </div>
           </section>
         )}
+
+        {/* Google AdSense 광고 */}
+        <section className="section">
+          <AdBanner format="auto" style={{ minHeight: 90 }} />
+        </section>
 
         {/* CTA Buttons */}
         <div className={styles.ctaArea}>

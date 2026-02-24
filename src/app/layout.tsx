@@ -113,6 +113,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         crossOrigin="anonymous"
         strategy="afterInteractive"
       />
+      {/* Google AdSense */}
+      <Script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9200560771587224"
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+      />
       <body>
         <GoogleAnalytics />
         <AppProvider>

@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import styles from './page.module.css'
+import AdBanner from '@/components/ads/AdBanner'
 
 type SortType = 'popular' | 'deadline' | 'new'
 
@@ -243,6 +244,11 @@ function SearchContent() {
             </section>
           </>
         )}
+
+        {/* Google AdSense 광고 */}
+        <section className="section">
+          <AdBanner format="auto" style={{ minHeight: 90 }} />
+        </section>
       </main>
       <BottomNav />
     </>

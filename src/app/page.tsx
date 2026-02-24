@@ -6,6 +6,7 @@ import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
 import styles from './page.module.css'
+import AdBanner from '@/components/ads/AdBanner'
 
 function useDragScroll() {
   const ref = useRef<HTMLDivElement>(null)
@@ -241,12 +242,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* AdSense 플레이스홀더 */}
+        {/* Google AdSense 광고 */}
         <section className="section">
-          <div className={styles.adBanner}>
-            <span className={styles.adLabel}>광고</span>
-            <p className={styles.adText}>여기에 Google AdSense 광고가 표시됩니다</p>
-          </div>
+          <AdBanner
+            format="auto"
+            style={{ minHeight: 100 }}
+          />
         </section>
       </main>
       <BottomNav />
