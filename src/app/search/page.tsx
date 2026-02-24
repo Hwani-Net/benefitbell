@@ -158,7 +158,7 @@ function SearchContent() {
             {kakaoUser && (
               <section className="section" style={{ marginBottom: 12 }}>
                 <button
-                  style={{ width: '100%', padding: '20px 16px', background: 'var(--primary-gradient)', borderRadius: 16, border: 'none', display: 'flex', alignItems: 'center', gap: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left', color: 'white', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)' }}
+                  style={{ width: '100%', padding: '20px 16px', background: 'var(--gradient-coral)', borderRadius: 16, border: 'none', display: 'flex', alignItems: 'center', gap: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left', color: 'white', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)' }}
                   onClick={() => router.push('/search?custom=true')}
                 >
                   <span style={{ fontSize: 28 }}>✨</span>
