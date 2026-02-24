@@ -118,8 +118,9 @@ export default function HomePage() {
     ? benefits.filter(b => b.popular)
     : benefits.slice(0, 5)
 
-  // 맞춤 혜택 = userProfile 기반으로 추천 점수 매긴 상위 5건
-  const personalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile).slice(0, 5) : []
+  // 맞춤 혜택 = userProfile 기반으로 추천 점수 매긴 전체 목록
+  const allPersonalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile) : []
+  const personalizedBenefits = allPersonalizedBenefits.slice(0, 5)
 
   const categories = [
     { key: 'basic-living', ...CATEGORY_INFO['basic-living'] },
@@ -215,7 +216,15 @@ export default function HomePage() {
             <div className="section-header">
               <h2 className="section-title">
                 ✨ {kakaoUser.nickname}님 맞춤 추천
+                {allPersonalizedBenefits.length > 0 && (
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-coral)', background: 'var(--color-coral-light)', padding: '2px 8px', borderRadius: 99, marginLeft: 8, verticalAlign: 'middle' }}>
+                    총 {allPersonalizedBenefits.length}건
+                  </span>
+                )}
               </h2>
+              {allPersonalizedBenefits.length > 5 && (
+                <Link href="/search?custom=true" className="section-link">전체보기</Link>
+              )}
             </div>
             <div className={styles.benefitList}>
               {personalizedBenefits.map((benefit, i) => (
