@@ -4,9 +4,6 @@
   border-bottom: 2px solid var(--border-color);
   margin: 0 0 4px;
   background: var(--bg-primary);
-  position: sticky;
-  top: 56px; /* TopBar 높이 */
-  z-index: 10;
 }
 
 .tabBtn {
