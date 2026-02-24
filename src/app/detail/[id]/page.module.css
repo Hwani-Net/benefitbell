@@ -214,19 +214,39 @@
 /* CTA */
 .ctaArea {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 0 16px 20px;
+  flex-wrap: wrap;
 }
 
 .kakaoBtn {
-  flex: 1;
+  flex: 1.2;
   font-size: 13px;
   padding: 14px 10px;
+  min-width: 0;
+}
+
+.shareBtn {
+  flex: 0.9;
+  font-size: 13px;
+  padding: 14px 10px;
+  min-width: 0;
 }
 
 .applyBtn {
   flex: 1.5;
   font-size: 14px;
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .ctaArea {
+    flex-direction: column;
+  }
+  .kakaoBtn, .shareBtn, .applyBtn {
+    flex: none;
+    width: 100%;
+  }
 }
 
 /* API Detail Text Block */

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { use, useEffect, useState, useCallback } from 'react'
 import styles from './page.module.css'
 import AdBanner from '@/components/ads/AdBanner'
+import { shareKakaoBenefit } from '@/lib/kakao'
 
 // Extended detail from the public API
 interface ApiDetail {
@@ -39,6 +40,27 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [shared, setShared] = useState(false)
+  const [kakaoShared, setKakaoShared] = useState(false)
+
+  // 카카오톡 공유
+  const handleKakaoShare = useCallback(() => {
+    if (!benefit) return
+    // Kakao SDK가 로드된 경우
+    if (typeof window !== 'undefined' && window.Kakao) {
+      shareKakaoBenefit({
+        title: benefit.title,
+        amount: benefit.amount,
+        categoryLabel: benefit.categoryLabel,
+        dDay: benefit.dDay,
+        benefitId: benefit.id,
+      })
+      setKakaoShared(true)
+      setTimeout(() => setKakaoShared(false), 3000)
+    } else {
+      // Kakao SDK 미로드 시 Web Share API fallback
+      handleShare()
+    }
+  }, [benefit])
 
   const handleShare = useCallback(async () => {
     const url = window.location.href
@@ -413,11 +435,24 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
         {/* CTA Buttons */}
         <div className={styles.ctaArea}>
+          {/* 카카오톡 공유 버튼 */}
           <button
-            className={`btn ${shared ? 'btn-success' : 'btn-kakao'} ${styles.kakaoBtn}`}
-            onClick={handleShare}
+            className={`btn btn-kakao ${styles.kakaoBtn}`}
+            onClick={handleKakaoShare}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            {shared ? '✅ 링크 복사됨!' : '📤 공유하기'}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3C6.48 3 2 6.58 2 11c0 2.84 1.72 5.34 4.33 6.88L5.2 21l4.1-2.07c.88.22 1.8.34 2.7.34 5.52 0 10-3.58 10-8S17.52 3 12 3z"/>
+            </svg>
+            {kakaoShared ? '✅ 공유됨!' : '카카오톡으로 공유'}
+          </button>
+          {/* 링크 복사 버튼 */}
+          <button
+            className={`btn ${shared ? 'btn-success' : 'btn-outline'} ${styles.shareBtn}`}
+            onClick={handleShare}
+            style={{ flex: 1, minWidth: 0 }}
+          >
+            {shared ? '✅ 복사됨!' : '🔗 링크 복사'}
           </button>
           <a
             href={benefit.applyUrl}
