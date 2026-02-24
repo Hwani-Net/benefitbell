@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -52,7 +53,7 @@ function useDragScroll() {
 }
 
 export default function HomePage() {
-  const { t, lang, toggleBookmark, isBookmarked, kakaoUser } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile } = useApp()
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
@@ -116,6 +117,9 @@ export default function HomePage() {
   const popularBenefits = benefits.filter(b => b.popular).length > 0
     ? benefits.filter(b => b.popular)
     : benefits.slice(0, 5)
+
+  // 맞춤 혜택 = userProfile 기반으로 추천 점수 매긴 상위 5건
+  const personalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile).slice(0, 5) : []
 
   const categories = [
     { key: 'basic-living', ...CATEGORY_INFO['basic-living'] },
@@ -205,6 +209,50 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* 🚀 맞춤 추천 혜택 (로그인 유저 전용) */}
+        {kakaoUser && personalizedBenefits.length > 0 && (
+          <section className="section" style={{ background: 'var(--bg-secondary)', padding: '24px 16px', borderRadius: 20, margin: '16px' }}>
+            <div className="section-header">
+              <h2 className="section-title">
+                ✨ {kakaoUser.nickname}님 맞춤 추천
+              </h2>
+            </div>
+            <div className={styles.benefitList}>
+              {personalizedBenefits.map((benefit, i) => (
+                <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`} style={{ background: 'var(--bg-primary)' }}>
+                  <div className={styles.benefitInfo}>
+                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
+                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <div className={styles.benefitMeta}>
+                      <span className={`badge badge-coral text-xs`}>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      {benefit.dDay <= 14 && benefit.dDay >= 0 && (
+                        <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
+                          {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                    <button
+                      className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
+                      onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
+                      aria-label="북마크"
+                    >
+                      {isBookmarked(benefit.id) ? '❤️' : '🤍'}
+                    </button>
+                    <button
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      aria-label={lang === 'ko' ? '공유' : 'Share'}
+                    >
+                      {sharedId === benefit.id ? '✅' : '📤'}
+                    </button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 카테고리 */}
         <section className="section">

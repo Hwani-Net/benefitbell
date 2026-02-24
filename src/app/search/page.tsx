@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -18,13 +19,14 @@ const SearchFieldIcon = () => (
 )
 
 function SearchContent() {
-  const { t, lang, toggleBookmark, isBookmarked } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile } = useApp()
   const searchParams = useSearchParams()
   const router = useRouter()
 
   // URL 쿼리 파라미터로 상태 관리 → 조건 선택 시 router.push() → 뒤로가기 시 /search 초기화면 복귀
   const query = searchParams.get('q') ?? ''
   const catKey = searchParams.get('cat') ?? searchParams.get('category') ?? ''
+  const customKey = searchParams.get('custom') ?? ''
   const sort = (searchParams.get('sort') as SortType) ?? 'popular'
 
   const [benefits, setBenefits] = useState<Benefit[]>([])
@@ -103,15 +105,16 @@ function SearchContent() {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (catKey) params.set('cat', catKey)
+    if (customKey) params.set('custom', customKey)
     if (s !== 'popular') params.set('sort', s)
     router.replace(`/search?${params.toString()}`)
-  }, [router, query, catKey])
+  }, [router, query, catKey, customKey])
 
   const handleInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') applyQuery(inputValue)
   }
 
-  const filtered = benefits.filter(b => {
+  const filtered = (customKey === 'true' && kakaoUser ? getPersonalizedBenefits(benefits, userProfile) : benefits).filter(b => {
     const matchesQuery = query === '' ||
       b.title.includes(query) ||
       b.titleEn.toLowerCase().includes(query.toLowerCase()) ||
@@ -150,8 +153,24 @@ function SearchContent() {
           </div>
         </div>
 
-        {query === '' && catKey === '' ? (
+        {query === '' && catKey === '' && customKey === '' ? (
           <>
+            {kakaoUser && (
+              <section className="section" style={{ marginBottom: 12 }}>
+                <button
+                  style={{ width: '100%', padding: '20px 16px', background: 'var(--primary-gradient)', borderRadius: 16, border: 'none', display: 'flex', alignItems: 'center', gap: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left', color: 'white', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)' }}
+                  onClick={() => router.push('/search?custom=true')}
+                >
+                  <span style={{ fontSize: 28 }}>✨</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'white' }}>{kakaoUser.nickname}님 맞춤 혜택 모아보기</div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 400, marginTop: 4 }}>저장된 정보를 기반으로 딱 맞는 혜택을 찾아드려요!</div>
+                  </div>
+                  <span style={{ color: 'white' }}>→</span>
+                </button>
+              </section>
+            )}
+
             {/* 카테고리 그리드 */}
             <section className="section">
               <h2 className="section-title mb-12">{t.searchByCategory}</h2>
@@ -196,7 +215,19 @@ function SearchContent() {
         ) : (
           <>
             {/* 카테고리 필터 헤더 (catKey 선택 시) */}
-            {catKey && CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO] && (
+            {customKey === 'true' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px 4px' }}>
+                <span style={{ fontSize: 20 }}>✨</span>
+                <strong style={{ fontSize: 15, color: 'var(--text-primary)' }}>
+                  맞춤 혜택 추천 결과
+                </strong>
+                <button
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-tertiary)' }}
+                  onClick={() => router.push('/search')}
+                  aria-label="필터 초기화"
+                >✕</button>
+              </div>
+            ) : catKey && CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO] ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px 4px' }}>
                 <span style={{ fontSize: 20 }}>{CATEGORY_INFO[catKey as keyof typeof CATEGORY_INFO].icon}</span>
                 <strong style={{ fontSize: 15, color: 'var(--text-primary)' }}>
@@ -210,7 +241,7 @@ function SearchContent() {
                   aria-label="카테고리 필터 초기화"
                 >✕</button>
               </div>
-            )}
+            ) : null}
             {/* 정렬 필터 탭 */}
             <div className={`scroll-x ${styles.sortRow}`} style={{ padding: '0 16px 12px' }}>
               {[
