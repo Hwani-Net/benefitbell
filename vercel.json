@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/check-new-benefits",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/prefetch-details",
+      "schedule": "0 17 * * *"
     }
   ]
 }
