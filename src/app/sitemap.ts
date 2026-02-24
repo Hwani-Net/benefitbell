@@ -57,12 +57,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }))
 
-  // ── 3. Dynamic benefit detail pages (fetch from API)
+  // ── 3. Dynamic benefit detail pages (fetch from API with timeout)
   let detailPages: MetadataRoute.Sitemap = []
   try {
+    // 5초 타임아웃 — API가 느릴 때 sitemap 전체가 실패하지 않도록
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+
     const res = await fetch(`${BASE_URL}/api/benefits`, {
+      signal: controller.signal,
       next: { revalidate: 3600 },
     })
+    clearTimeout(timeoutId)
+
     if (res.ok) {
       const json = await res.json()
       const benefits: { id: string }[] = json.data ?? []
@@ -74,7 +81,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     }
   } catch (e) {
-    console.warn('[sitemap] Failed to fetch benefit IDs:', e)
+    // API 실패 or 타임아웃 → detailPages는 빈 배열로 유지
+    // staticPages + categoryPages는 항상 반환됨
+    console.warn('[sitemap] Benefit API unavailable, serving partial sitemap:', e)
   }
 
   return [...staticPages, ...categoryPages, ...detailPages]
