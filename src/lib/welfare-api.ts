@@ -316,7 +316,21 @@ export function transformListItemToBenefit(item: WelfareListItem, index: number)
     documentsEn: [],
     eligibilityChecks: [],
     popular: (item.inqNum || 0) > 1000,
-    new: false,
+    new: (() => {
+      // svcfrstRegTs: 최초등록일 — 90일 이내면 신규
+      const ts = String(item.svcfrstRegTs || '')
+      const dateStr = ts.replace(/[\s.\-/T:]/g, '').substring(0, 8)
+      if (dateStr.length < 8) return false
+      try {
+        const regDate = new Date(
+          parseInt(dateStr.substring(0, 4)),
+          parseInt(dateStr.substring(4, 6)) - 1,
+          parseInt(dateStr.substring(6, 8))
+        )
+        const daysDiff = (Date.now() - regDate.getTime()) / (1000 * 60 * 60 * 24)
+        return daysDiff <= 90
+      } catch { return false }
+    })(),
   }
 }
 

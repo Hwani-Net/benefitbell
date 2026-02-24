@@ -166,8 +166,26 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const hasApiMethods = (apiDetail?.applicationMethods?.length ?? 0) > 0
   const hasSteps = steps.length > 0
 
-  const checks = benefit.eligibilityChecks
+  // 자격 조건: 빈 배열이면 섹션 숨김
+  const checks = benefit.eligibilityChecks ?? []
+  const hasChecks = checks.length > 0
   const fulfilled = checks.filter(c => c.pass).length
+
+  // 신청 기간: list API는 항상 빈 문자열 → apiDetail 날짜 사용
+  const formatDate = (d: string) => {
+    if (!d) return ''
+    const cleaned = d.replace(/[.\-/]/g, '')
+    if (cleaned.length >= 8) {
+      return `${cleaned.substring(0,4)}.${cleaned.substring(4,6)}.${cleaned.substring(6,8)}`
+    }
+    return d
+  }
+  const appStart = formatDate(benefit.applicationStart) || formatDate(apiDetail?.year ? `${apiDetail.year}0101` : '')
+  const appEnd = formatDate(benefit.applicationEnd)
+  const appPeriodText = appStart || appEnd
+    ? `${appStart || ''} ~ ${appEnd || '상시'}`
+    : '도움말에서 확인'
+
 
   // Helper: render multi-line text as paragraphs
   const renderText = (text: string) => {
@@ -272,7 +290,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
               <span className={styles.infoIcon} style={{ background: '#EFF6FF' }}>📅</span>
               <div>
                 <p className={styles.infoLabel}>{t.appPeriod}</p>
-                <p className={styles.infoValue}>{benefit.applicationStart} ~ {benefit.applicationEnd}</p>
+                <p className={styles.infoValue}>{appPeriodText}</p>
               </div>
             </div>
             {(benefit.targetAge || apiDetail?.lifeStages) && (
@@ -314,34 +332,36 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </div>
         </section>
 
-        {/* Eligibility Check */}
-        <section className="section">
-          <div className={styles.eligCard}>
-            <div className={styles.eligHeader}>
-              <h2 className="section-title">{t.myEligibility}</h2>
-              <span className={styles.eligCount}>{t.eligibilityCheck(fulfilled, checks.length)}</span>
+        {/* Eligibility Check — hasChecks 일 때만 표시 */}
+        {hasChecks && (
+          <section className="section">
+            <div className={styles.eligCard}>
+              <div className={styles.eligHeader}>
+                <h2 className="section-title">{t.myEligibility}</h2>
+                <span className={styles.eligCount}>{t.eligibilityCheck(fulfilled, checks.length)}</span>
+              </div>
+              <div className="progress-bar mb-12" style={{ marginBottom: 16 }}>
+                <div
+                  className="progress-fill green"
+                  style={{ width: `${(fulfilled / checks.length) * 100}%` }}
+                />
+              </div>
+              <div className={styles.checkList}>
+                {checks.map((c, i) => (
+                  <div key={i} className={styles.checkItem}>
+                    <span className={c.pass ? styles.checkPass : styles.checkFail}>
+                      {c.pass ? '✅' : '⚠️'}
+                    </span>
+                    <span className={styles.checkLabel}>{lang === 'ko' ? c.label : c.labelEn}</span>
+                    <span className={`${styles.checkBadge} ${c.pass ? styles.passBadge : styles.failBadge}`}>
+                      {c.pass ? t.pass : t.fail}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="progress-bar mb-12" style={{ marginBottom: 16 }}>
-              <div
-                className="progress-fill green"
-                style={{ width: `${(fulfilled / checks.length) * 100}%` }}
-              />
-            </div>
-            <div className={styles.checkList}>
-              {checks.map((c, i) => (
-                <div key={i} className={styles.checkItem}>
-                  <span className={c.pass ? styles.checkPass : styles.checkFail}>
-                    {c.pass ? '✅' : '⚠️'}
-                  </span>
-                  <span className={styles.checkLabel}>{lang === 'ko' ? c.label : c.labelEn}</span>
-                  <span className={`${styles.checkBadge} ${c.pass ? styles.passBadge : styles.failBadge}`}>
-                    {c.pass ? t.pass : t.fail}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* AI Eligibility Check */}
         <AiEligibilityCheck
