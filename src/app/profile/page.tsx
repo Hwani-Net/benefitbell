@@ -36,6 +36,130 @@ function parseRegion(region: string) {
   return { sido: parts[0] || '', sigungu: parts.slice(1).join(' ') || '' }
 }
 
+// ─── 프리미엄 상태 카드 ───
+function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kakaoUserId?: number }) {
+  const [paymentDate, setPaymentDate] = useState<string | null>(null)
+  const [loadingPayment, setLoadingPayment] = useState(false)
+
+  useEffect(() => {
+    if (!isPremium || !kakaoUserId) return
+    setLoadingPayment(true)
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('premium_payments')
+          .select('created_at')
+          .eq('kakao_id', String(kakaoUserId))
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        if (data?.created_at) setPaymentDate(data.created_at)
+      } finally {
+        setLoadingPayment(false)
+      }
+    })()
+  }, [isPremium, kakaoUserId])
+
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso)
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`
+  }
+
+  const getRenewalDate = (iso: string) => {
+    const d = new Date(iso)
+    d.setMonth(d.getMonth() + 1)
+    return formatDate(d.toISOString())
+  }
+
+  if (isPremium) {
+    return (
+      <section className="section">
+        <div style={{
+          background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
+          borderRadius: 20,
+          padding: '20px',
+          color: 'white',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <span style={{ fontSize: 24 }}>👑</span>
+            <div>
+              <p style={{ fontSize: 16, fontWeight: 800 }}>프리미엄 이용 중</p>
+              <p style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>모든 프리미엄 혜택이 활성화되어 있습니다</p>
+            </div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px' }}>
+            {loadingPayment ? (
+              <p style={{ fontSize: 13, opacity: 0.8 }}>결제 정보 불러오는 중...</p>
+            ) : paymentDate ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, opacity: 0.8 }}>결제일</span>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{formatDate(paymentDate)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, opacity: 0.8 }}>갱신 안내일 (예정)</span>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{getRenewalDate(paymentDate)}</span>
+                </div>
+                <p style={{ fontSize: 11, opacity: 0.7, marginTop: 8, lineHeight: 1.4 }}>
+                  ※ 갱신 수동 안내 시 카카오톡 채널로 연락드립니다
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, opacity: 0.8 }}>결제 기록을 찾을 수 없습니다.</p>
+            )}
+          </div>
+          <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['✨ AI 무제한', '🚫 광고 없음', '⏰ 14일 전 알림', '💬 우선 상담'].map(feat => (
+              <span key={feat} style={{ fontSize: 11, background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: 99 }}>{feat}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="section">
+      <div style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 20,
+        padding: '20px',
+        border: '2px dashed var(--border-color)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22 }}>👑</span>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>프리미엄 혜택</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>월 4,900원</p>
+            </div>
+          </div>
+          <Link href="/premium" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13, textDecoration: 'none', borderRadius: 10 }}>
+            업그레이드 →
+          </Link>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[
+            { icon: '✨', text: '무제한 AI 혜택 분석', sub: '현재 1일 3회 제한 중' },
+            { icon: '🚫', text: '광고 완전 제거', sub: '현재 광고 노출 중' },
+            { icon: '⏰', text: '14일 전 얼리버드 알림', sub: '현재 3일 전만 알림' },
+            { icon: '💬', text: '1:1 맞춤 상담 우선', sub: '카카오톡 채널 우선 지원' },
+          ].map(item => (
+            <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{item.icon}</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{item.text}</p>
+                <p style={{ fontSize: 11, color: 'var(--color-coral)', marginTop: 1 }}>{item.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function ProfilePage() {
   const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
@@ -526,23 +650,9 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            {/* 프리미엄 배너 */}
-            {!isPremium && (
-              <section className="section">
-                <div className={styles.premiumBanner}>
-                  <div className={styles.premiumLeft}>
-                    <span className="badge badge-purple-soft">{t.premium}</span>
-                    <p className={styles.premiumTitle}>{t.premiumFeatures}</p>
-                  </div>
-                  <div className={styles.premiumRight}>
-                    <p className={styles.premiumPrice}>₩4,900<small>{t.perMonth}</small></p>
-                    <a href="/premium" className={`btn btn-primary`} style={{ padding: '8px 16px', fontSize: 13, display: 'inline-block', textDecoration: 'none' }}>
-                      기능 알아보기
-                    </a>
-                  </div>
-                </div>
-              </section>
-            )}
+            {/* 프리미엄 상태 카드 */}
+            <PremiumStatusCard isPremium={isPremium} kakaoUserId={kakaoUser?.id} />
+
 
             {/* 카카오 채널 */}
             <section className="section">
