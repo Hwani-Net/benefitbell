@@ -402,6 +402,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('bookmarks', JSON.stringify(bookmarks))
   }, [bookmarks])
 
+  useEffect(() => {
+    localStorage.setItem('userProfile', JSON.stringify(userProfile))
+  }, [userProfile])
+
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light')
 
   const toggleBookmark = (id: string) => {

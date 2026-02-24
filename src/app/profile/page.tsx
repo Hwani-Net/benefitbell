@@ -40,6 +40,12 @@ export default function ProfilePage() {
   const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
+  
+  // AppContext의 userProfile이 로컬스토리지에서 늦게 불러와진 경우(hydration) 로컬 profile 상태 동기화
+  useEffect(() => {
+    setProfile(userProfile)
+  }, [userProfile])
+
   const [saved, setSaved] = useState(false)
   const isPremium = userProfile?.isPremium || false
   const [isKakaoLinked, setIsKakaoLinked] = useState(false)
@@ -114,6 +120,12 @@ export default function ProfilePage() {
   const parsedRegion = parseRegion(profile.region || '')
   const [selectedSido, setSelectedSido] = useState(parsedRegion.sido || Object.keys(REGIONS)[0])
   const [selectedSigungu, setSelectedSigungu] = useState(parsedRegion.sigungu || '')
+
+  useEffect(() => {
+    const parsed = parseRegion(profile.region || '')
+    setSelectedSido(parsed.sido || Object.keys(REGIONS)[0])
+    setSelectedSigungu(parsed.sigungu || '')
+  }, [profile.region])
 
   const handleSidoChange = (sido: string) => {
     setSelectedSido(sido)
