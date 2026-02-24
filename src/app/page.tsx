@@ -122,6 +122,11 @@ export default function HomePage() {
   const allPersonalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile) : []
   const personalizedBenefits = allPersonalizedBenefits.slice(0, 5)
 
+  // 신규 혜택 = new 플래그 있는 것 우선, 없으면 목록 마지막 5건 (가장 최근 추가)
+  const newBenefits = benefits.filter(b => b.new).length > 0
+    ? benefits.filter(b => b.new).slice(0, 6)
+    : benefits.slice(-6).reverse()
+
   const categories = [
     { key: 'basic-living', ...CATEGORY_INFO['basic-living'] },
     { key: 'near-poverty', ...CATEGORY_INFO['near-poverty'] },
@@ -314,7 +319,73 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 인기 혜택 TOP 5 */}
+        {/* 🆕 신규 혜택 */}
+        {!loading && newBenefits.length > 0 && (
+          <section className="section">
+            <div className="section-header">
+              <h2 className="section-title">
+                🆕 신규 혜택
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-coral)', background: 'var(--color-coral-light)', padding: '2px 8px', borderRadius: 99, marginLeft: 8, verticalAlign: 'middle' }}>
+                  NEW
+                </span>
+              </h2>
+              <Link href="/search" className="section-link">{t.viewAll}</Link>
+            </div>
+            <div className={styles.benefitList}>
+              {newBenefits.map((benefit, i) => (
+                <Link
+                  key={benefit.id}
+                  href={`/detail/${benefit.id}`}
+                  className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`}
+                >
+                  <div className={styles.benefitInfo}>
+                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
+                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <div className={styles.benefitMeta}>
+                      <span className="badge badge-coral-soft text-xs">🆕 신규</span>
+                      <span className="badge badge-gray text-xs">{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      {benefit.dDay >= 0 && benefit.dDay <= 30 && (
+                        <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
+                          {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                    <button
+                      className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
+                      onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
+                      aria-label="북마크"
+                    >
+                      {isBookmarked(benefit.id) ? '❤️' : '🤍'}
+                    </button>
+                    <button
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      aria-label={lang === 'ko' ? '공유' : 'Share'}
+                    >
+                      {sharedId === benefit.id ? '✅' : '📤'}
+                    </button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {loading && (
+          <section className="section">
+            <div className="section-header">
+              <h2 className="section-title">🆕 신규 혜택</h2>
+            </div>
+            <div className={styles.benefitList}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className={`${styles.benefitItem} shimmer`} style={{ height: 72 }} />
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">{t.popularBenefits}</h2>
