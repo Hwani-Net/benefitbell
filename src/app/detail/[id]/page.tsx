@@ -22,6 +22,8 @@ interface ApiDetail {
   targetDetail: string
   selectionCriteria: string
   supportContent: string
+  applyBgnDt?: string
+  applyEndDt?: string
   lifeStages: string
   targetGroups: string
   themes: string
@@ -93,27 +95,51 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   }, [benefit])
 
   useEffect(() => {
-    async function loadData() {
+    async function fetchDetail(benefitId: string, retry = false): Promise<ApiDetail | null> {
       try {
-        // 1. Load basic benefit from list API
-        const listRes = await fetch('/api/benefits')
-        if (listRes.ok) {
-          const listJson = await listRes.json()
-          const found = (listJson.data as Benefit[]).find(b => b.id === id)
-          if (found) setBenefit(found)
-        }
-
-        // 2. Load detailed info from detail API
-        const detailRes = await fetch(`/api/benefits/${id}`)
+        const detailRes = await fetch(`/api/benefits/${benefitId}`)
         if (detailRes.ok) {
           const detailJson = await detailRes.json()
           if (detailJson.success && detailJson.source === 'api') {
-            setApiDetail(detailJson.data)
-          } else if (detailJson.success && detailJson.source === 'mock') {
-            // mock detail returned the Benefit directly
-            setBenefit(detailJson.data)
+            return detailJson.data as ApiDetail
           }
         }
+        // 첫 시도 실패 시 1.5초 후 재시도 (data.go.kr 간헐 오류)
+        if (!retry) {
+          await new Promise(r => setTimeout(r, 1500))
+          return fetchDetail(benefitId, true)
+        }
+      } catch { /* ignore */ }
+      return null
+    }
+
+    async function loadData() {
+      try {
+        // 1. 목록 API와 상세 API 병렬 시작
+        const [listRes, detail] = await Promise.all([
+          fetch('/api/benefits'),
+          fetchDetail(id),
+        ])
+
+        if (listRes.ok) {
+          const listJson = await listRes.json()
+          const found = (listJson.data as Benefit[]).find(b => b.id === id)
+          if (found) {
+            // 상세 API에 날짜 있으면 업데이트
+            if (detail?.applyBgnDt || detail?.applyEndDt) {
+              setBenefit({
+                ...found,
+                applicationStart: detail.applyBgnDt ?? found.applicationStart,
+                applicationEnd: detail.applyEndDt ?? found.applicationEnd,
+              })
+            } else {
+              setBenefit(found)
+            }
+          }
+        }
+
+        if (detail) setApiDetail(detail)
+
       } catch (err) {
         console.error(err)
       } finally {

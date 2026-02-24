@@ -46,71 +46,108 @@ export async function GET(
     return NextResponse.json({ success: false, error: 'API key not configured' }, { status: 500 })
   }
 
-  try {
-    const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_SERVICE_KEY}&callTp=D&servId=${servId}`
-    const response = await fetch(apiUrl, {
-      next: { revalidate: 86400 }, // Cache for 24 hours (detail data changes rarely)
-    })
+  const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_SERVICE_KEY}&callTp=D&servId=${servId}`
 
-    if (!response.ok) {
-      return NextResponse.json({ success: false, error: 'API error' }, { status: 502 })
+  // 3회 재시도 + 지수 백오프 (data.go.kr 간헐적 502 대응)
+  let lastError: string = 'Unknown error'
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, attempt * 600)) // 600ms, 1200ms
     }
 
-    const xml = await response.text()
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000) // 8초 timeout
 
-    // Check for API error
-    const resultCode = getXmlValue(xml, 'resultCode')
-    if (resultCode !== '0' && resultCode !== '00') {
-      return NextResponse.json({
-        success: false,
-        error: getXmlValue(xml, 'resultMessage') || 'API returned error',
-      }, { status: 502 })
+      let response: Response
+      try {
+        response = await fetch(apiUrl, {
+          signal: controller.signal,
+          next: { revalidate: 86400 },
+        })
+      } finally {
+        clearTimeout(timeout)
+      }
+
+      if (!response.ok) {
+        lastError = `HTTP ${response.status}`
+        continue // 재시도
+      }
+
+      const xml = await response.text()
+      if (!xml || xml.length < 50) {
+        lastError = 'Empty response'
+        continue
+      }
+
+      // resultCode 체크 — 00 또는 0이 정상
+      const resultCode = getXmlValue(xml, 'resultCode')
+      if (resultCode && resultCode !== '0' && resultCode !== '00') {
+        const msg = getXmlValue(xml, 'resultMessage') || `resultCode: ${resultCode}`
+        // 30 = 데이터 없음 (존재하지 않는 ID) — 재시도 불필요
+        if (resultCode === '30' || resultCode === '99') {
+          return NextResponse.json({ success: false, error: msg }, { status: 404 })
+        }
+        lastError = msg
+        continue
+      }
+
+      // Parse detailed benefit info
+      const detail = {
+        id,
+        servId,
+        title: getXmlValue(xml, 'servNm'),
+        ministry: getXmlValue(xml, 'jurMnofNm'),
+        phone: getXmlValue(xml, 'rprsCtadr'),
+        year: getXmlValue(xml, 'crtrYr'),
+        supportCycle: getXmlValue(xml, 'sprtCycNm'),
+        supportType: getXmlValue(xml, 'srvPvsnNm'),
+        // Detailed content fields
+        overview: cleanText(getXmlValue(xml, 'wlfareInfoOutlCn')),
+        targetDetail: cleanText(getXmlValue(xml, 'tgtrDtlCn')),
+        selectionCriteria: cleanText(getXmlValue(xml, 'slctCritCn')),
+        supportContent: cleanText(getXmlValue(xml, 'alwServCn')),
+        // Apply dates
+        applyBgnDt: getXmlValue(xml, 'aplyBgnDd'),
+        applyEndDt: getXmlValue(xml, 'aplyEndDd'),
+        // Array fields
+        lifeStages: getXmlValue(xml, 'lifeArray'),
+        targetGroups: getXmlValue(xml, 'trgterIndvdlArray'),
+        themes: getXmlValue(xml, 'intrsThemaArray'),
+        // Application methods
+        applicationMethods: getXmlValues(xml, 'applmetList', 'servSeDetailNm'),
+        applicationLinks: getXmlValues(xml, 'applmetList', 'servSeDetailLink'),
+        // Inquiry contacts
+        contacts: getXmlValues(xml, 'inqplCtadrList', 'servSeDetailNm')
+          .map((name, i) => ({
+            name,
+            address: getXmlValues(xml, 'inqplCtadrList', 'servSeDetailLink')[i] || '',
+          })),
+        // Required documents
+        requiredDocs: getXmlValues(xml, 'basfrmList', 'servSeDetailNm'),
+        // Related laws
+        relatedLaws: getXmlValues(xml, 'baslawList', 'servSeDetailNm'),
+        // Inquiry homepage
+        homepages: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailNm')
+          .map((name, i) => ({
+            name,
+            url: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailLink')[i] || '',
+          })),
+      }
+
+      return NextResponse.json({ success: true, data: detail, source: 'api' })
+
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      lastError = msg.includes('abort') ? 'Timeout' : msg
+      // 타임아웃이면 재시도
     }
-
-    // Parse detailed benefit info
-    const detail = {
-      id,
-      servId,
-      title: getXmlValue(xml, 'servNm'),
-      ministry: getXmlValue(xml, 'jurMnofNm'),
-      phone: getXmlValue(xml, 'rprsCtadr'),
-      year: getXmlValue(xml, 'crtrYr'),
-      supportCycle: getXmlValue(xml, 'sprtCycNm'),
-      supportType: getXmlValue(xml, 'srvPvsnNm'),
-      // Detailed content fields
-      overview: cleanText(getXmlValue(xml, 'wlfareInfoOutlCn')),
-      targetDetail: cleanText(getXmlValue(xml, 'tgtrDtlCn')),
-      selectionCriteria: cleanText(getXmlValue(xml, 'slctCritCn')),
-      supportContent: cleanText(getXmlValue(xml, 'alwServCn')),
-      // Array fields
-      lifeStages: getXmlValue(xml, 'lifeArray'),
-      targetGroups: getXmlValue(xml, 'trgterIndvdlArray'),
-      themes: getXmlValue(xml, 'intrsThemaArray'),
-      // Application methods
-      applicationMethods: getXmlValues(xml, 'applmetList', 'servSeDetailNm'),
-      applicationLinks: getXmlValues(xml, 'applmetList', 'servSeDetailLink'),
-      // Inquiry contacts
-      contacts: getXmlValues(xml, 'inqplCtadrList', 'servSeDetailNm')
-        .map((name, i) => ({
-          name,
-          address: getXmlValues(xml, 'inqplCtadrList', 'servSeDetailLink')[i] || '',
-        })),
-      // Required documents
-      requiredDocs: getXmlValues(xml, 'basfrmList', 'servSeDetailNm'),
-      // Related laws
-      relatedLaws: getXmlValues(xml, 'baslawList', 'servSeDetailNm'),
-      // Inquiry homepage
-      homepages: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailNm')
-        .map((name, i) => ({
-          name,
-          url: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailLink')[i] || '',
-        })),
-    }
-
-    return NextResponse.json({ success: true, data: detail, source: 'api' })
-
-  } catch (error) {
-    console.error('Detail API Error:', error)
-    return NextResponse.json({ success: false, error: 'Failed to fetch detail' }, { status: 500 })
   }
+
+  // 3회 모두 실패
+  console.error(`[/api/benefits/${servId}] All 3 attempts failed. Last: ${lastError}`)
+  return NextResponse.json(
+    { success: false, error: `Failed after 3 attempts: ${lastError}` },
+    { status: 502 }
+  )
 }
