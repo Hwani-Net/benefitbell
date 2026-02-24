@@ -64,6 +64,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" data-theme="light" suppressHydrationWarning>
       <head>
+        <meta name="google-adsense-account" content="ca-pub-9200560771587224" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9200560771587224"
+          crossOrigin="anonymous"
+        ></script>
         {/* Prevent FOUC: apply saved theme before first paint */}
         <script
           dangerouslySetInnerHTML={{
@@ -104,23 +110,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="mask-icon" href="/icons/icon-192.png" color="#FF6B4A" />
       </head>
-      {/* Kakao SDK */}
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-      <Script
-        src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
-        integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-      />
-      {/* Google AdSense */}
-      <Script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9200560771587224"
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-      />
       <body>
+        {/* Kakao SDK */}
+        <Script
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+          integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <GoogleAnalytics />
         <AppProvider>
           <div className="app-container">
