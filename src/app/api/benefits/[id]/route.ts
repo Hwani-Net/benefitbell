@@ -53,7 +53,7 @@ export async function GET(
   }
 
   try {
-    const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_SERVICE_KEY}&servId=${servId}`
+    const apiUrl = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_SERVICE_KEY}&callTp=D&servId=${servId}`
     const response = await fetch(apiUrl, {
       next: { revalidate: 86400 }, // Cache for 24 hours (detail data changes rarely)
     })

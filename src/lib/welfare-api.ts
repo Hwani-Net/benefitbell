@@ -3,7 +3,7 @@
  * 한국사회보장정보원 중앙부처 복지서비스 API
  */
 
-const BASE_URL = 'http://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
+const BASE_URL = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
 
 // =====================
 // API Response Types
@@ -135,20 +135,51 @@ function getStatus(startDateStr: string | null, endDateStr: string | null): Bene
 }
 
 // =====================
+// XML Parsing Utilities
+// =====================
+
+/** Get single XML tag value */
+function xmlGet(text: string, tag: string): string {
+  const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\/${tag}>`))
+  return m ? m[1].trim() : ''
+}
+
+/** Get all values of a repeated XML tag */
+function xmlGetAll(text: string, tag: string): string[] {
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)<\/${tag}>`, 'g')
+  const results: string[] = []
+  let m
+  while ((m = re.exec(text)) !== null) results.push(m[1].trim())
+  return results
+}
+
+/** Extract all <item> blocks and parse them into objects with specified fields */
+function xmlParseItems(text: string, fields: string[]): Record<string, string>[] {
+  const itemBlocks = text.match(/<servList>[\s\S]*?<\/servList>/g) ?? []
+  return itemBlocks.map(block => {
+    const obj: Record<string, string> = {}
+    for (const f of fields) obj[f] = xmlGet(block, f)
+    return obj
+  })
+}
+
+// =====================
 // API Fetching
 // =====================
 
 /**
  * Fetch welfare service list from data.go.kr
  */
-export async function fetchWelfareList(pageNo = 1, numOfRows = 100): Promise<WelfareListItem[]> {
+export async function fetchWelfareList(pageNo = 1, numOfRows = 500): Promise<WelfareListItem[]> {
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY
   if (!serviceKey) {
     console.warn('[welfare-api] DATA_GO_KR_SERVICE_KEY not set')
     return []
   }
 
-  const url = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${encodeURIComponent(serviceKey)}&pageNo=${pageNo}&numOfRows=${numOfRows}&_type=json`
+  // ⚠️ srchKeyCode=001 필수 — 없으면 resultCode:10 에러
+  // ⚠️ _type=json 무시됨 — XML 파싱으로 처리
+  const url = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=${pageNo}&numOfRows=${numOfRows}`
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } }) // ISR 1h cache
@@ -157,13 +188,73 @@ export async function fetchWelfareList(pageNo = 1, numOfRows = 100): Promise<Wel
       return []
     }
 
-    const data = await res.json()
-    const items = data?.response?.body?.items?.item
+    const text = await res.text()
+    const resultCode = xmlGet(text, 'resultCode')
+    if (resultCode !== '0' && resultCode !== '00') {
+      console.error(`[welfare-api] API error: ${resultCode} - ${xmlGet(text, 'resultMessage')}`)
+      return []
+    }
 
-    if (!items) return []
-    return Array.isArray(items) ? items : [items]
+    const LIST_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+    const items = xmlParseItems(text, LIST_FIELDS)
+    return items as unknown as WelfareListItem[]
   } catch (err) {
     console.error('[welfare-api] List fetch error:', err)
+    return []
+  }
+}
+
+/**
+ * Fetch ALL welfare services across all pages
+ * Automatically paginates to retrieve all records from data.go.kr
+ */
+export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
+  const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY
+  if (!serviceKey) return []
+
+  const numOfRows = 500
+  const allItems: WelfareListItem[] = []
+  const LIST_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+
+  try {
+    // First page to get totalCount
+    const firstUrl = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=1&numOfRows=${numOfRows}`
+    const firstRes = await fetch(firstUrl, { next: { revalidate: 3600 } })
+    if (!firstRes.ok) return []
+
+    const firstText = await firstRes.text()
+    const resultCode = xmlGet(firstText, 'resultCode')
+    if (resultCode !== '0' && resultCode !== '00') {
+      console.error(`[welfare-api] API error on first page: ${resultCode}`)
+      return []
+    }
+
+    const totalCount = parseInt(xmlGet(firstText, 'totalCount') || '0', 10)
+    const firstItems = xmlParseItems(firstText, LIST_FIELDS)
+    allItems.push(...(firstItems as unknown as WelfareListItem[]))
+
+    console.log(`[welfare-api] Total: ${totalCount}, fetched page 1 (${allItems.length})`)
+
+    // Fetch remaining pages in parallel (up to 10 pages max = 5000 items)
+    const totalPages = Math.min(Math.ceil(totalCount / numOfRows), 10)
+    if (totalPages > 1) {
+      const pageNums = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+      const results = await Promise.all(
+        pageNums.map(async (page) => {
+          const url = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=${page}&numOfRows=${numOfRows}`
+          const res = await fetch(url, { next: { revalidate: 3600 } })
+          if (!res.ok) return []
+          const text = await res.text()
+          return xmlParseItems(text, LIST_FIELDS) as unknown as WelfareListItem[]
+        })
+      )
+      results.forEach(items => allItems.push(...items))
+    }
+
+    console.log(`[welfare-api] Total fetched: ${allItems.length} items`)
+    return allItems
+  } catch (err) {
+    console.error('[welfare-api] fetchAllWelfareList error:', err)
     return []
   }
 }
@@ -175,7 +266,7 @@ export async function fetchWelfareDetail(servId: string): Promise<WelfareDetailI
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY
   if (!serviceKey) return null
 
-  const url = `${BASE_URL}/NationalWelfaredetailedV001?serviceKey=${encodeURIComponent(serviceKey)}&servId=${servId}&_type=json`
+  const url = `${BASE_URL}/NationalWelfaredetailedV001?serviceKey=${serviceKey}&callTp=D&servId=${servId}&_type=json`
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } })
