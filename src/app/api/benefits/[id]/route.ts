@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { BENEFITS } from '@/data/benefits'
 
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
 
@@ -36,17 +35,12 @@ export async function GET(
   const { id } = await params
   const DATA_GO_KR_SERVICE_KEY = process.env.DATA_GO_KR_SERVICE_KEY
 
-  // If it's a mock item (non-api ID), return from local data
-  if (!id.startsWith('api-')) {
-    const mockItem = BENEFITS.find(b => b.id === id)
-    if (!mockItem) {
-      return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
-    }
-    return NextResponse.json({ success: true, data: mockItem, source: 'mock' })
-  }
+  // Extract the actual servId (servId 형식: WLF00000024 or api-WLF00000024)
+  const servId = id.startsWith('api-') ? id.replace('api-', '') : id
 
-  // Extract the actual servId from "api-WLF00000024" format
-  const servId = id.replace('api-', '')
+  if (!servId || servId === 'api-') {
+    return NextResponse.json({ success: false, error: 'Invalid benefit ID' }, { status: 400 })
+  }
 
   if (!DATA_GO_KR_SERVICE_KEY || DATA_GO_KR_SERVICE_KEY === 'placeholder') {
     return NextResponse.json({ success: false, error: 'API key not configured' }, { status: 500 })

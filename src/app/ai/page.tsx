@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
-import { BENEFITS, CATEGORY_INFO, getDDayColor, getDDayText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -95,11 +94,7 @@ export default function AiPage() {
     }
   }
 
-  const recommendedBenefits = result
-    ? result.benefitIds
-        .map(id => BENEFITS.find(b => b.id === id))
-        .filter(Boolean)
-    : []
+
 
   return (
     <div className={styles.page}>
@@ -206,27 +201,18 @@ export default function AiPage() {
 
             <p className={styles.resultCount}>
               {isKo
-                ? `${recommendedBenefits.length}개의 맞춤 혜택을 찾았어요`
-                : `Found ${recommendedBenefits.length} matching benefits`}
+                ? `${result.benefitIds.length}개의 맞춤 혜택을 찾았어요`
+                : `Found ${result.benefitIds.length} matching benefits`}
             </p>
 
             <div className={styles.benefitList}>
-              {recommendedBenefits.map(b => {
-                if (!b) return null
-                const catInfo = CATEGORY_INFO[b.category]
-                const reason = result.reasons[b.id]
+              {result.benefitIds.map(id => {
+                const reason = result.reasons[id]
                 return (
-                  <Link key={b.id} href={`/detail/${b.id}`} className={styles.benefitCard}>
+                  <Link key={id} href={`/detail/${id}`} className={styles.benefitCard}>
                     <div className={styles.cardTop}>
-                      <span className={styles.catBadge} style={{ background: catInfo?.color + '20', color: catInfo?.color }}>
-                        {catInfo?.icon} {isKo ? b.categoryLabel : b.categoryLabelEn}
-                      </span>
-                      <span className={styles.ddayBadge} style={{ color: getDDayColor(b.dDay) }}>
-                        {getDDayText(b.dDay, lang as 'ko' | 'en')}
-                      </span>
+                      <span className={styles.catBadge}>📋 {id.replace('WLF', 'ID').substring(0, 12)}</span>
                     </div>
-                    <h3 className={styles.cardTitle}>{isKo ? b.title : b.titleEn}</h3>
-                    <p className={styles.cardAmount}>{isKo ? b.amount : b.amountEn}</p>
                     {reason && (
                       <div className={styles.aiReason}>
                         <span>✨</span>

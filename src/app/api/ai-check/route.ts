@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { BENEFITS } from '@/data/benefits'
+import { fetchWelfareDetail } from '@/lib/welfare-api'
+
+// Resolve benefit id to servId (handles both "api-WLF000xxx" and raw "WLF000xxx")
+function extractServId(benefitId: string): string {
+  return benefitId.startsWith('api-') ? benefitId.replace('api-', '') : benefitId
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,8 +20,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
     }
 
-    const benefit = BENEFITS.find(b => b.id === benefitId)
-    if (!benefit) {
+    // Fetch real detail from data.go.kr
+    const servId = extractServId(benefitId)
+    const detail = await fetchWelfareDetail(servId)
+    if (!detail) {
       return NextResponse.json({ error: 'Benefit not found' }, { status: 404 })
     }
 
@@ -25,20 +32,18 @@ export async function POST(req: NextRequest) {
 
     const isKo = lang === 'ko'
     const benefitInfo = isKo
-      ? `혜택명: ${benefit.title}
-설명: ${benefit.description}
-지원금액: ${benefit.amount}
-대상연령: ${benefit.targetAge ?? '제한 없음'}
-소득기준: ${benefit.incomeLevel ?? '제한 없음'}
-주관부처: ${benefit.ministry}
-기존 자격조건: ${benefit.eligibilityChecks.map(e => e.label).join(', ')}`
-      : `Benefit: ${benefit.titleEn}
-Description: ${benefit.descriptionEn}
-Amount: ${benefit.amountEn}
-Target Age: ${benefit.targetAge ?? 'None'}
-Income Level: ${benefit.incomeLevel ?? 'None'}
-Ministry: ${benefit.ministryEn}
-Eligibility: ${benefit.eligibilityChecks.map(e => e.labelEn).join(', ')}`
+      ? `혜택명: ${detail.servNm}
+설명: ${detail.servDgst}
+지원내용: ${detail.alwServCn?.substring(0, 200) ?? ''}
+지원대상: ${detail.trgterIndvdl ?? ''}
+선정기준: ${detail.slctCriteria ?? ''}
+주관부처: ${detail.jurOrgNm}`
+      : `Benefit: ${detail.servNm}
+Description: ${detail.servDgst}
+Support: ${detail.alwServCn?.substring(0, 200) ?? ''}
+Target: ${detail.trgterIndvdl ?? ''}
+Criteria: ${detail.slctCriteria ?? ''}
+Ministry: ${detail.jurOrgNm}`
 
     const prompt = isKo
       ? `${benefitInfo}
@@ -65,7 +70,7 @@ Format:
     const parsed = JSON.parse(jsonMatch[0])
     return NextResponse.json({
       benefitId,
-      benefitTitle: isKo ? benefit.title : benefit.titleEn,
+      benefitTitle: detail.servNm,
       questions: parsed.questions ?? [],
     })
   } catch (err) {
@@ -78,15 +83,16 @@ Format:
 export async function PUT(req: NextRequest) {
   try {
     const { benefitId, questions, answers, lang = 'ko' } = await req.json()
-    // answers: boolean[] matching questions array
 
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
     }
 
-    const benefit = BENEFITS.find(b => b.id === benefitId)
-    if (!benefit) {
+    // Fetch real detail
+    const servId = extractServId(benefitId)
+    const detail = await fetchWelfareDetail(servId)
+    if (!detail) {
       return NextResponse.json({ error: 'Benefit not found' }, { status: 404 })
     }
 
@@ -99,7 +105,7 @@ export async function PUT(req: NextRequest) {
     ).join('\n')
 
     const prompt = isKo
-      ? `혜택명: ${benefit.title}
+      ? `혜택명: ${detail.servNm}
 사용자 답변:
 ${qa}
 
@@ -110,7 +116,7 @@ ${qa}
 
 형식:
 {"verdict": "likely|partial|unlikely", "reason": "2~3문장 설명", "tips": "추가 안내 또는 다음 단계 (선택적)"}`
-      : `Benefit: ${benefit.titleEn}
+      : `Benefit: ${detail.servNm}
 User answers:
 ${qa}
 

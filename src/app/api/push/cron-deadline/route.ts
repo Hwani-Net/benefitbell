@@ -1,5 +1,5 @@
 /**
- * POST /api/push/cron-deadline
+ * GET /api/push/cron-deadline
  * Vercel Cron: 매일 오전 9시 KST (00:00 UTC)
  * D-7, D-1 임박 혜택을 구독자 전체에게 Push 발송
  */
@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { getSubscriptions } from '@/lib/push-store'
 import { getUrgentBenefits } from '@/data/benefits'
+import { fetchAllWelfareList, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
 
 // Cron secret validation
 const CRON_SECRET = process.env.CRON_SECRET
@@ -30,9 +31,15 @@ export async function GET(request: Request) {
 
   webpush.setVapidDetails(VAPID_MAILTO, VAPID_PUBLIC, VAPID_PRIVATE)
 
+  // Fetch real benefits from API
+  const apiItems = await fetchAllWelfareList()
+  const allBenefits = apiItems
+    .map((item, i) => transformListItemToBenefit(item, i))
+    .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
+
   // D-7 and D-1 benefits
-  const urgent7 = getUrgentBenefits(7)   // 7일 이내 마감
-  const urgent1 = getUrgentBenefits(1)   // 오늘/내일 마감
+  const urgent7 = getUrgentBenefits(allBenefits, 7)   // 7일 이내 마감
+  const urgent1 = getUrgentBenefits(allBenefits, 1)   // 오늘/내일 마감
 
   // No urgency → skip
   if (urgent7.length === 0) {

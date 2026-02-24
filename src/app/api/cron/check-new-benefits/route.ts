@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import webpush from 'web-push'
-import { BENEFITS } from '@/data/benefits'
+import { fetchAllWelfareList, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
 
 // Vercel Cron 보안 헤더 체크
 const CRON_SECRET = process.env.CRON_SECRET
@@ -35,11 +35,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ sent: 0, message: 'No subscribers' })
     }
 
-    // 2. 마감 7일 이내 OR 오픈 예정 혜택 필터
-    const relevantBenefits = BENEFITS.filter(b =>
-      (b.status === 'open' && b.dDay >= 0 && b.dDay <= 7) ||
-      b.status === 'upcoming'
-    )
+    // 2. 마감 7일 이내 OR 오픈 예정 혜택 필터 (실 API)
+    const apiItems = await fetchAllWelfareList()
+    const allBenefits = apiItems.map((item, i) => transformListItemToBenefit(item, i))
+    const relevantBenefits = allBenefits
+      .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
+      .filter(b =>
+        (b.status === 'open' && b.dDay >= 0 && b.dDay <= 7) ||
+        b.status === 'upcoming'
+      )
 
     if (relevantBenefits.length === 0) {
       return NextResponse.json({ sent: 0, message: 'No relevant benefits today' })

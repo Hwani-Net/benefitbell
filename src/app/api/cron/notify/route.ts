@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { getSubscriptions, removeSubscription } from '@/lib/push-store'
-import { calculateDDay } from '@/lib/welfare-api'
-import { BENEFITS } from '@/data/benefits'
+import { calculateDDay, fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,8 +37,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'VAPID config error' }, { status: 500 })
   }
 
-  // Find urgent benefits (D-Day <= 3)
-  const urgentBenefits = BENEFITS
+  // Find urgent benefits (D-Day <= 3) from real API
+  const apiItems = await fetchAllWelfareList()
+  const allBenefits = apiItems.map((item, i) => transformListItemToBenefit(item, i))
+  const urgentBenefits = allBenefits
     .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
     .filter(b => b.dDay >= 0 && b.dDay <= 3)
     .sort((a, b) => a.dDay - b.dDay)
