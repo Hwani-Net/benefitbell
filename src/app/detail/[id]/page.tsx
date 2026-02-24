@@ -157,7 +157,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const category = lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn
   const ministry = apiDetail?.ministry || (lang === 'ko' ? benefit.ministry : benefit.ministryEn)
   const steps = benefit.steps.map(s => lang === 'ko' ? { title: s.title, desc: s.desc } : { title: s.titleEn, desc: s.descEn })
-  const docs = apiDetail?.requiredDocs?.length ? apiDetail.requiredDocs : (lang === 'ko' ? benefit.documents : benefit.documentsEn)
+
+  // 필요 서류: API 데이터 우선, 없으면 benefit 데이터, 둘 다 없으면 []
+  const benefitDocs = lang === 'ko' ? (benefit.documents ?? []) : (benefit.documentsEn ?? [])
+  const docs: string[] = apiDetail?.requiredDocs?.length ? apiDetail.requiredDocs : benefitDocs
+
+  // 신청 방법: API applicationMethods 있으면 사용, 없으면 benefit.steps fallback
+  const hasApiMethods = (apiDetail?.applicationMethods?.length ?? 0) > 0
+  const hasSteps = steps.length > 0
+
   const checks = benefit.eligibilityChecks
   const fulfilled = checks.filter(c => c.pass).length
 
@@ -342,18 +350,18 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         />
 
         {/* Application Methods (from API) */}
-        {apiDetail?.applicationMethods && apiDetail.applicationMethods.length > 0 ? (
+        {hasApiMethods ? (
           <section className="section">
             <h2 className="section-title mb-12">📝 신청 방법</h2>
             <div className={styles.stepList}>
-              {apiDetail.applicationMethods.map((method, i) => (
+              {apiDetail!.applicationMethods.map((method, i) => (
                 <div key={i} className={styles.stepItem}>
                   <div className={styles.stepNum}>{i + 1}</div>
                   <div className={styles.stepContent}>
                     <p className={styles.stepTitle}>{method}</p>
-                    {apiDetail.applicationLinks[i] && (
+                    {apiDetail!.applicationLinks[i] && (
                       <a
-                        href={apiDetail.applicationLinks[i]}
+                        href={apiDetail!.applicationLinks[i]}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ fontSize: 13, color: 'var(--primary)' }}
@@ -366,7 +374,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
               ))}
             </div>
           </section>
-        ) : (
+        ) : hasSteps ? (
           <section className="section">
             <h2 className="section-title mb-12">{t.howToApply}</h2>
             <div className={styles.stepList}>
@@ -381,20 +389,63 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
               ))}
             </div>
           </section>
+        ) : (
+          // 신청 방법 데이터 없음 — 복지로 도움말 링크 표시
+          <section className="section">
+            <h2 className="section-title mb-12">{t.howToApply}</h2>
+            <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: 12, textAlign: 'center' }}>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                신청 방법 상세 정보는 복지로에서 확인하세요
+              </p>
+              <a
+                href={benefit.applyUrl || 'https://www.bokjiro.go.kr'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ display: 'inline-block', fontSize: 14 }}
+              >
+                복지로에서 신청 하기 →
+              </a>
+            </div>
+          </section>
         )}
 
         {/* Required Documents */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.requiredDocuments}</h2>
-          <div className={styles.docList}>
-            {docs.map((doc, i) => (
-              <div key={i} className={styles.docItem}>
-                <span className={styles.docIcon}>📄</span>
-                <span className={styles.docName}>{doc}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {docs.length > 0 && (
+          <section className="section">
+            <h2 className="section-title mb-12">{t.requiredDocuments}</h2>
+            <div className={styles.docList}>
+              {docs.map((doc, i) => (
+                <div key={i} className={styles.docItem}>
+                  <span className={styles.docIcon}>📄</span>
+                  <span className={styles.docName}>{doc}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 담당 기관 연락체 */}
+        {apiDetail?.contacts && apiDetail.contacts.length > 0 && (
+          <section className="section">
+            <h2 className="section-title mb-12">📞 담당 기관 연락체</h2>
+            <div className={styles.docList}>
+              {apiDetail.contacts.map((contact, i) => (
+                <div key={i} className={styles.docItem}>
+                  <span className={styles.docIcon}>🏢</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{contact.name}</p>
+                    {contact.address && (
+                      <a href={`tel:${contact.address.replace(/[^0-9]/g, '')}`} style={{ fontSize: 13, color: 'var(--primary)', marginTop: 2, display: 'block' }}>
+                        {contact.address}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Related Laws (API only) */}
         {apiDetail?.relatedLaws && apiDetail.relatedLaws.length > 0 && (
