@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
@@ -56,7 +56,33 @@ export default function HomePage() {
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
+  const [sharedId, setSharedId] = useState<string | null>(null)
   const dragScrollRef = useDragScroll()
+
+  // Web Share API (web-share 스킬 준수)
+  const handleShare = useCallback(async (benefitId: string, title: string) => {
+    const url = `${window.location.origin}/detail/${benefitId}`
+    const text = lang === 'ko'
+      ? `💡 ${title} — 혜택알리미에서 확인하세요!`
+      : `💡 ${title} — Check on BenefitBell!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        setSharedId(benefitId)
+        setTimeout(() => setSharedId(null), 2500)
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          await navigator.clipboard?.writeText(url)
+          setSharedId(benefitId)
+          setTimeout(() => setSharedId(null), 2500)
+        }
+      }
+    } else {
+      await navigator.clipboard?.writeText(url)
+      setSharedId(benefitId)
+      setTimeout(() => setSharedId(null), 2500)
+    }
+  }, [lang])
 
   useEffect(() => {
     async function loadBenefits() {
@@ -230,13 +256,22 @@ export default function HomePage() {
                     {benefit.new && <span className={`badge badge-coral-soft text-xs`}>{t.newBadge}</span>}
                   </div>
                 </div>
-                <button
-                  className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
-                  onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
-                  aria-label="북마크"
-                >
-                  {isBookmarked(benefit.id) ? '❤️' : '🤍'}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                  <button
+                    className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
+                    onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
+                    aria-label="북마크"
+                  >
+                    {isBookmarked(benefit.id) ? '❤️' : '🤍'}
+                  </button>
+                  <button
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
+                    onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                    aria-label={lang === 'ko' ? '공유' : 'Share'}
+                  >
+                    {sharedId === benefit.id ? '✅' : '📤'}
+                  </button>
+                </div>
               </Link>
             ))}
           </div>

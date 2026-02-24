@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
+import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -35,10 +36,20 @@ export default function AiPage() {
   const [result, setResult] = useState<AiResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [usageCount, setUsageCount] = useState(0)
+  const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
+  const [sharedId, setSharedId] = useState<string | null>(null)
 
   const isKo = lang === 'ko'
   const examples = isKo ? EXAMPLE_PROMPTS_KO : EXAMPLE_PROMPTS_EN
   const { userProfile } = useApp()
+
+  // 혜택 목록 미리 로드 (결과 카드에서 제목 표시용)
+  useEffect(() => {
+    fetch('/api/benefits')
+      .then(r => r.json())
+      .then(json => { if (json.data) setAllBenefits(json.data) })
+      .catch(e => console.warn('AI page benefit preload failed:', e))
+  }, [])
 
   useEffect(() => {
     if (!userProfile?.isPremium) {
@@ -94,7 +105,31 @@ export default function AiPage() {
     }
   }
 
+  // Web Share API (스킬 가이드 준수)
+  const handleShare = async (benefitId: string, title: string) => {
+    const url = `${window.location.origin}/detail/${benefitId}`
+    const text = isKo
+      ? `💡 ${title} — 혜택알리미에서 확인하세요!`
+      : `💡 ${title} — Check on BenefitBell!`
 
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        setSharedId(benefitId)
+        setTimeout(() => setSharedId(null), 2500)
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          await navigator.clipboard?.writeText(url)
+          setSharedId(benefitId)
+          setTimeout(() => setSharedId(null), 2500)
+        }
+      }
+    } else {
+      await navigator.clipboard?.writeText(url)
+      setSharedId(benefitId)
+      setTimeout(() => setSharedId(null), 2500)
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -207,19 +242,68 @@ export default function AiPage() {
 
             <div className={styles.benefitList}>
               {result.benefitIds.map(id => {
+                const benefit = allBenefits.find(b => b.id === id)
                 const reason = result.reasons[id]
                 return (
-                  <Link key={id} href={`/detail/${id}`} className={styles.benefitCard}>
+                  <div key={id} className={styles.benefitCard}>
+                    {/* 카드 상단: 카테고리 + 공유 버튼 */}
                     <div className={styles.cardTop}>
-                      <span className={styles.catBadge}>📋 {id.replace('WLF', 'ID').substring(0, 12)}</span>
+                      <span className="badge badge-coral-soft" style={{ fontSize: 11 }}>
+                        {benefit
+                          ? (isKo ? benefit.categoryLabel : benefit.categoryLabelEn)
+                          : '🔎 혜택'}
+                      </span>
+                      {benefit?.dDay !== undefined && benefit.dDay >= 0 && benefit.dDay <= 30 && (
+                        <span className="badge" style={{ fontSize: 11, color: getDDayColor(benefit.dDay) }}>
+                          {getDDayText(benefit.dDay, isKo ? 'ko' : 'en')}
+                        </span>
+                      )}
+                      <button
+                        style={{
+                          marginLeft: 'auto',
+                          background: sharedId === id ? 'rgba(16,185,129,0.12)' : 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 16,
+                          padding: '2px 6px',
+                          borderRadius: 8,
+                          color: sharedId === id ? '#10b981' : 'var(--text-secondary)',
+                          transition: 'all 0.2s',
+                        }}
+                        onClick={() => benefit && handleShare(id, isKo ? benefit.title : benefit.titleEn)}
+                        aria-label={isKo ? '공유하기' : 'Share'}
+                        title={isKo ? '공유하기' : 'Share'}
+                      >
+                        {sharedId === id ? '✅' : '📤'}
+                      </button>
                     </div>
-                    {reason && (
-                      <div className={styles.aiReason}>
-                        <span>✨</span>
-                        <p>{reason}</p>
-                      </div>
-                    )}
-                  </Link>
+
+                    {/* 혜택 제목 & 금액 — 실제 데이터 표시 */}
+                    <Link href={`/detail/${id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                      <h3 className={styles.cardTitle}>
+                        {benefit
+                          ? (isKo ? benefit.title : benefit.titleEn)
+                          : id}
+                      </h3>
+                      {benefit && (
+                        <p className={styles.cardAmount}>
+                          {isKo ? benefit.amount : benefit.amountEn}
+                        </p>
+                      )}
+
+                      {/* AI 추천 이유 */}
+                      {reason && (
+                        <div className={styles.aiReason}>
+                          <span>✨</span>
+                          <p>{reason}</p>
+                        </div>
+                      )}
+
+                      <p style={{ fontSize: 12, color: 'var(--accent)', marginTop: 8, fontWeight: 600 }}>
+                        {isKo ? '자세히 보기 →' : 'View details →'}
+                      </p>
+                    </Link>
+                  </div>
                 )
               })}
             </div>
