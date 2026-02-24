@@ -24,7 +24,7 @@ function SearchContent() {
 
   // URL 쿼리 파라미터로 상태 관리 → 조건 선택 시 router.push() → 뒤로가기 시 /search 초기화면 복귀
   const query = searchParams.get('q') ?? ''
-  const catKey = searchParams.get('cat') ?? ''
+  const catKey = searchParams.get('cat') ?? searchParams.get('category') ?? ''
   const sort = (searchParams.get('sort') as SortType) ?? 'popular'
 
   const [benefits, setBenefits] = useState<Benefit[]>([])
