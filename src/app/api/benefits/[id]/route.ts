@@ -52,7 +52,9 @@ export async function GET(
   let lastError: string = 'Unknown error'
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, attempt * 600)) // 600ms, 1200ms
+      // 429 Rate Limit: 3초 대기, 기타 오류: 800ms/1600ms
+      const delay = lastError.includes('429') ? 3000 : attempt * 800
+      await new Promise(r => setTimeout(r, delay))
     }
 
     try {
@@ -63,10 +65,15 @@ export async function GET(
       try {
         response = await fetch(apiUrl, {
           signal: controller.signal,
-          next: { revalidate: 86400 },
+          cache: 'no-store', // 실패 응답 캐시 방지
         })
       } finally {
         clearTimeout(timeout)
+      }
+
+      if (response.status === 429) {
+        lastError = '429 Rate Limit'
+        continue
       }
 
       if (!response.ok) {
