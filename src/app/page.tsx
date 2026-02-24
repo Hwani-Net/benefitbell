@@ -361,6 +361,7 @@ export default function HomePage() {
         {/* Google AdSense 광고 */}
         <section className="section">
           <AdBanner
+            slot="5754258932"
             format="auto"
             style={{ minHeight: 100 }}
           />

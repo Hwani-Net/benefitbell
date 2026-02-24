@@ -406,9 +406,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </section>
         )}
 
-        {/* Google AdSense 광고 */}
+        {/* Google AdSense 광고 (인아티클) */}
         <section className="section">
-          <AdBanner format="auto" style={{ minHeight: 90 }} />
+          <AdBanner slot="3128095592" format="auto" style={{ minHeight: 90 }} />
         </section>
 
         {/* CTA Buttons */}

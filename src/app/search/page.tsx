@@ -347,7 +347,7 @@ function SearchContent() {
 
         {/* Google AdSense 광고 */}
         <section className="section">
-          <AdBanner format="auto" style={{ minHeight: 90 }} />
+          <AdBanner slot="5754258932" format="auto" style={{ minHeight: 90 }} />
         </section>
       </main>
       <BottomNav />
