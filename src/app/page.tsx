@@ -54,17 +54,22 @@ export default function HomePage() {
   const { t, lang, toggleBookmark, isBookmarked, kakaoUser } = useApp()
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState(false)
   const dragScrollRef = useDragScroll()
 
   useEffect(() => {
     async function loadBenefits() {
       try {
         const res = await fetch('/api/benefits')
-        if (!res.ok) throw new Error('API return not ok')
         const json = await res.json()
-        setBenefits(json.data)
+        if (json.success && json.data?.length > 0) {
+          setBenefits(json.data)
+        } else {
+          setApiError(true)
+        }
       } catch (err) {
         console.error('Failed to load benefits', err)
+        setApiError(true)
       } finally {
         setLoading(false)
       }
@@ -72,8 +77,18 @@ export default function HomePage() {
     loadBenefits()
   }, [])
 
-  const urgentBenefits = benefits.filter(b => b.dDay >= 0 && b.dDay <= 30 && b.status === 'open').sort((a, b) => a.dDay - b.dDay)
-  const popularBenefits = benefits.filter(b => b.popular)
+  // 마감 임박 = dDay 있는 것 우선, 없으면 전체에서 상위 5건
+  const urgentBenefits = benefits
+    .filter(b => b.dDay >= 0 && b.dDay <= 30 && b.status === 'open')
+    .sort((a, b) => a.dDay - b.dDay)
+  const urgentDisplay = urgentBenefits.length > 0
+    ? urgentBenefits
+    : benefits.slice(0, 10) // 마감일 데이터 없을 경우 최신 10건 표시
+
+  // 인기 혜택 = popular 플래그 있으면 우선, 없으면 전체 상위 5건
+  const popularBenefits = benefits.filter(b => b.popular).length > 0
+    ? benefits.filter(b => b.popular)
+    : benefits.slice(0, 5)
 
   const categories = [
     { key: 'basic-living', ...CATEGORY_INFO['basic-living'] },
@@ -108,6 +123,11 @@ export default function HomePage() {
                 📊 실시간 복지서비스 {benefits.length}건 연동
               </p>
             )}
+            {!loading && apiError && (
+              <p style={{ fontSize: 11, color: 'rgba(255,200,100,0.9)', marginTop: 4 }}>
+                ⚠️ 데이터 없데이트 실패 — 잠시 후 다시 시도해주세요
+              </p>
+            )}
           </div>
           <div className={styles.greetingEmoji}>
             {kakaoUser?.profile_image
@@ -124,29 +144,40 @@ export default function HomePage() {
             <Link href="/search" className="section-link">{t.viewAll}</Link>
           </div>
           <div ref={dragScrollRef} className={`scroll-x ${styles.urgentScroll}`}>
-            {urgentBenefits.slice(0, 5).map((benefit, i) => (
-              <Link
-                key={benefit.id}
-                href={`/detail/${benefit.id}`}
-                className={`${styles.urgentCard} animate-fade-in stagger-${Math.min(i+1,5)}`}
-                draggable={false}
-                onDragStart={e => e.preventDefault()}
-              >
-                <div className={styles.urgentCardTop}>
-                  <span className={`badge ${getDDayColor(benefit.dDay)}`}>
-                    {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
-                  </span>
-                  <span className={styles.ministry}>{lang === 'ko' ? benefit.ministry : benefit.ministryEn}</span>
-                </div>
-                <h3 className={styles.urgentTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</h3>
-                <p className={styles.urgentAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
-                <div className={styles.urgentCategoryChip}>
-                  <span>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
-                </div>
-              </Link>
-            ))}
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className={styles.urgentCard} style={{ background: 'var(--bg-secondary)', opacity: 0.5, minWidth: 200, height: 120, borderRadius: 16 }} />
+              ))
+            ) : urgentDisplay.length === 0 ? (
+              <div style={{ padding: '24px', color: 'var(--text-secondary)', textAlign: 'center', width: '100%' }}>
+                {apiError ? '⚠️ 데이터를 불러오지 못했습니다. 새로고침 해주세요.' : '현재 마감 임박 혜택이 없습니다.'}
+              </div>
+            ) : (
+              urgentDisplay.slice(0, 5).map((benefit, i) => (
+                <Link
+                  key={benefit.id}
+                  href={`/detail/${benefit.id}`}
+                  className={`${styles.urgentCard} animate-fade-in stagger-${Math.min(i+1,5)}`}
+                  draggable={false}
+                  onDragStart={e => e.preventDefault()}
+                >
+                  <div className={styles.urgentCardTop}>
+                    <span className={`badge ${getDDayColor(benefit.dDay)}`}>
+                      {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
+                    </span>
+                    <span className={styles.ministry}>{lang === 'ko' ? benefit.ministry : benefit.ministryEn}</span>
+                  </div>
+                  <h3 className={styles.urgentTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</h3>
+                  <p className={styles.urgentAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                  <div className={styles.urgentCategoryChip}>
+                    <span>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </section>
+
 
         {/* 카테고리 */}
         <section className="section">
