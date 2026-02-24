@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useApp } from '@/lib/context'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -7,15 +8,63 @@ import styles from './page.module.css'
 const KAKAOPAY_LINK = process.env.NEXT_PUBLIC_KAKAOPAY_PREMIUM_LINK || ''
 
 export default function PremiumPage() {
-  const { t, userProfile, kakaoUser } = useApp()
+  const { t, userProfile, kakaoUser, setUserProfile } = useApp()
   const isPremium = userProfile?.isPremium
+  const [step, setStep] = useState<'idle' | 'paying' | 'activating' | 'done'>('idle')
+  const [error, setError] = useState('')
+
+  const handlePayClick = () => {
+    if (!KAKAOPAY_LINK) return
+    // Open KakaoPay in new tab
+    window.open(KAKAOPAY_LINK, '_blank')
+    // Show "I've paid" button
+    setStep('paying')
+  }
+
+  const handleActivate = async () => {
+    if (!kakaoUser) {
+      setError('로그인이 필요합니다.')
+      return
+    }
+
+    setStep('activating')
+    setError('')
+
+    try {
+      const res = await fetch('/api/premium/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kakaoId: String(kakaoUser.id),
+          nickname: kakaoUser.nickname,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || '활성화에 실패했습니다.')
+        setStep('paying')
+        return
+      }
+
+      // Update local state
+      if (userProfile && setUserProfile) {
+        setUserProfile({ ...userProfile, isPremium: true })
+      }
+      setStep('done')
+    } catch (err) {
+      setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
+      setStep('paying')
+    }
+  }
 
   return (
     <>
       <TopBar />
       <main className="page-content">
-        {isPremium ? (
-          /* ===== 이미 프리미엄 유저 ===== */
+        {(isPremium || step === 'done') ? (
+          /* ===== 프리미엄 유저 ===== */
           <section className={styles.hero}>
             <span className="badge badge-purple-soft mb-12">Premium ✓</span>
             <h1 className={styles.title}>프리미엄 이용 중 🎉</h1>
@@ -30,6 +79,13 @@ export default function PremiumPage() {
                 <li style={{ fontSize: 14, color: 'var(--text-primary)' }}>✅ 카카오톡 1:1 맞춤 상담 우선</li>
               </ul>
             </div>
+            {step === 'done' && (
+              <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--color-green-light)', borderRadius: 12, textAlign: 'center' }}>
+                <p style={{ fontSize: 14, color: 'var(--color-green)', fontWeight: 600 }}>
+                  🎊 프리미엄이 활성화되었습니다!
+                </p>
+              </div>
+            )}
           </section>
         ) : (
           /* ===== 프리미엄 가입 유도 ===== */
@@ -64,53 +120,122 @@ export default function PremiumPage() {
               </div>
             </section>
 
-            {/* 결제 버튼 */}
+            {/* 결제 플로우 */}
             <section className="section" style={{ padding: '0 16px' }}>
-              {KAKAOPAY_LINK ? (
-                <a
-                  href={KAKAOPAY_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-full btn-lg"
-                  style={{
-                    background: '#FFE812',
-                    color: '#3C1E1E',
-                    fontWeight: 800,
-                    fontSize: 16,
-                    borderRadius: 14,
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    padding: '16px 0',
-                    boxShadow: '0 4px 12px rgba(255, 232, 18, 0.35)',
-                  }}
-                >
-                  💳 카카오페이로 결제하기
-                </a>
-              ) : (
-                <button
-                  className="btn btn-full btn-lg"
-                  disabled
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    color: 'var(--text-tertiary)',
-                    fontWeight: 700,
-                    fontSize: 16,
-                    borderRadius: 14,
-                    padding: '16px 0',
-                    cursor: 'not-allowed',
-                    border: '1px dashed var(--border-color)',
-                  }}
-                >
-                  💳 결제 시스템 준비 중...
-                </button>
+              {step === 'idle' && (
+                <>
+                  {kakaoUser ? (
+                    <button
+                      onClick={handlePayClick}
+                      className="btn btn-full btn-lg"
+                      style={{
+                        background: '#FFE812',
+                        color: '#3C1E1E',
+                        fontWeight: 800,
+                        fontSize: 16,
+                        borderRadius: 14,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '16px 0',
+                        boxShadow: '0 4px 12px rgba(255, 232, 18, 0.35)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}
+                    >
+                      💳 카카오페이로 결제하기
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-full btn-lg"
+                      disabled
+                      style={{
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-tertiary)',
+                        fontWeight: 700,
+                        fontSize: 16,
+                        borderRadius: 14,
+                        padding: '16px 0',
+                        cursor: 'not-allowed',
+                        border: '1px dashed var(--border-color)',
+                        width: '100%',
+                      }}
+                    >
+                      🔒 로그인 후 결제할 수 있어요
+                    </button>
+                  )}
+                </>
               )}
 
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 10, lineHeight: 1.5 }}>
-                카카오페이 송금 후 프리미엄이 활성화됩니다.<br/>
-                문의: 카카오톡 채널 @hyetack-alimi
+              {step === 'paying' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    background: 'var(--color-blue-light)',
+                    borderRadius: 16,
+                    padding: '20px',
+                    marginBottom: 16,
+                  }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+                      💳 카카오페이로 송금하셨나요?
+                    </p>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      송금이 완료되면 아래 버튼을 눌러<br/>프리미엄을 활성화해주세요!
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleActivate}
+                    className="btn btn-full btn-lg"
+                    style={{
+                      background: 'var(--gradient-purple)',
+                      color: 'white',
+                      fontWeight: 800,
+                      fontSize: 16,
+                      borderRadius: 14,
+                      padding: '16px 0',
+                      border: 'none',
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxShadow: '0 4px 15px rgba(168, 85, 247, 0.3)',
+                    }}
+                  >
+                    ✅ 결제 완료! 프리미엄 활성화
+                  </button>
+
+                  <button
+                    onClick={() => { window.open(KAKAOPAY_LINK, '_blank') }}
+                    style={{
+                      marginTop: 12,
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    카카오페이 다시 열기
+                  </button>
+                </div>
+              )}
+
+              {step === 'activating' && (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: 32, marginBottom: 12, animation: 'spin 1s linear infinite' }}>⏳</div>
+                  <p style={{ fontSize: 15, color: 'var(--text-secondary)' }}>프리미엄 활성화 중...</p>
+                </div>
+              )}
+
+              {error && (
+                <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-red)', textAlign: 'center' }}>
+                  ⚠️ {error}
+                </p>
+              )}
+
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 12, lineHeight: 1.5 }}>
+                결제 관련 문의: 카카오톡 채널 @hyetack-alimi
               </p>
             </section>
 

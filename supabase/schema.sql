@@ -59,3 +59,27 @@ create policy "allow_upsert_own_profile"
   on user_profiles for all
   using (true)
   with check (true);
+
+-- 3. 프리미엄 결제 기록 테이블
+create table if not exists premium_payments (
+  id          uuid primary key default gen_random_uuid(),
+  kakao_id    text not null,
+  nickname    text,
+  amount      integer default 4900,
+  method      text default 'kakaopay_transfer',
+  status      text default 'claimed',  -- claimed / verified / refunded
+  created_at  timestamptz default now()
+);
+
+create index if not exists premium_payments_kakao_id_idx
+  on premium_payments(kakao_id);
+
+alter table premium_payments enable row level security;
+
+create policy "allow_insert_payment"
+  on premium_payments for insert
+  with check (true);
+
+create policy "allow_select_payment"
+  on premium_payments for select
+  using (true);
