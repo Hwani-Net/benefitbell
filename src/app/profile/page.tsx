@@ -1,11 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
+import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
 import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import PushToggle from '@/components/pwa/PushToggle'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import styles from './page.module.css'
 
 // ─── 한국 행정구역 데이터 ───
@@ -29,16 +31,14 @@ const REGIONS: Record<string, string[]> = {
   '제주특별자치도': ['서귀포시','제주시'],
 }
 
-// 지역 문자열 파싱 ("서울특별시 강남구" → { sido: "서울특별시", sigungu: "강남구" })
 function parseRegion(region: string) {
   const parts = region.trim().split(' ')
-  const sido = parts[0] || ''
-  const sigungu = parts.slice(1).join(' ') || ''
-  return { sido, sigungu }
+  return { sido: parts[0] || '', sigungu: parts.slice(1).join(' ') || '' }
 }
 
 export default function ProfilePage() {
-  const { t, lang, userProfile, setUserProfile, kakaoUser } = useApp()
+  const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked } = useApp()
+  const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [saved, setSaved] = useState(false)
   const isPremium = userProfile?.isPremium || false
@@ -51,18 +51,58 @@ export default function ProfilePage() {
   })
   const [categorySaving, setCategorySaving] = useState(false)
 
+  // ─── 북마크 혜택 데이터 ───
+  const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
+  const [benefitsLoading, setBenefitsLoading] = useState(true)
+  const [sharedId, setSharedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/benefits')
+      .then(r => r.json())
+      .then(json => { if (json.data) setAllBenefits(json.data) })
+      .catch(e => console.warn('bookmark benefit preload failed:', e))
+      .finally(() => setBenefitsLoading(false))
+  }, [])
+
+  const savedBenefits = allBenefits.filter(b => isBookmarked(b.id))
+
+  // Web Share API
+  const handleShare = useCallback(async (benefitId: string, title: string) => {
+    const url = `${window.location.origin}/detail/${benefitId}`
+    const text = lang === 'ko'
+      ? `💡 ${title} — 혜택알리미에서 확인하세요!`
+      : `💡 ${title} — Check on BenefitBell!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        setSharedId(benefitId)
+        setTimeout(() => setSharedId(null), 2500)
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          await navigator.clipboard?.writeText(url)
+          setSharedId(benefitId)
+          setTimeout(() => setSharedId(null), 2500)
+        }
+      }
+    } else {
+      await navigator.clipboard?.writeText(url)
+      setSharedId(benefitId)
+      setTimeout(() => setSharedId(null), 2500)
+    }
+  }, [lang])
+
   const CATEGORY_CHIPS = [
-    { key: 'youth',          label: '청년' },
-    { key: 'small-biz',      label: '소상공인' },
-    { key: 'startup',        label: '창업' },
-    { key: 'closure-restart',label: '폐업·재창업' },
-    { key: 'debt-relief',    label: '채무조정' },
-    { key: 'employment',     label: '취업' },
-    { key: 'housing',        label: '주거' },
-    { key: 'medical',        label: '의료' },
-    { key: 'education',      label: '교육' },
-    { key: 'basic-living',   label: '기초생활' },
-    { key: 'senior',         label: '노인' },
+    { key: 'youth',           label: '청년' },
+    { key: 'small-biz',       label: '소상공인' },
+    { key: 'startup',         label: '창업' },
+    { key: 'closure-restart', label: '폐업·재창업' },
+    { key: 'debt-relief',     label: '채무조정' },
+    { key: 'employment',      label: '취업' },
+    { key: 'housing',         label: '주거' },
+    { key: 'medical',         label: '의료' },
+    { key: 'education',       label: '교육' },
+    { key: 'basic-living',    label: '기초생활' },
+    { key: 'senior',          label: '노인' },
   ]
 
   const toggleCategory = (key: string) => {
@@ -71,12 +111,10 @@ export default function ProfilePage() {
     )
   }
 
-  // 지역 2단계 state
   const parsedRegion = parseRegion(profile.region || '')
   const [selectedSido, setSelectedSido] = useState(parsedRegion.sido || Object.keys(REGIONS)[0])
   const [selectedSigungu, setSelectedSigungu] = useState(parsedRegion.sigungu || '')
 
-  // 시도 변경 시 시군구 초기화
   const handleSidoChange = (sido: string) => {
     setSelectedSido(sido)
     const firstSigungu = REGIONS[sido]?.[0] || ''
@@ -89,7 +127,6 @@ export default function ProfilePage() {
     update('region', `${selectedSido} ${sigungu}`.trim())
   }
 
-  // 카카오 로그인 후 리다이렉트되어 돌아왔을 때 쿠키 확인
   useEffect(() => {
     const getCookie = (name: string) => {
       const value = `; ${document.cookie}`
@@ -97,7 +134,6 @@ export default function ProfilePage() {
       if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '')
       return null
     }
-
     const kakaoProfile = getCookie('kakao_profile')
     if (kakaoProfile) {
       try {
@@ -105,8 +141,6 @@ export default function ProfilePage() {
         if (data.name && !isKakaoLinked) {
           setProfile(prev => ({ ...prev, name: data.name }))
           setIsKakaoLinked(true)
-          
-          // 전역 상태에도 즉각 반영 (선택적)
           setUserProfile({ ...userProfile, name: data.name })
         }
       } catch (e) {
@@ -132,11 +166,9 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
-    // 1. 로컬 프로필 저장
     setUserProfile(profile)
     localStorage.setItem('push_categories', JSON.stringify(selectedCategories))
 
-    // 2. Supabase user_profiles 동기화 (카카오 유저만)
     if (kakaoUser?.id) {
       try {
         await supabase.from('user_profiles').upsert({
@@ -156,7 +188,6 @@ export default function ProfilePage() {
       }
     }
 
-    // 3. VAPID 구독 태그 업데이트 (구독 중인 경우)
     try {
       setCategorySaving(true)
       const reg = await navigator.serviceWorker.ready
@@ -211,7 +242,7 @@ export default function ProfilePage() {
     <>
       <TopBar />
       <main className="page-content">
-        {/* 프로필 헤더 - 로그인 시에만 표시 */}
+        {/* 프로필 헤더 */}
         {kakaoUser ? (
           <div className={styles.profileHero}>
             {kakaoUser.profile_image
@@ -238,307 +269,304 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* SNS 연동 */}
-        <section className="section">
-          <h2 className="section-title mb-12">소셜 계정 연결</h2>
-          {isKakaoLinked ? (
-            <div className={styles.coffeeCard} style={{ background: '#FEE500', color: '#000000', border: 'none' }}>
-              <p className={styles.coffeeTitle}>✅ 카카오 계정 연동 완료</p>
-              <p className={styles.coffeeDesc} style={{ color: '#333333' }}>카카오 계정으로 안전하게 연결되었습니다.</p>
-            </div>
-          ) : (
-            <div className={styles.coffeeCard}>
-              <p className={styles.coffeeTitle}>🔐 카카오 간편 로그인</p>
-              <p className={styles.coffeeDesc}>로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.</p>
-              <a href="/api/auth/kakao" className="btn btn-kakao w-full mt-12" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
-                1초 만에 카카오로 시작하기
-              </a>
-            </div>
-          )}
-        </section>
-
-        {/* 개인정보 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.myInfo}</h2>
-          <div className={styles.formCard}>
-            {/* 이름 */}
-            <div className={styles.formRow}>
-              <label className={styles.label}>이름</label>
-              <input
-                className={styles.input}
-                value={profile.name}
-                onChange={e => update('name', e.target.value)}
-              />
-            </div>
-
-            {/* 생년 — formRowFull로 이동하여 label과 select가 수직 정렬 */}
-            <div className={styles.formRowFull}>
-              <label className={styles.label}>{t.birthDate}</label>
-              <select
-                className={styles.selectField}
-                value={profile.birthYear}
-                onChange={e => update('birthYear', Number(e.target.value))}
-              >
-                {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
-                  const year = new Date().getFullYear() - i
-                  return <option key={year} value={year}>{year}년</option>
-                })}
-              </select>
-            </div>
-
-            {/* 성별 */}
-            <div className={styles.formRow}>
-              <label className={styles.label}>{t.gender}</label>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={`chip ${profile.gender === 'male' ? 'active' : ''}`}
-                  onClick={() => update('gender', 'male')}
-                >{t.male}</button>
-                <button
-                  className={`chip ${profile.gender === 'female' ? 'active' : ''}`}
-                  onClick={() => update('gender', 'female')}
-                >{t.female}</button>
-              </div>
-            </div>
-
-            {/* 거주지역 — 2단계 select */}
-            <div className={styles.formRowFull}>
-              <label className={styles.label}>{t.region}</label>
-              <div className={styles.selectRow}>
-                <select
-                  className={styles.selectField}
-                  value={selectedSido}
-                  onChange={e => handleSidoChange(e.target.value)}
-                >
-                  {Object.keys(REGIONS).map(sido => (
-                    <option key={sido} value={sido}>{sido}</option>
-                  ))}
-                </select>
-                <select
-                  className={styles.selectField}
-                  value={selectedSigungu}
-                  onChange={e => handleSigunguChange(e.target.value)}
-                >
-                  {(REGIONS[selectedSido] || []).map(sg => (
-                    <option key={sg} value={sg}>{sg}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 가구원 수 */}
-            <div className={styles.formRow}>
-              <label className={styles.label}>{t.householdSize}</label>
-              <div className={styles.stepper}>
-                <button className={styles.stepBtn} onClick={() => update('householdSize', Math.max(1, profile.householdSize - 1))}>-</button>
-                <span className={styles.stepValue}>{profile.householdSize}{lang === 'ko' ? '인' : 'P'}</span>
-                <button className={styles.stepBtn} onClick={() => update('householdSize', Math.min(10, profile.householdSize + 1))}>+</button>
-              </div>
-            </div>
-
-            {/* 소득분위 슬라이더 */}
-            <div className={styles.formRowFull}>
-              <div className={styles.sliderHeader}>
-                <label className={styles.label}>{t.incomeRatio}</label>
-                <span className={styles.sliderValue}>{lang === 'ko' ? `중위소득 ${profile.incomePercent}%` : `${profile.incomePercent}% Median`}</span>
-              </div>
-              <input
-                type="range"
-                className={styles.slider}
-                min={10} max={200} step={10}
-                value={profile.incomePercent}
-                onChange={e => update('incomePercent', Number(e.target.value))}
-              />
-              <div className={styles.sliderLabels}>
-                <span>기초수급</span><span>차상위</span><span>일반</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 관심 혜택 카테고리 */}
-        <section className="section">
-          <h2 className="section-title mb-12">📢 알림 받을 혜택 분야</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-            선택한 분야의 혜택이 오픈/마감 임박 시 푸시 알림을 보냅니다. (중복 선택 가능)
-          </p>
-          <div className={styles.chipGrid}>
-            {CATEGORY_CHIPS.map(({ key, label }) => (
-              <button
-                key={key}
-                className={`chip ${selectedCategories.includes(key) ? 'active' : ''}`}
-                onClick={() => toggleCategory(key)}
-              >
-                {selectedCategories.includes(key) ? '✓ ' : ''}{label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-
-        {/* 주거형태 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.housingType}</h2>
-          <div className={styles.chipRow}>
-            {housingOptions.map(h => (
-              <button
-                key={h.key}
-                className={`chip ${profile.housingType === h.key ? 'active' : ''}`}
-                onClick={() => update('housingType', h.key)}
-              >{h.label}</button>
-            ))}
-          </div>
-        </section>
-
-        {/* 고용상태 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.employmentStatus}</h2>
-          <div className={styles.chipRow}>
-            {employmentOptions.map(e => (
-              <button
-                key={e.key}
-                className={`chip ${profile.employmentStatus === e.key ? 'active' : ''}`}
-                onClick={() => update('employmentStatus', e.key as UserProfile['employmentStatus'])}
-              >{e.label}</button>
-            ))}
-          </div>
-        </section>
-
-        {/* 특이사항 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.specialStatus}</h2>
-          <div className={styles.chipRow}>
-            {specialOptions.map(s => (
-              <button
-                key={s.key}
-                className={`chip ${profile.specialStatus.includes(s.key) ? 'active-purple' : ''}`}
-                onClick={() => toggleSpecial(s.key)}
-              >{s.label}</button>
-            ))}
-          </div>
-        </section>
-
-        {/* 알림 설정 */}
-        <section className="section">
-          <h2 className="section-title mb-12">{t.notificationSettings}</h2>
-          <div className={styles.notifCard}>
-            {/* 푸시 알림 */}
-            <PushToggle />
-            <div className={styles.divider} />
-            {/* 카카오 알림 */}
-            <div className={styles.notifRow}>
-              <div>
-                <p className={styles.notifLabel}>💬 {t.kakaoNotification}</p>
-                <p className={styles.notifDesc}>카카오톡으로 혜택 마감 알림을 받습니다</p>
-              </div>
-              <button
-                className={`toggle ${profile.kakaoAlerts ? 'on' : ''}`}
-                onClick={() => update('kakaoAlerts', !profile.kakaoAlerts)}
-              />
-            </div>
-            {/* 알림 시점 */}
-            {profile.kakaoAlerts && (
-              <div className={styles.alertDays}>
-                <p className={styles.notifLabel}>{t.notifyBefore}</p>
-                <div className={styles.chipRow}>
-                  {[14, 7, 3, 1].map(d => (
-                    <button
-                      key={d}
-                      className={`chip ${profile.alertDays.includes(d) ? 'active-blue' : ''}`}
-                      onClick={() => toggleAlertDay(d)}
-                    >
-                      {d === 1 ? (lang === 'ko' ? '당일' : 'Today') : `D-${d}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* 맞춤 추천 */}
-            <div className={styles.notifRow}>
-              <div>
-                <p className={styles.notifLabel}>⭐ {t.personalizedRec}</p>
-                <p className={styles.notifDesc}>프로필 기반 맞춤 혜택을 추천받습니다</p>
-              </div>
-              <div className="toggle on" />
-            </div>
-          </div>
-        </section>
-
-        {/* 프리미엄 배너 */}
-        {!isPremium && (
-          <section className="section">
-            <div className={styles.premiumBanner}>
-              <div className={styles.premiumLeft}>
-                <span className="badge badge-purple-soft">{t.premium}</span>
-                <p className={styles.premiumTitle}>{t.premiumFeatures}</p>
-              </div>
-              <div className={styles.premiumRight}>
-                <p className={styles.premiumPrice}>₩4,900<small>{t.perMonth}</small></p>
-                <a
-                  href="/premium"
-                  className={`btn btn-primary`}
-                  style={{ padding: '8px 16px', fontSize: 13, display: 'inline-block', textDecoration: 'none' }}
-                >
-                  기능 알아보기
-                </a>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 카카오 채널 */}
-        <section className="section">
-          <div className={styles.coffeeCard} style={{ background: 'linear-gradient(135deg, #FEF9C3 0%, #FEF3C7 100%)', border: '1px solid #FDE68A' }}>
-            <p className={styles.coffeeTitle}>💬 카카오톡 채널 추가하기</p>
-            <p className={styles.coffeeDesc}>혜택알리미 채널을 추가하면 최신 혜택 소식을 카카오톡으로 받을 수 있습니다</p>
-            <a
-              href={`https://pf.kakao.com/${KAKAO_CHANNEL_ID}/friend`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`btn btn-kakao w-full mt-12`}
-              style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}
-            >
-              카카오톡 채널 추가 @hyetack-alimi
-            </a>
-          </div>
-        </section>
-
-        {/* 커피 후원 */}
-        <section className="section">
-          <div className={styles.coffeeCard}>
-            <p className={styles.coffeeTitle}>{t.coffeeSupport}</p>
-            <p className={styles.coffeeDesc}>{t.supportDesc}</p>
-            {/* 카카오페이 송금 링크 */}
-            {process.env.NEXT_PUBLIC_KAKAOPAY_LINK && (
-              <a
-                href={process.env.NEXT_PUBLIC_KAKAOPAY_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`btn w-full mt-12`}
-                style={{ background: '#FFE812', color: '#000', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12 }}
-              >
-                💳 카카오페이로 후원하기
-              </a>
-            )}
-            {/* Buy Me a Coffee 버튼 */}
-            <a
-              href="https://www.buymeacoffee.com/stayicond"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`btn btn-outline w-full mt-12`}
-              style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12, padding: '12px 0' }}
-            >
-              ☕ Buy Me a Coffee
-            </a>
-          </div>
-        </section>
-
-        {/* 저장 버튼 */}
-        <div style={{ padding: '0 16px 20px' }}>
-          <button className={`btn btn-primary btn-full btn-lg`} onClick={handleSave}>
-            {saved ? `✅ ${t.saved}` : t.saveSettings}
+        {/* ─── 탭 네비게이션 ─── */}
+        <div className={styles.tabNav}>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'bookmarks' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('bookmarks')}
+          >
+            ❤️ {lang === 'ko' ? `저장한 혜택 ${bookmarks.length > 0 ? `(${bookmarks.length})` : ''}` : `Saved ${bookmarks.length > 0 ? `(${bookmarks.length})` : ''}`}
+          </button>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'settings' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            ⚙️ {lang === 'ko' ? '설정' : 'Settings'}
           </button>
         </div>
+
+        {/* ─── 탭 콘텐츠: 저장한 혜택 ─── */}
+        {activeTab === 'bookmarks' && (
+          <div style={{ padding: '0 0 24px' }}>
+            {benefitsLoading ? (
+              <div style={{ textAlign: 'center', padding: '48px 16px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+                <p>{lang === 'ko' ? '혜택 정보를 불러오는 중...' : 'Loading benefits...'}</p>
+              </div>
+            ) : savedBenefits.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '56px 16px' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🤍</div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+                  {lang === 'ko' ? '저장한 혜택이 없어요' : 'No saved benefits yet'}
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24 }}>
+                  {lang === 'ko' ? '마음에 드는 혜택에 ❤️를 눌러 저장하세요' : 'Tap ❤️ on any benefit to save it here'}
+                </p>
+                <Link
+                  href="/search"
+                  className="btn btn-primary"
+                  style={{ display: 'inline-block', textDecoration: 'none', padding: '12px 28px' }}
+                >
+                  {lang === 'ko' ? '혜택 둘러보기 →' : 'Browse Benefits →'}
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {savedBenefits.map(b => (
+                  <div key={b.id} className={styles.bookmarkItem}>
+                    <Link href={`/detail/${b.id}`} className={styles.bookmarkContent}>
+                      <div className={styles.bookmarkMeta}>
+                        <span className="badge badge-coral-soft" style={{ fontSize: 11 }}>
+                          {lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}
+                        </span>
+                        {b.dDay >= 0 && b.dDay <= 14 && (
+                          <span className="badge" style={{ fontSize: 11, color: getDDayColor(b.dDay) }}>
+                            {getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className={styles.bookmarkTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
+                      <p className={styles.bookmarkAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                    </Link>
+                    <div className={styles.bookmarkActions}>
+                      <button
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', fontSize: 18,
+                          color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
+                          padding: '4px', transition: 'color 0.2s',
+                        }}
+                        onClick={() => handleShare(b.id, lang === 'ko' ? b.title : b.titleEn)}
+                        aria-label={lang === 'ko' ? '공유' : 'Share'}
+                      >
+                        {sharedId === b.id ? '✅' : '📤'}
+                      </button>
+                      <button
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', fontSize: 20,
+                          color: '#ef4444', padding: '4px',
+                        }}
+                        onClick={() => toggleBookmark(b.id)}
+                        aria-label={lang === 'ko' ? '저장 취소' : 'Remove'}
+                      >
+                        ❤️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── 탭 콘텐츠: 설정 ─── */}
+        {activeTab === 'settings' && (
+          <>
+            {/* SNS 연동 */}
+            <section className="section">
+              <h2 className="section-title mb-12">소셜 계정 연결</h2>
+              {isKakaoLinked ? (
+                <div className={styles.coffeeCard} style={{ background: '#FEE500', color: '#000000', border: 'none' }}>
+                  <p className={styles.coffeeTitle}>✅ 카카오 계정 연동 완료</p>
+                  <p className={styles.coffeeDesc} style={{ color: '#333333' }}>카카오 계정으로 안전하게 연결되었습니다.</p>
+                </div>
+              ) : (
+                <div className={styles.coffeeCard}>
+                  <p className={styles.coffeeTitle}>🔐 카카오 간편 로그인</p>
+                  <p className={styles.coffeeDesc}>로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.</p>
+                  <a href="/api/auth/kakao" className="btn btn-kakao w-full mt-12" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
+                    1초 만에 카카오로 시작하기
+                  </a>
+                </div>
+              )}
+            </section>
+
+            {/* 개인정보 */}
+            <section className="section">
+              <h2 className="section-title mb-12">{t.myInfo}</h2>
+              <div className={styles.formCard}>
+                <div className={styles.formRow}>
+                  <label className={styles.label}>이름</label>
+                  <input className={styles.input} value={profile.name} onChange={e => update('name', e.target.value)} />
+                </div>
+                <div className={styles.formRowFull}>
+                  <label className={styles.label}>{t.birthDate}</label>
+                  <select className={styles.selectField} value={profile.birthYear} onChange={e => update('birthYear', Number(e.target.value))}>
+                    {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
+                      const year = new Date().getFullYear() - i
+                      return <option key={year} value={year}>{year}년</option>
+                    })}
+                  </select>
+                </div>
+                <div className={styles.formRow}>
+                  <label className={styles.label}>{t.gender}</label>
+                  <div className={styles.toggleGroup}>
+                    <button className={`chip ${profile.gender === 'male' ? 'active' : ''}`} onClick={() => update('gender', 'male')}>{t.male}</button>
+                    <button className={`chip ${profile.gender === 'female' ? 'active' : ''}`} onClick={() => update('gender', 'female')}>{t.female}</button>
+                  </div>
+                </div>
+                <div className={styles.formRowFull}>
+                  <label className={styles.label}>{t.region}</label>
+                  <div className={styles.selectRow}>
+                    <select className={styles.selectField} value={selectedSido} onChange={e => handleSidoChange(e.target.value)}>
+                      {Object.keys(REGIONS).map(sido => <option key={sido} value={sido}>{sido}</option>)}
+                    </select>
+                    <select className={styles.selectField} value={selectedSigungu} onChange={e => handleSigunguChange(e.target.value)}>
+                      {(REGIONS[selectedSido] || []).map(sg => <option key={sg} value={sg}>{sg}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.formRow}>
+                  <label className={styles.label}>{t.householdSize}</label>
+                  <div className={styles.stepper}>
+                    <button className={styles.stepBtn} onClick={() => update('householdSize', Math.max(1, profile.householdSize - 1))}>-</button>
+                    <span className={styles.stepValue}>{profile.householdSize}{lang === 'ko' ? '인' : 'P'}</span>
+                    <button className={styles.stepBtn} onClick={() => update('householdSize', Math.min(10, profile.householdSize + 1))}>+</button>
+                  </div>
+                </div>
+                <div className={styles.formRowFull}>
+                  <div className={styles.sliderHeader}>
+                    <label className={styles.label}>{t.incomeRatio}</label>
+                    <span className={styles.sliderValue}>{lang === 'ko' ? `중위소득 ${profile.incomePercent}%` : `${profile.incomePercent}% Median`}</span>
+                  </div>
+                  <input type="range" className={styles.slider} min={10} max={200} step={10} value={profile.incomePercent} onChange={e => update('incomePercent', Number(e.target.value))} />
+                  <div className={styles.sliderLabels}><span>기초수급</span><span>차상위</span><span>일반</span></div>
+                </div>
+              </div>
+            </section>
+
+            {/* 관심 혜택 카테고리 */}
+            <section className="section">
+              <h2 className="section-title mb-12">📢 알림 받을 혜택 분야</h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                선택한 분야의 혜택이 오픈/마감 임박 시 푸시 알림을 보냅니다. (중복 선택 가능)
+              </p>
+              <div className={styles.chipGrid}>
+                {CATEGORY_CHIPS.map(({ key, label }) => (
+                  <button key={key} className={`chip ${selectedCategories.includes(key) ? 'active' : ''}`} onClick={() => toggleCategory(key)}>
+                    {selectedCategories.includes(key) ? '✓ ' : ''}{label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* 주거형태 */}
+            <section className="section">
+              <h2 className="section-title mb-12">{t.housingType}</h2>
+              <div className={styles.chipRow}>
+                {housingOptions.map(h => (
+                  <button key={h.key} className={`chip ${profile.housingType === h.key ? 'active' : ''}`} onClick={() => update('housingType', h.key)}>{h.label}</button>
+                ))}
+              </div>
+            </section>
+
+            {/* 고용상태 */}
+            <section className="section">
+              <h2 className="section-title mb-12">{t.employmentStatus}</h2>
+              <div className={styles.chipRow}>
+                {employmentOptions.map(e => (
+                  <button key={e.key} className={`chip ${profile.employmentStatus === e.key ? 'active' : ''}`} onClick={() => update('employmentStatus', e.key as UserProfile['employmentStatus'])}>{e.label}</button>
+                ))}
+              </div>
+            </section>
+
+            {/* 특이사항 */}
+            <section className="section">
+              <h2 className="section-title mb-12">{t.specialStatus}</h2>
+              <div className={styles.chipRow}>
+                {specialOptions.map(s => (
+                  <button key={s.key} className={`chip ${profile.specialStatus.includes(s.key) ? 'active-purple' : ''}`} onClick={() => toggleSpecial(s.key)}>{s.label}</button>
+                ))}
+              </div>
+            </section>
+
+            {/* 알림 설정 */}
+            <section className="section">
+              <h2 className="section-title mb-12">{t.notificationSettings}</h2>
+              <div className={styles.notifCard}>
+                <PushToggle />
+                <div className={styles.divider} />
+                <div className={styles.notifRow}>
+                  <div>
+                    <p className={styles.notifLabel}>💬 {t.kakaoNotification}</p>
+                    <p className={styles.notifDesc}>카카오톡으로 혜택 마감 알림을 받습니다</p>
+                  </div>
+                  <button className={`toggle ${profile.kakaoAlerts ? 'on' : ''}`} onClick={() => update('kakaoAlerts', !profile.kakaoAlerts)} />
+                </div>
+                {profile.kakaoAlerts && (
+                  <div className={styles.alertDays}>
+                    <p className={styles.notifLabel}>{t.notifyBefore}</p>
+                    <div className={styles.chipRow}>
+                      {[14, 7, 3, 1].map(d => (
+                        <button key={d} className={`chip ${profile.alertDays.includes(d) ? 'active-blue' : ''}`} onClick={() => toggleAlertDay(d)}>
+                          {d === 1 ? (lang === 'ko' ? '당일' : 'Today') : `D-${d}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className={styles.notifRow}>
+                  <div>
+                    <p className={styles.notifLabel}>⭐ {t.personalizedRec}</p>
+                    <p className={styles.notifDesc}>프로필 기반 맞춤 혜택을 추천받습니다</p>
+                  </div>
+                  <div className="toggle on" />
+                </div>
+              </div>
+            </section>
+
+            {/* 프리미엄 배너 */}
+            {!isPremium && (
+              <section className="section">
+                <div className={styles.premiumBanner}>
+                  <div className={styles.premiumLeft}>
+                    <span className="badge badge-purple-soft">{t.premium}</span>
+                    <p className={styles.premiumTitle}>{t.premiumFeatures}</p>
+                  </div>
+                  <div className={styles.premiumRight}>
+                    <p className={styles.premiumPrice}>₩4,900<small>{t.perMonth}</small></p>
+                    <a href="/premium" className={`btn btn-primary`} style={{ padding: '8px 16px', fontSize: 13, display: 'inline-block', textDecoration: 'none' }}>
+                      기능 알아보기
+                    </a>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 카카오 채널 */}
+            <section className="section">
+              <div className={styles.coffeeCard} style={{ background: 'linear-gradient(135deg, #FEF9C3 0%, #FEF3C7 100%)', border: '1px solid #FDE68A' }}>
+                <p className={styles.coffeeTitle}>💬 카카오톡 채널 추가하기</p>
+                <p className={styles.coffeeDesc}>혜택알리미 채널을 추가하면 최신 혜택 소식을 카카오톡으로 받을 수 있습니다</p>
+                <a href={`https://pf.kakao.com/${KAKAO_CHANNEL_ID}/friend`} target="_blank" rel="noopener noreferrer" className={`btn btn-kakao w-full mt-12`} style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
+                  카카오톡 채널 추가 @hyetack-alimi
+                </a>
+              </div>
+            </section>
+
+            {/* 커피 후원 */}
+            <section className="section">
+              <div className={styles.coffeeCard}>
+                <p className={styles.coffeeTitle}>{t.coffeeSupport}</p>
+                <p className={styles.coffeeDesc}>{t.supportDesc}</p>
+                {process.env.NEXT_PUBLIC_KAKAOPAY_LINK && (
+                  <a href={process.env.NEXT_PUBLIC_KAKAOPAY_LINK} target="_blank" rel="noopener noreferrer" className={`btn w-full mt-12`} style={{ background: '#FFE812', color: '#000', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12 }}>
+                    💳 카카오페이로 후원하기
+                  </a>
+                )}
+                <a href="https://www.buymeacoffee.com/stayicond" target="_blank" rel="noopener noreferrer" className={`btn btn-outline w-full mt-12`} style={{ borderColor: '#F97316', color: '#F97316', textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px', fontWeight: 700, borderRadius: 12, padding: '12px 0' }}>
+                  ☕ Buy Me a Coffee
+                </a>
+              </div>
+            </section>
+
+            {/* 저장 버튼 */}
+            <div style={{ padding: '0 16px 20px' }}>
+              <button className={`btn btn-primary btn-full btn-lg`} onClick={handleSave}>
+                {saved ? `✅ ${t.saved}` : t.saveSettings}
+              </button>
+            </div>
+          </>
+        )}
       </main>
       <BottomNav />
     </>

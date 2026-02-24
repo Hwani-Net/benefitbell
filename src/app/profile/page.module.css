@@ -1,4 +1,97 @@
+/* ─── Tab Navigation ─── */
+.tabNav {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  margin: 0 0 4px;
+  background: var(--bg-primary);
+  position: sticky;
+  top: 56px; /* TopBar 높이 */
+  z-index: 10;
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tabBtn:hover { color: var(--text-primary); }
+
+.tabActive {
+  color: var(--color-coral, #f97316) !important;
+  border-bottom-color: var(--color-coral, #f97316) !important;
+}
+
+/* ─── Bookmark Card ─── */
+.bookmarkItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  transition: background 0.15s;
+}
+
+.bookmarkItem:last-child { border-bottom: none; }
+.bookmarkItem:active { background: var(--bg-secondary); }
+
+.bookmarkContent {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.bookmarkMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.bookmarkTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookmarkAmount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-coral, #f97316);
+  margin: 0;
+}
+
+.bookmarkActions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ─── Chip Grid (알림 카테고리) ─── */
+.chipGrid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .profileHero {
+
   display: flex;
   align-items: center;
   gap: 16px;
