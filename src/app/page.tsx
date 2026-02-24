@@ -263,6 +263,30 @@ export default function HomePage() {
           </section>
         )}
 
+        {/* 💎 프리미엄 업그레이드 배너 (비프리미엄 유저 전용) */}
+        {kakaoUser && !userProfile?.isPremium && (
+          <section className="section" style={{ padding: '0 16px', marginBottom: 8 }}>
+            <Link href="/premium" style={{ textDecoration: 'none', display: 'block' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #EC4899 100%)',
+                borderRadius: 16,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                boxShadow: '0 4px 15px rgba(124, 58, 237, 0.25)',
+              }}>
+                <span style={{ fontSize: 28, flexShrink: 0 }}>👑</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>프리미엄으로 업그레이드</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>AI 무제한 + 광고 제거 + 14일 전 알림 — 월 4,900원</div>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>→</span>
+              </div>
+            </Link>
+          </section>
+        )}
+
         {/* 카테고리 */}
         <section className="section">
           <div className="section-header">
