@@ -30,6 +30,32 @@ function SearchContent() {
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState(query)
+  const [sharedId, setSharedId] = useState<string | null>(null)
+
+  // Web Share API (web-share 스킬 준수)
+  const handleShare = useCallback(async (benefitId: string, title: string) => {
+    const url = `${window.location.origin}/detail/${benefitId}`
+    const text = lang === 'ko'
+      ? `💡 ${title} — 혜택알리미에서 확인하세요!`
+      : `💡 ${title} — Check on BenefitBell!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        setSharedId(benefitId)
+        setTimeout(() => setSharedId(null), 2500)
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          await navigator.clipboard?.writeText(url)
+          setSharedId(benefitId)
+          setTimeout(() => setSharedId(null), 2500)
+        }
+      }
+    } else {
+      await navigator.clipboard?.writeText(url)
+      setSharedId(benefitId)
+      setTimeout(() => setSharedId(null), 2500)
+    }
+  }, [lang])
 
   const recentSearches = ['기초연금 신청', '서울시 청년지원', '차상위 의료비']
   const recommendedTags = ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
@@ -224,12 +250,30 @@ function SearchContent() {
                           <p className={styles.resultAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
                           <p className={styles.resultPeriod}>📅 {b.applicationStart} ~ {b.applicationEnd}</p>
                         </div>
-                        <button
-                          className={styles.resultBookmark}
-                          onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
-                        >
-                          {isBookmarked(b.id) ? '❤️' : '🤍'}
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                          <button
+                            className={styles.resultBookmark}
+                            onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
+                          >
+                            {isBookmarked(b.id) ? '❤️' : '🤍'}
+                          </button>
+                          <button
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
+                              padding: '2px 4px',
+                              borderRadius: 6,
+                              transition: 'color 0.2s',
+                            }}
+                            onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                            aria-label={lang === 'ko' ? '공유' : 'Share'}
+                          >
+                            {sharedId === b.id ? '✅' : '📤'}
+                          </button>
+                        </div>
                       </Link>
                     ))}
                     {filtered.length === 0 && (
