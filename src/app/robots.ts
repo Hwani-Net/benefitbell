@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/profile'],
+        disallow: ['/api/', '/profile', '/premium', '/ai'],
       },
     ],
     sitemap: 'https://naedon-finder.vercel.app/sitemap.xml',

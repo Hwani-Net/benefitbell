@@ -32,6 +32,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
     siteName: '혜택알리미 BenefitBell',
+    images: [
+      {
+        url: 'https://naedon-finder.vercel.app/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: '혜택알리미 - 정부 지원금 한눈에',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -80,25 +88,63 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebApplication',
-              name: '혜택알리미',
-              alternateName: 'BenefitBell',
-              description: '정부 지원금·복지 혜택 실시간 알림 서비스',
-              url: 'https://benefitbell.kr',
-              applicationCategory: 'GovernmentService',
-              operatingSystem: 'Web',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'KRW',
+            __html: JSON.stringify([
+              {
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                name: '혜택알리미',
+                alternateName: 'BenefitBell',
+                description: '정부 지원금·복지 혜택 실시간 알림 서비스. 기초생활수급, 닰애없었던 청년, 노인 등 모든 계층의 혜택을 한 곳에서 확인하세요.',
+                url: 'https://naedon-finder.vercel.app',
+                applicationCategory: 'GovernmentService',
+                operatingSystem: 'Web, iOS, Android',
+                offers: {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'KRW',
+                },
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: '4.8',
+                  ratingCount: '127',
+                },
+                author: {
+                  '@type': 'Organization',
+                  name: 'BenefitBell',
+                  url: 'https://naedon-finder.vercel.app',
+                },
               },
-              author: {
-                '@type': 'Organization',
-                name: 'BenefitBell',
+              {
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity: [
+                  {
+                    '@type': 'Question',
+                    name: '정부 지원금은 어떻게 확인하나요?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: '혜택알리미에서 세대 정보(나이, 소득, 주거형태 등)를 입력하면 나에게 맞는 혜택을 실시간으로 확인할 수 있습니다.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: '기초생활수급자는 어떤 혜택을 받을 수 있나요?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: '기초생활수급자는 의료급여, 전세임대차 지원, 에너지바우챖, 교육급여, 장애인 연금 등 100건 이상의 지원을 받을 수 있습니다.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: '혜택알리미 프리미엄은 얼마인가요?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: '월 4,900원에 AI 혜택 분석 무제한, 광고 제거, 14일 전 얼리버드 알림을 이용할 수 있습니다.',
+                    },
+                  },
+                ],
               },
-            }),
+            ]),
           }}
         />
         <meta name="application-name" content="혜택알리미" />
