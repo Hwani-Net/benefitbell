@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
@@ -8,12 +8,38 @@ import Link from 'next/link'
 import styles from './page.module.css'
 
 export default function CalendarPage() {
-  const { t, lang } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked } = useApp()
   const now = new Date()
   const [currentDate, setCurrentDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1))
   const [selectedDay, setSelectedDay] = useState(now.getDate())
   const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
   const [loading, setLoading] = useState(true)
+  const [sharedId, setSharedId] = useState<string | null>(null)
+
+  // Web Share API
+  const handleShare = useCallback(async (benefitId: string, title: string) => {
+    const url = `${window.location.origin}/detail/${benefitId}`
+    const text = lang === 'ko'
+      ? `💡 ${title} — 혜택알리미에서 확인하세요!`
+      : `💡 ${title} — Check on BenefitBell!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+        setSharedId(benefitId)
+        setTimeout(() => setSharedId(null), 2500)
+      } catch (err) {
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          await navigator.clipboard?.writeText(url)
+          setSharedId(benefitId)
+          setTimeout(() => setSharedId(null), 2500)
+        }
+      }
+    } else {
+      await navigator.clipboard?.writeText(url)
+      setSharedId(benefitId)
+      setTimeout(() => setSharedId(null), 2500)
+    }
+  }, [lang])
 
   useEffect(() => {
     async function loadBenefits() {
@@ -183,7 +209,26 @@ export default function CalendarPage() {
                       <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
                       <p className={styles.calCardAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
                     </div>
-                    <span className={styles.calCardArrow}>›</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                      <button
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#ef4444', padding: '4px' }}
+                        onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
+                        aria-label={lang === 'ko' ? '북마크' : 'Bookmark'}
+                      >
+                        {isBookmarked(b.id) ? '❤️' : '🤍'}
+                      </button>
+                      <button
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', fontSize: 14,
+                          color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
+                          padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
+                        }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        aria-label={lang === 'ko' ? '공유' : 'Share'}
+                      >
+                        {sharedId === b.id ? '✅' : '📤'}
+                      </button>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -205,7 +250,26 @@ export default function CalendarPage() {
                       <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
                       <p className={styles.calCardDate}>{t.deadlineLabel}: {b.applicationEnd}</p>
                     </div>
-                    <span className={styles.calCardArrow}>›</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                      <button
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#ef4444', padding: '4px' }}
+                        onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
+                        aria-label={lang === 'ko' ? '북마크' : 'Bookmark'}
+                      >
+                        {isBookmarked(b.id) ? '❤️' : '🤍'}
+                      </button>
+                      <button
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', fontSize: 14,
+                          color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
+                          padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
+                        }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        aria-label={lang === 'ko' ? '공유' : 'Share'}
+                      >
+                        {sharedId === b.id ? '✅' : '📤'}
+                      </button>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -231,7 +295,26 @@ export default function CalendarPage() {
                       <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
                       <p className={styles.calCardAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
                     </div>
-                    <span className={styles.calCardArrow}>›</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                      <button
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#ef4444', padding: '4px' }}
+                        onClick={e => { e.preventDefault(); toggleBookmark(b.id) }}
+                        aria-label={lang === 'ko' ? '북마크' : 'Bookmark'}
+                      >
+                        {isBookmarked(b.id) ? '❤️' : '🤍'}
+                      </button>
+                      <button
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', fontSize: 14,
+                          color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
+                          padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
+                        }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        aria-label={lang === 'ko' ? '공유' : 'Share'}
+                      >
+                        {sharedId === b.id ? '✅' : '📤'}
+                      </button>
+                    </div>
                   </Link>
                 ))}
                 {alwaysOpenBenefits.length > 10 && (
