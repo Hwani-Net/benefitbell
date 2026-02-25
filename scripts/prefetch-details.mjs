@@ -1,6 +1,9 @@
 /**
  * 일회성 상세 데이터 사전 수집 스크립트
- * node 실행: node scripts/prefetch-details.mjs
+ * Usage:
+ *   node scripts/prefetch-details.mjs          # 미캐시 항목 전체 수집
+ *   node scripts/prefetch-details.mjs --force  # 전체 재수집 (캐시 무시)
+ *   node scripts/prefetch-details.mjs --dry    # 수집 대상 목록만 출력 (실제 호출 안 함)
  */
 import { createClient } from '@supabase/supabase-js'
 
@@ -8,6 +11,13 @@ const SUPABASE_URL = 'https://dbolydpnqefusswahfml.supabase.co'
 const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRib2x5ZHBucWVmdXNzd2FoZm1sIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTg1MzQzMywiZXhwIjoyMDg3NDI5NDMzfQ.F9jmdqaNwKIhNum-JipniKX0NyUE2mZfWxjRXgBoQy4'
 const DATA_GO_KR_KEY = 'ccb9d17949e5cb97d8349992b505b64d97f95b889afd6387c0d919038dfddc1e'
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
+
+const BATCH = 5         // 동시 처리 수 (쿼터 절약: 10→5)
+const BATCH_DELAY = 2000 // 배치 간 딜레이 ms (429 방지: 1s→2s)
+
+const args = process.argv.slice(2)
+const FORCE = args.includes('--force')
+const DRY = args.includes('--dry')
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -35,22 +45,44 @@ function cleanText(text) {
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
+/**
+ * 단일 servId 상세 조회
+ * @returns {object|null|'QUOTA'} 성공 시 row객체, 실패 시 null, 쿼터초과 시 'QUOTA'
+ */
 async function fetchDetail(servId) {
   const url = `${API_BASE}/NationalWelfaredetailedV001?serviceKey=${DATA_GO_KR_KEY}&callTp=D&servId=${servId}`
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt > 0) await sleep(2000)
     try {
       const ctrl = new AbortController()
-      const t = setTimeout(() => ctrl.abort(), 7000)
+      const t = setTimeout(() => ctrl.abort(), 8000)
       let res
       try { res = await fetch(url, { signal: ctrl.signal }) }
       finally { clearTimeout(t) }
-      
-      if (!res.ok) { continue }
+
+      // ★ 쿼터 초과: 즉시 상위에 알림
+      if (res.status === 429) {
+        const body = await res.text().catch(() => '')
+        console.error(`❌ [${servId}] 429 쿼터 초과 — ${body.substring(0, 100)}`)
+        return 'QUOTA'
+      }
+
+      if (!res.ok) {
+        console.warn(`⚠ [${servId}] HTTP ${res.status} (attempt ${attempt + 1})`)
+        continue
+      }
+
       const xml = await res.text()
-      if (!xml || xml.length < 50) continue
+      if (!xml || xml.length < 50) {
+        console.warn(`⚠ [${servId}] 빈 응답 (attempt ${attempt + 1})`)
+        continue
+      }
+
       const rc = getXmlValue(xml, 'resultCode')
-      if (rc && rc !== '0' && rc !== '00') continue
+      if (rc && rc !== '0' && rc !== '00') {
+        console.warn(`⚠ [${servId}] resultCode=${rc}: ${getXmlValue(xml, 'resultMessage')}`)
+        continue
+      }
 
       return {
         serv_id:             servId,
@@ -81,64 +113,110 @@ async function fetchDetail(servId) {
         })),
         fetched_at: new Date().toISOString(),
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      const msg = e?.name === 'AbortError' ? 'Timeout' : e?.message
+      console.warn(`⚠ [${servId}] Error: ${msg} (attempt ${attempt + 1})`)
+    }
   }
   return null
 }
 
 async function main() {
-  console.log('🚀 Starting prefetch...')
-  
-  // 1. 목록 수집
-  const listUrl = `${API_BASE}/NationalWelfarelistV001?serviceKey=${DATA_GO_KR_KEY}&callTp=L&srchKeyCode=001&pageNo=1&numOfRows=500`
+  console.log(`🚀 Prefetch 시작 (${FORCE ? 'FORCE' : 'incremental'}${DRY ? ' DRY' : ''})`)
+  console.log(`   배치: ${BATCH}개 동시, ${BATCH_DELAY}ms 간격`)
+
+  // 1. 전체 목록 수집
+  const listUrl = `${API_BASE}/NationalWelfarelistV001?serviceKey=${DATA_GO_KR_KEY}&callTp=L&srchKeyCode=001&pageNo=1&numOfRows=999`
   const listRes = await fetch(listUrl)
+  if (!listRes.ok) {
+    if (listRes.status === 429) {
+      console.error('❌ 목록 API도 429 쿼터 초과. 자정(KST) 이후 재시도하세요.')
+      process.exit(1)
+    }
+    console.error(`❌ 목록 API 실패: HTTP ${listRes.status}`)
+    process.exit(1)
+  }
   const xml = await listRes.text()
   const matches = xml.match(/<servId>([^<]+)<\/servId>/g) ?? []
   const allIds = matches.map(m => m.replace(/<\/?servId>/g, '').trim()).filter(Boolean)
-  console.log(`📋 Total IDs: ${allIds.length}`)
+  console.log(`📋 전체 ID: ${allIds.length}개`)
 
-  // 2. 기존 캐시 확인
-  const { data: cached } = await supabase.from('welfare_details').select('serv_id')
-  const cachedSet = new Set((cached ?? []).map(r => r.serv_id))
-  const toFetch = allIds.filter(id => !cachedSet.has(id))
-  console.log(`✅ Cached: ${cachedSet.size}, To fetch: ${toFetch.length}`)
-
-  // 2.5 연결 테스트 — 테이블에 단일 행 테스트 삽입
-  const testRow = { serv_id: '__TEST__', title: 'test', fetched_at: new Date().toISOString() }
-  const { error: testErr } = await supabase.from('welfare_details').upsert([testRow], { onConflict: 'serv_id' })
-  if (testErr) {
-    console.error('❌ Supabase connection/table test FAILED:', JSON.stringify(testErr))
-    console.error('=> 테이블이 생성되지 않았거나 권한 문제입니다.')
-    process.exit(1)
+  // 2. 기존 캐시 확인 (FORCE면 스킵)
+  let toFetch = allIds
+  if (!FORCE) {
+    const { data: cached, error: cacheErr } = await supabase
+      .from('welfare_details')
+      .select('serv_id')
+    if (cacheErr) {
+      console.error('❌ Supabase 캐시 조회 실패:', cacheErr.message)
+      process.exit(1)
+    }
+    const cachedSet = new Set((cached ?? []).map(r => r.serv_id))
+    toFetch = allIds.filter(id => !cachedSet.has(id))
+    console.log(`✅ 캐시: ${cachedSet.size}개, 신규 수집 대상: ${toFetch.length}개`)
   }
-  console.log('✅ Supabase connection test passed. Starting batch...')
 
-  // 3. 배치 처리 (10개씩, 1초 간격)
-  const BATCH = 10
-  let success = 0, fail = 0
+  if (toFetch.length === 0) {
+    console.log('✨ 모든 항목이 이미 캐시됨. 완료.')
+    process.exit(0)
+  }
+
+  if (DRY) {
+    console.log('📋 DRY RUN — 수집 대상 목록:')
+    toFetch.forEach(id => console.log(' -', id))
+    process.exit(0)
+  }
+
+  // 3. 배치 처리
+  let success = 0, fail = 0, quotaHit = false
+  const startTime = Date.now()
+
   for (let i = 0; i < toFetch.length; i += BATCH) {
+    if (quotaHit) break
+
     const batch = toFetch.slice(i, i + BATCH)
-    const results = (await Promise.all(batch.map(fetchDetail))).filter(Boolean)
-    
-    if (results.length > 0) {
-      const { error } = await supabase.from('welfare_details').upsert(results, { onConflict: 'serv_id' })
-      if (error) { 
-        console.error('❌ Upsert error:', JSON.stringify(error))
-        fail += batch.length 
+    const results = await Promise.all(batch.map(fetchDetail))
+
+    // 쿼터 초과 감지
+    if (results.includes('QUOTA')) {
+      quotaHit = true
+      console.error('\n🚫 쿼터 초과 감지! 수집 중단.')
+      console.error(`   진행: ${i}/${toFetch.length} (${Math.round(i / toFetch.length * 100)}%)`)
+      console.error('   자정(KST 00:00) 이후 재실행하면 중단 지점부터 이어서 수집됩니다.')
+      break
+    }
+
+    const rows = results.filter(r => r && r !== 'QUOTA')
+    if (rows.length > 0) {
+      const { error } = await supabase
+        .from('welfare_details')
+        .upsert(rows, { onConflict: 'serv_id' })
+      if (error) {
+        console.error(`❌ Supabase upsert 실패:`, error.message)
+        fail += batch.length
+      } else {
+        success += rows.length
+        fail += batch.length - rows.length
       }
-      else { success += results.length; fail += batch.length - results.length }
     } else {
       fail += batch.length
     }
-    
-    const pct = Math.round(((i + BATCH) / toFetch.length) * 100)
-    console.log(`[${pct}%] Processed ${Math.min(i + BATCH, toFetch.length)}/${toFetch.length} — success: ${success}, fail: ${fail}`)
-    
-    if (i + BATCH < toFetch.length) await sleep(1000)
+
+    const done = Math.min(i + BATCH, toFetch.length)
+    const pct = Math.round(done / toFetch.length * 100)
+    const elapsed = Math.round((Date.now() - startTime) / 1000)
+    const eta = elapsed > 0 ? Math.round((toFetch.length - done) / done * elapsed) : '?'
+    process.stdout.write(`\r[${pct}%] ${done}/${toFetch.length} — ✅ ${success} ❌ ${fail} | 경과: ${elapsed}s ETA: ${eta}s`)
+
+    if (i + BATCH < toFetch.length && !quotaHit) await sleep(BATCH_DELAY)
   }
-  
-  console.log(`\n✨ Done! Success: ${success}, Failed: ${fail}`)
+
+  console.log(`\n\n✨ 완료! ✅ ${success}개 저장, ❌ ${fail}개 실패`)
+  if (quotaHit) {
+    console.log('⚠ 쿼터 초과로 일부 미수집. 내일 재실행 필요.')
+    process.exit(2) // exit code 2 = partial
+  }
   process.exit(0)
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+main().catch(e => { console.error('❌ 치명 오류:', e.message); process.exit(1) })
