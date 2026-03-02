@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
 
 // Build a compact summary of all benefits for RAG context (from real API)
@@ -28,13 +28,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userMessage required' }, { status: 400 })
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
+      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 503 })
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const openai = new OpenAI({ apiKey })
 
     const benefitsContext = await buildBenefitsContext()
     const isKo = lang === 'ko'
@@ -65,19 +64,19 @@ Analyze the user's situation and:
 Respond ONLY in this JSON format:
 {"benefitIds": ["id1", "id2"], "message": "explanation", "reasons": {"id1": "reason1", "id2": "reason2"}}`
 
-    const result = await model.generateContent([
-      { text: systemPrompt },
-      { text: isKo ? `사용자 상황: ${userMessage}` : `User situation: ${userMessage}` },
-    ])
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: isKo ? `사용자 상황: ${userMessage}` : `User situation: ${userMessage}` },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    })
 
-    const text = result.response.text().trim()
+    const text = completion.choices[0]?.message?.content?.trim() ?? '{}'
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid AI response format' }, { status: 500 })
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(text)
     return NextResponse.json({
       benefitIds: parsed.benefitIds ?? [],
       message: parsed.message ?? '',
@@ -87,11 +86,11 @@ Respond ONLY in this JSON format:
     console.error('[ai-recommend] Error:', err)
     const msg = err instanceof Error ? err.message : String(err)
     // API Key invalid
-    if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+    if (msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
       return NextResponse.json({ error: 'AI_KEY_INVALID' }, { status: 503 })
     }
-    // Quota exceeded
-    if (msg.includes('429') || msg.includes('quota')) {
+    // Quota exceeded / rate limit
+    if (msg.includes('429') || msg.includes('quota') || msg.includes('rate_limit')) {
       return NextResponse.json({ error: 'AI_QUOTA' }, { status: 429 })
     }
     return NextResponse.json({ error: 'AI service error' }, { status: 500 })

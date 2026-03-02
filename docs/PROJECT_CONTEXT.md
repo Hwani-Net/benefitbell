@@ -71,6 +71,7 @@
 | 2026-03-03 | 서류 매핑: 화이트리스트 > Gemini | 할루시네이션 방어 + API 과금 0원 | Gemini 서류명 추출 (기각) |
 | 2026-03-03 | 서류 체크 상태 localStorage 저장 | 서버 부하 없음 + 오프라인 지원 | Firestore 저장 (과잉) |
 | 2026-03-03 | web-push 라이브러리 제거 및 FCM 도입 | 기존 VAPID 키 의존성 제거, FCM 토큰 및 firebase-admin messaging 기반 푸시 발송 구조로 완전 전환 | web-push 유지 (기각) |
+| 2026-03-03 | Gemini → OpenAI API 전환 | Gemini API Quota Exceeded 문제 해결, gpt-4o-mini는 가성비 최적 + JSON 모드 지원 | Gemini 유료 tier (기각) |
 
 ## 🔧 기술 스택
 
@@ -80,7 +81,7 @@
 | 스타일 | Vanilla CSS (CSS Modules) |
 | DB | Firestore (Firebase) |
 | Auth | Firebase Custom Token (카카오 OAuth) |
-| AI | Gemini API (`AIzaSyC3v...`) |
+| AI | OpenAI API (`gpt-4o-mini`) |
 | 푸시 | Firebase Cloud Messaging (FCM) |
 | 공공데이터 | data.go.kr 복지서비스 API |
 | 호스팅 | Netlify (상업적 사용 허용) |

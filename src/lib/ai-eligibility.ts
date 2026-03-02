@@ -1,5 +1,5 @@
 /**
- * AI Eligibility Engine — Gemini-based batch eligibility assessment
+ * AI Eligibility Engine — OpenAI-based batch eligibility assessment
  * 
  * Assesses user eligibility for benefits using profile data + benefit metadata.
  * Designed for batch processing (multiple benefits per API call) to minimize costs.
@@ -36,7 +36,7 @@ function profileHash(p: UserProfile): string {
 // ── Batch assessment ─────────────────────────────────
 /**
  * Assess eligibility for multiple benefits at once.
- * Uses a single Gemini API call for up to 10 benefits at a time.
+ * Uses a single OpenAI API call for up to 10 benefits at a time.
  * Returns cached results when available.
  */
 export async function assessBatch(
@@ -65,14 +65,14 @@ export async function assessBatch(
   for (let i = 0; i < uncached.length; i += BATCH_SIZE) {
     const batch = uncached.slice(i, i + BATCH_SIZE)
     try {
-      const batchResults = await callGeminiEligibility(profile, batch)
+      const batchResults = await callAIEligibility(profile, batch)
       for (const r of batchResults) {
         const key = `${hash}_${r.benefitId}`
         cache.set(key, r)
         results.push(r)
       }
     } catch (err) {
-      console.warn('[ai-eligibility] Gemini batch failed, using fallback:', err)
+      console.warn('[ai-eligibility] OpenAI batch failed, using fallback:', err)
       // Fallback: keyword-based scoring
       for (const b of batch) {
         const fallback = keywordFallback(profile, b)
@@ -97,7 +97,7 @@ export async function assessSingle(
   if (cached) return cached
 
   try {
-    const [result] = await callGeminiEligibility(profile, [benefit])
+    const [result] = await callAIEligibility(profile, [benefit])
     cache.set(key, result)
     return result
   } catch {
@@ -112,8 +112,8 @@ export function clearEligibilityCache() {
   cache.clear()
 }
 
-// ── Gemini API call ──────────────────────────────────
-async function callGeminiEligibility(
+// ── OpenAI API call (via /api/ai-eligibility route) ──
+async function callAIEligibility(
   profile: UserProfile,
   benefits: BenefitMeta[],
 ): Promise<EligibilityResult[]> {

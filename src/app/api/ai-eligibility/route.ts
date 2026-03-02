@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 
 /**
  * POST /api/ai-eligibility
@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
  * Input: { profile, benefits[] }
  * Output: { results: EligibilityResult[] }
  * 
- * Uses Gemini to compare user profile against benefit criteria.
+ * Uses OpenAI to compare user profile against benefit criteria.
  * Single API call handles up to 10 benefits for cost efficiency.
  */
 export async function POST(req: NextRequest) {
@@ -19,13 +19,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'profile and benefits required' }, { status: 400 })
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
+      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 503 })
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const openai = new OpenAI({ apiKey })
 
     const profileDesc = [
       `나이: ${profile.age}세`,
@@ -78,15 +77,18 @@ verdict 기준: score >= 70 → "likely", 40~69 → "partial", < 40 → "unlikel
 
 주의: 반드시 위 JSON 형식만 반환하세요. 다른 텍스트를 포함하지 마세요.`
 
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: '당신은 대한민국 정부 복지 혜택 자격 판정 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+    })
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid AI response' }, { status: 500 })
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
+    const text = completion.choices[0]?.message?.content?.trim() ?? '{}'
+    const parsed = JSON.parse(text)
 
     // Validate and normalize results
     const results = (parsed.results || []).map((r: { benefitId: string; score: number; summary: string; verdict: string }) => ({
@@ -100,7 +102,7 @@ verdict 기준: score >= 70 → "likely", 40~69 → "partial", < 40 → "unlikel
   } catch (err) {
     console.error('[ai-eligibility] Error:', err)
     const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes('429') || msg.includes('quota')) {
+    if (msg.includes('429') || msg.includes('quota') || msg.includes('rate_limit')) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     }
     return NextResponse.json({ error: 'AI eligibility service error' }, { status: 500 })

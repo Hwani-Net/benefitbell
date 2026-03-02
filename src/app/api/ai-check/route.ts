@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { fetchWelfareDetail } from '@/lib/welfare-api'
 import { getAdminFirestore } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'AI 서비스가 설정되지 않았습니다.' }, { status: 500 })
     }
@@ -76,8 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '혜택 정보를 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const openai = new OpenAI({ apiKey })
 
     const isKo = lang === 'ko'
     const prompt = isKo ? `
@@ -117,8 +116,17 @@ Respond in JSON:
 }
     `
 
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    })
+
+    const text = completion.choices[0]?.message?.content?.trim() ?? '{}'
 
     let parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] }
     try {
@@ -136,7 +144,7 @@ Respond in JSON:
   } catch (err) {
     console.error('[ai-check] Error:', err)
     const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('429') || message.toLowerCase().includes('quota')) {
+    if (message.includes('429') || message.toLowerCase().includes('quota') || message.includes('rate_limit')) {
       return NextResponse.json({ error: 'AI 서비스가 일시적으로 과부하 상태입니다.', code: 'AI_OVERLOADED' }, { status: 503 })
     }
     return NextResponse.json({ error: 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 })
