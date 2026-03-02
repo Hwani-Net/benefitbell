@@ -1,6 +1,8 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase'
+import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
 // =====================
 // i18n 딕셔너리
@@ -377,17 +379,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   }, [])
 
+  // Firebase Custom Token 감지 → signInWithCustomToken (카카오 로그인 직후)
   useEffect(() => {
-    if (kakaoUser?.id) {
-      supabase.from('user_profiles').select('is_premium').eq('kakao_id', String(kakaoUser.id)).single()
-        .then((res: any) => {
-          const { data, error } = res
-          if (data && !error) {
-            setUserProfile(prev => ({ ...prev, isPremium: data.is_premium }))
-          }
-        })
+    const token = document.cookie
+      .split('; ')
+      .find(r => r.startsWith('firebase_custom_token='))
+      ?.split('=')[1]
+
+    if (!token) return
+
+    // 즉시 쿠키 삭제 (1회성 소비)
+    document.cookie = 'firebase_custom_token=; path=/; max-age=0'
+
+    const auth = getFirebaseAuth()
+    if (!auth) return
+
+    signInWithCustomToken(auth, token).catch(err =>
+      console.warn('[firebase] signInWithCustomToken failed:', err)
+    )
+  }, [])
+
+  // Firebase Auth 상태 감지 → Firestore에서 premium 조회
+  useEffect(() => {
+    const auth = getFirebaseAuth()
+    if (!auth) {
+      // Firebase 미설정 — kakaoUser.id로 Supabase 방식 fallback 없음, 그냥 skip
+      return
     }
-  }, [kakaoUser?.id])
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) return
+      try {
+        const db = getFirebaseDb()
+        if (!db) return
+        const kakaoId = firebaseUser.uid.replace('kakao_', '')
+        const userDoc = await getDoc(doc(db, 'users', kakaoId))
+        if (userDoc.exists()) {
+          const data = userDoc.data()
+          setUserProfile(prev => ({ ...prev, isPremium: !!data.is_premium }))
+        }
+      } catch (e) {
+        console.warn('[firebase] Firestore premium check failed:', e)
+      }
+    })
+    return () => unsubscribe()
+  }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)

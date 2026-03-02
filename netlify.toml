@@ -1,0 +1,28 @@
+# Netlify 빌드 설정 — 혜택알리미 (BenefitBell)
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# ── 서비스 워커 헤더 ──────────────────────────────────────────────────────────
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Service-Worker-Allowed = "/"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/firebase-messaging-sw.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Service-Worker-Allowed = "/"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# ── Scheduled Functions (크론잡) ──────────────────────────────────────────────
+# 스케줄은 각 함수 파일 내 export const config 에서 정의
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

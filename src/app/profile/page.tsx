@@ -6,7 +6,6 @@ import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import PushToggle from '@/components/pwa/PushToggle'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import styles from './page.module.css'
 
@@ -44,16 +43,14 @@ function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kak
   useEffect(() => {
     if (!isPremium || !kakaoUserId) return
     setLoadingPayment(true)
+    // Firestore payment_logs 조회 via API
     ;(async () => {
       try {
-        const { data } = await supabase
-          .from('premium_payments')
-          .select('created_at')
-          .eq('kakao_id', String(kakaoUserId))
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        if (data?.created_at) setPaymentDate(data.created_at)
+        const res = await fetch(`/api/premium/payment-date?kakaoId=${kakaoUserId}`)
+        if (res.ok) {
+          const { date } = await res.json()
+          if (date) setPaymentDate(date)
+        }
       } finally {
         setLoadingPayment(false)
       }
@@ -164,6 +161,7 @@ export default function ProfilePage() {
   const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
+  const [profileStep, setProfileStep] = useState<1 | 2>(1)
   
   // AppContext의 userProfile이 로컬스토리지에서 늦게 불러와진 경우(hydration) 로컬 profile 상태 동기화
   useEffect(() => {
@@ -307,20 +305,24 @@ export default function ProfilePage() {
 
     if (kakaoUser?.id) {
       try {
-        await supabase.from('user_profiles').upsert({
-          kakao_id: String(kakaoUser.id),
-          nickname: kakaoUser.nickname,
-          categories: selectedCategories,
-          age_group: profile.birthYear
-            ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
-              : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
-              : 'senior')
-            : undefined,
-          region: profile.region,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'kakao_id' })
+        // Firestore users 컬렉션 업데이트 via API
+        await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kakaoId: String(kakaoUser.id),
+            nickname: kakaoUser.nickname,
+            categories: selectedCategories,
+            age_group: profile.birthYear
+              ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
+                : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
+                : 'senior')
+              : undefined,
+            region: profile.region,
+          }),
+        })
       } catch (e) {
-        console.warn('user_profiles sync failed:', e)
+        console.warn('user profile sync failed:', e)
       }
     }
 
@@ -516,101 +518,154 @@ export default function ProfilePage() {
               )}
             </section>
 
-            {/* 개인정보 */}
+            {/* 개인정보 — 2단계 위저드 */}
             <section className="section">
               <h2 className="section-title mb-12">{t.myInfo}</h2>
-              <div className={styles.formCard}>
-                <div className={styles.formRow}>
-                  <label className={styles.label}>이름</label>
-                  <input className={styles.input} value={profile.name} onChange={e => update('name', e.target.value)} />
+              {/* Progress Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--bg-secondary)', overflow: 'hidden' }}>
+                  <div style={{
+                    width: profileStep === 1 ? '50%' : '100%',
+                    height: '100%',
+                    borderRadius: 3,
+                    background: profileStep === 1 ? 'var(--primary)' : '#10b981',
+                    transition: 'width 0.3s ease',
+                  }} />
                 </div>
-                <div className={styles.formRowFull}>
-                  <label className={styles.label}>{t.birthDate}</label>
-                  <select className={styles.selectField} value={profile.birthYear} onChange={e => update('birthYear', Number(e.target.value))}>
-                    {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
-                      const year = new Date().getFullYear() - i
-                      return <option key={year} value={year}>{year}년</option>
-                    })}
-                  </select>
-                </div>
-                <div className={styles.formRow}>
-                  <label className={styles.label}>{t.gender}</label>
-                  <div className={styles.toggleGroup}>
-                    <button className={`chip ${profile.gender === 'male' ? 'active' : ''}`} onClick={() => update('gender', 'male')}>{t.male}</button>
-                    <button className={`chip ${profile.gender === 'female' ? 'active' : ''}`} onClick={() => update('gender', 'female')}>{t.female}</button>
-                  </div>
-                </div>
-                <div className={styles.formRowFull}>
-                  <label className={styles.label}>{t.region}</label>
-                  <div className={styles.selectRow}>
-                    <select className={styles.selectField} value={selectedSido} onChange={e => handleSidoChange(e.target.value)}>
-                      {Object.keys(REGIONS).map(sido => <option key={sido} value={sido}>{sido}</option>)}
-                    </select>
-                    <select className={styles.selectField} value={selectedSigungu} onChange={e => handleSigunguChange(e.target.value)}>
-                      {(REGIONS[selectedSido] || []).map(sg => <option key={sg} value={sg}>{sg}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  <label className={styles.label}>{t.householdSize}</label>
-                  <div className={styles.stepper}>
-                    <button className={styles.stepBtn} onClick={() => update('householdSize', Math.max(1, profile.householdSize - 1))}>-</button>
-                    <span className={styles.stepValue}>{profile.householdSize}{lang === 'ko' ? '인' : 'P'}</span>
-                    <button className={styles.stepBtn} onClick={() => update('householdSize', Math.min(10, profile.householdSize + 1))}>+</button>
-                  </div>
-                </div>
-                <div className={styles.formRowFull}>
-                  <div className={styles.sliderHeader}>
-                    <label className={styles.label}>{t.incomeRatio}</label>
-                    <span className={styles.sliderValue}>{lang === 'ko' ? `중위소득 ${profile.incomePercent}%` : `${profile.incomePercent}% Median`}</span>
-                  </div>
-                  <input type="range" className={styles.slider} min={10} max={200} step={10} value={profile.incomePercent} onChange={e => update('incomePercent', Number(e.target.value))} />
-                  <div className={styles.sliderLabels}><span>기초수급</span><span>차상위</span><span>일반</span></div>
-                </div>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {profileStep}/2
+                </span>
               </div>
+
+              {/* Step 1: 필수 정보 */}
+              {profileStep === 1 && (
+                <div className={styles.formCard}>
+                  <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    📋 {lang === 'ko' ? '기본 정보 (필수)' : 'Basic Info (Required)'}
+                  </p>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>이름</label>
+                    <input className={styles.input} value={profile.name} onChange={e => update('name', e.target.value)} />
+                  </div>
+                  <div className={styles.formRowFull}>
+                    <label className={styles.label}>{t.birthDate}</label>
+                    <select className={styles.selectField} value={profile.birthYear} onChange={e => update('birthYear', Number(e.target.value))}>
+                      {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
+                        const year = new Date().getFullYear() - i
+                        return <option key={year} value={year}>{year}년</option>
+                      })}
+                    </select>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.gender}</label>
+                    <div className={styles.toggleGroup}>
+                      <button className={`chip ${profile.gender === 'male' ? 'active' : ''}`} onClick={() => update('gender', 'male')}>{t.male}</button>
+                      <button className={`chip ${profile.gender === 'female' ? 'active' : ''}`} onClick={() => update('gender', 'female')}>{t.female}</button>
+                    </div>
+                  </div>
+                  <div className={styles.formRowFull}>
+                    <label className={styles.label}>{t.region}</label>
+                    <div className={styles.selectRow}>
+                      <select className={styles.selectField} value={selectedSido} onChange={e => handleSidoChange(e.target.value)}>
+                        {Object.keys(REGIONS).map(sido => <option key={sido} value={sido}>{sido}</option>)}
+                      </select>
+                      <select className={styles.selectField} value={selectedSigungu} onChange={e => handleSigunguChange(e.target.value)}>
+                        {(REGIONS[selectedSido] || []).map(sg => <option key={sg} value={sg}>{sg}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.employmentStatus}</label>
+                    <div className={styles.chipRow}>
+                      {employmentOptions.map(e => (
+                        <button key={e.key} className={`chip ${profile.employmentStatus === e.key ? 'active' : ''}`} onClick={() => update('employmentStatus', e.key as UserProfile['employmentStatus'])}>{e.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Next Step Button */}
+                  <button
+                    className="btn btn-primary btn-full"
+                    style={{ marginTop: 16 }}
+                    onClick={() => setProfileStep(2)}
+                  >
+                    {lang === 'ko' ? '다음 단계로 →' : 'Next Step →'}
+                  </button>
+                  <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
+                    💡 {lang === 'ko' ? '추가 정보를 입력하면 AI 혜택 매칭 정확도가 올라갑니다' : 'More details = better AI benefit matching accuracy'}
+                  </p>
+                </div>
+              )}
+
+              {/* Step 2: 선택 정보 */}
+              {profileStep === 2 && (
+                <div className={styles.formCard}>
+                  <p style={{ fontSize: 13, color: '#10b981', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ✨ {lang === 'ko' ? '추가 정보 (선택 — 정확도 UP!)' : 'Additional Info (Optional — Better Accuracy!)'}
+                  </p>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.householdSize}</label>
+                    <div className={styles.stepper}>
+                      <button className={styles.stepBtn} onClick={() => update('householdSize', Math.max(1, profile.householdSize - 1))}>-</button>
+                      <span className={styles.stepValue}>{profile.householdSize}{lang === 'ko' ? '인' : 'P'}</span>
+                      <button className={styles.stepBtn} onClick={() => update('householdSize', Math.min(10, profile.householdSize + 1))}>+</button>
+                    </div>
+                  </div>
+                  <div className={styles.formRowFull}>
+                    <div className={styles.sliderHeader}>
+                      <label className={styles.label}>{t.incomeRatio}</label>
+                      <span className={styles.sliderValue}>{lang === 'ko' ? `중위소득 ${profile.incomePercent}%` : `${profile.incomePercent}% Median`}</span>
+                    </div>
+                    <input type="range" className={styles.slider} min={10} max={200} step={10} value={profile.incomePercent} onChange={e => update('incomePercent', Number(e.target.value))} />
+                    <div className={styles.sliderLabels}><span>기초수급</span><span>차상위</span><span>일반</span></div>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.housingType}</label>
+                    <div className={styles.chipRow}>
+                      {housingOptions.map(h => (
+                        <button key={h.key} className={`chip ${profile.housingType === h.key ? 'active' : ''}`} onClick={() => update('housingType', h.key)}>{h.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.specialStatus}</label>
+                    <div className={styles.chipRow}>
+                      {specialOptions.map(s => (
+                        <button key={s.key} className={`chip ${profile.specialStatus.includes(s.key) ? 'active-purple' : ''}`} onClick={() => toggleSpecial(s.key)}>{s.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Navigation */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                    <button
+                      className="btn btn-outline"
+                      style={{ flex: 1 }}
+                      onClick={() => setProfileStep(1)}
+                    >
+                      {lang === 'ko' ? '← 이전' : '← Back'}
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      style={{ flex: 2 }}
+                      onClick={handleSave}
+                    >
+                      {saved ? `✅ ${t.saved}` : (lang === 'ko' ? '✓ 저장 완료' : '✓ Save All')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* 관심 혜택 카테고리 */}
             <section className="section">
-              <h2 className="section-title mb-12">📢 알림 받을 혜택 분야</h2>
+              <h2 className="section-title mb-12">📢 {lang === 'ko' ? '알림 받을 혜택 분야' : 'Benefit Categories for Alerts'}</h2>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-                선택한 분야의 혜택이 오픈/마감 임박 시 푸시 알림을 보냅니다. (중복 선택 가능)
+                {lang === 'ko' ? '선택한 분야의 혜택이 오픈/마감 임박 시 푸시 알림을 보냅니다. (중복 선택 가능)' : 'Get push notifications when benefits in selected fields open or close soon.'}
               </p>
               <div className={styles.chipGrid}>
                 {CATEGORY_CHIPS.map(({ key, label }) => (
                   <button key={key} className={`chip ${selectedCategories.includes(key) ? 'active' : ''}`} onClick={() => toggleCategory(key)}>
                     {selectedCategories.includes(key) ? '✓ ' : ''}{label}
                   </button>
-                ))}
-              </div>
-            </section>
-
-            {/* 주거형태 */}
-            <section className="section">
-              <h2 className="section-title mb-12">{t.housingType}</h2>
-              <div className={styles.chipRow}>
-                {housingOptions.map(h => (
-                  <button key={h.key} className={`chip ${profile.housingType === h.key ? 'active' : ''}`} onClick={() => update('housingType', h.key)}>{h.label}</button>
-                ))}
-              </div>
-            </section>
-
-            {/* 고용상태 */}
-            <section className="section">
-              <h2 className="section-title mb-12">{t.employmentStatus}</h2>
-              <div className={styles.chipRow}>
-                {employmentOptions.map(e => (
-                  <button key={e.key} className={`chip ${profile.employmentStatus === e.key ? 'active' : ''}`} onClick={() => update('employmentStatus', e.key as UserProfile['employmentStatus'])}>{e.label}</button>
-                ))}
-              </div>
-            </section>
-
-            {/* 특이사항 */}
-            <section className="section">
-              <h2 className="section-title mb-12">{t.specialStatus}</h2>
-              <div className={styles.chipRow}>
-                {specialOptions.map(s => (
-                  <button key={s.key} className={`chip ${profile.specialStatus.includes(s.key) ? 'active-purple' : ''}`} onClick={() => toggleSpecial(s.key)}>{s.label}</button>
                 ))}
               </div>
             </section>

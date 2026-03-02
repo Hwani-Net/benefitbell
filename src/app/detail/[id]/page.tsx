@@ -5,10 +5,12 @@ import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import AiEligibilityCheck from '@/components/ai/AiEligibilityCheck'
 import Link from 'next/link'
-import { use, useEffect, useState, useCallback } from 'react'
+import { use, useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import AdBanner from '@/components/ads/AdBanner'
 import { shareKakaoBenefit } from '@/lib/kakao'
+import { matchDocuments } from '@/data/document-urls'
 
 // Extended detail from the public API
 interface ApiDetail {
@@ -37,6 +39,7 @@ interface ApiDetail {
 
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const router = useRouter()
   const { t, lang, toggleBookmark, isBookmarked } = useApp()
   const [benefit, setBenefit] = useState<Benefit | null>(null)
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
@@ -227,7 +230,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
       <main className="page-content">
         {/* Header */}
         <div className={styles.detailHeader}>
-          <Link href="/search" className={styles.backBtn}>‹</Link>
+          <button
+            className={styles.backBtn}
+            onClick={() => router.back()}
+            aria-label="뒤로가기"
+          >‹</button>
           <span className={styles.headerTitle}>{t.benefitDetail}</span>
           <button
             className={styles.bookmarkBtn}
@@ -238,8 +245,16 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </button>
         </div>
 
+        {/* AI 자격 체크 인라인 카드 — 전략 정렬: 상단 즉시 노출 */}
+        <AiEligibilityCheck
+          benefitId={benefit.id}
+          benefitTitle={title}
+          variant="inline"
+        />
+
         {/* Hero Card */}
         <div className={styles.heroCard}>
+
           <div className={styles.heroTop}>
             <span className="badge badge-purple-soft">{category}</span>
             {benefit.dDay >= 0 && benefit.dDay <= 30 && (
@@ -389,11 +404,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </section>
         )}
 
-        {/* AI Eligibility Check */}
-        <AiEligibilityCheck
-          benefitId={benefit.id}
-          benefitTitle={title}
-        />
 
         {/* Application Methods (from API) */}
         {hasApiMethods ? (
@@ -456,19 +466,9 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </section>
         )}
 
-        {/* Required Documents */}
+        {/* Required Documents — Phase 6: 서류 원스톱 체크리스트 */}
         {docs.length > 0 && (
-          <section className="section">
-            <h2 className="section-title mb-12">{t.requiredDocuments}</h2>
-            <div className={styles.docList}>
-              {docs.map((doc, i) => (
-                <div key={i} className={styles.docItem}>
-                  <span className={styles.docIcon}>📄</span>
-                  <span className={styles.docName}>{doc}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <DocumentChecklist docs={docs} benefitId={benefit.id} />
         )}
 
         {/* 담당 기관 연락체 */}
@@ -563,5 +563,167 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
       </main>
       <BottomNav />
     </>
+   )
+}
+
+// ── Phase 6: 서류 원스톱 체크리스트 컴포넌트 ──────────────
+const GOV24_HOME = 'https://www.gov.kr/mw/AA020InfoCappView.do'
+
+function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: string }) {
+  const enriched = matchDocuments(docs)
+  const storageKey = `doc_check_${benefitId}`
+
+  const [checked, setChecked] = useState<Record<number, boolean>>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      const saved = localStorage.getItem(storageKey)
+      return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+  })
+
+  const toggle = useCallback((idx: number) => {
+    setChecked(prev => {
+      const next = { ...prev, [idx]: !prev[idx] }
+      try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [storageKey])
+
+  const checkedCount = Object.values(checked).filter(Boolean).length
+  const total = enriched.length
+  const progressPct = total > 0 ? Math.round((checkedCount / total) * 100) : 0
+
+  const borderColor = (doc: { freeOnline: boolean; issueUrl: string }) => {
+    if (doc.freeOnline) return '#10b981' // green — free
+    if (doc.issueUrl) return '#3b82f6'   // blue — paid online
+    return '#9ca3af'                      // gray — manual
+  }
+
+  return (
+    <section className="section">
+      <div style={{ marginBottom: 12 }}>
+        <h2 className="section-title" style={{ marginBottom: 4 }}>📋 필요 서류</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>
+          정부24에서 바로 발급받으세요
+        </p>
+      </div>
+
+      {/* Progress Bar */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+          <span>서류 준비 현황</span>
+          <span style={{ fontWeight: 600, color: checkedCount === total ? '#10b981' : 'var(--text-primary)' }}>
+            {checkedCount}/{total} 완료
+          </span>
+        </div>
+        <div style={{ height: 6, background: 'var(--bg-tertiary, #e5e7eb)', borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${progressPct}%`,
+            background: checkedCount === total ? '#10b981' : 'var(--primary, #7f13ec)',
+            borderRadius: 3,
+            transition: 'width 0.3s ease',
+          }} />
+        </div>
+      </div>
+
+      {/* Document List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {enriched.map((doc, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              background: checked[i] ? 'var(--bg-secondary, #f9fafb)' : 'var(--bg-primary, #fff)',
+              borderRadius: 10,
+              borderLeft: `3px solid ${borderColor(doc)}`,
+              opacity: checked[i] ? 0.7 : 1,
+              transition: 'all 0.2s ease',
+              cursor: 'pointer',
+            }}
+            onClick={() => toggle(i)}
+          >
+            {/* Checkbox */}
+            <button
+              onClick={(e) => { e.stopPropagation(); toggle(i) }}
+              aria-label={checked[i] ? '서류 준비 완료 취소' : '서류 준비 완료 체크'}
+              style={{
+                width: 22, height: 22, borderRadius: 6, border: 'none', flexShrink: 0,
+                background: checked[i] ? '#10b981' : '#e5e7eb',
+                color: '#fff', fontSize: 14, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'background 0.2s ease',
+              }}
+            >
+              {checked[i] ? '✓' : ''}
+            </button>
+
+            {/* Doc Name + Description */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontSize: 14, fontWeight: 600, margin: 0,
+                color: 'var(--text-primary)',
+                textDecoration: checked[i] ? 'line-through' : 'none',
+              }}>
+                {doc.name}
+              </p>
+              {doc.description && (
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>{doc.description}</p>
+              )}
+            </div>
+
+            {/* Issue Button */}
+            {doc.issueUrl ? (
+              <a
+                href={doc.issueUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  flexShrink: 0, padding: '4px 10px', borderRadius: 6,
+                  fontSize: 12, fontWeight: 600,
+                  background: doc.freeOnline ? '#ECFDF5' : '#EFF6FF',
+                  color: doc.freeOnline ? '#059669' : '#2563EB',
+                  textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+              >
+                {doc.freeOnline ? '무료발급' : '발급하기'}
+              </a>
+            ) : (
+              <span style={{
+                flexShrink: 0, padding: '4px 10px', borderRadius: 6,
+                fontSize: 12, color: '#9ca3af', background: '#f3f4f6', whiteSpace: 'nowrap',
+              }}>
+                본인 준비
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Action Banner — 정부24 한 번에 발급 */}
+      <a
+        href={GOV24_HOME}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 16, padding: '12px 16px', borderRadius: 10,
+          background: 'var(--primary, #7f13ec)', color: '#fff',
+          fontSize: 14, fontWeight: 600, textDecoration: 'none',
+          transition: 'opacity 0.2s',
+        }}
+      >
+        🏛️ 정부24 한 번에 발급받기 →
+      </a>
+
+      {/* Info Tip */}
+      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8, margin: '8px 0 0 0' }}>
+        대부분의 서류는 정부24에서 무료로 발급 가능합니다
+      </p>
+    </section>
   )
 }

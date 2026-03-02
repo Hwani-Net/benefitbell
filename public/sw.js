@@ -73,7 +73,17 @@ self.addEventListener('push', (event) => {
       { action: 'dismiss', title: '나중에' },
     ],
   }
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      // 열린 클라이언트에 뱃지 카운트 업 요청
+      self.clients.matchAll({ type: 'window' }).then(clientList => {
+        clientList.forEach(client => {
+          client.postMessage({ type: 'PUSH_RECEIVED', benefitId: data.data?.benefitId })
+        })
+      }),
+    ])
+  )
 })
 
 // 알림 클릭 시 앱 열기

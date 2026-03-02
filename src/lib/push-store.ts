@@ -5,8 +5,9 @@
  */
 
 export interface PushSub {
+  fcmToken?: string
   endpoint: string
-  keys: {
+  keys?: {
     p256dh: string
     auth: string
   }

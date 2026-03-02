@@ -2,6 +2,7 @@
 import { useApp } from '@/lib/context'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import styles from './BottomNav.module.css'
 
 const HomeIcon = () => (
@@ -43,25 +44,86 @@ const AiIcon = () => (
   </svg>
 )
 
+/**
+ * Unread notification badge.
+ * SW push event stores a flag in localStorage: 'push_unread_count'
+ * Cleared when user visits /profile or /ai page.
+ */
+function useUnreadBadge(pathname: string) {
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    function syncUnread() {
+      try {
+        const count = parseInt(localStorage.getItem('push_unread_count') || '0', 10)
+        setUnread(isNaN(count) ? 0 : count)
+      } catch { /* ignore */ }
+    }
+    syncUnread()
+    window.addEventListener('push_unread_changed', syncUnread)
+    return () => window.removeEventListener('push_unread_changed', syncUnread)
+  }, [])
+
+  // Clear badge when visiting home or profile
+  useEffect(() => {
+    if (pathname === '/' || pathname === '/profile') {
+      try {
+        localStorage.setItem('push_unread_count', '0')
+        setUnread(0)
+      } catch { /* ignore */ }
+    }
+  }, [pathname])
+
+  return unread
+}
+
 export default function BottomNav() {
   const { t } = useApp()
   const pathname = usePathname()
+  const unread = useUnreadBadge(pathname)
 
   const tabs = [
-    { href: '/', label: t.home, Icon: HomeIcon },
-    { href: '/search', label: t.search, Icon: SearchIcon },
-    { href: '/ai', label: t.aiRecommend, Icon: AiIcon },
-    { href: '/calendar', label: t.calendar, Icon: CalendarIcon },
-    { href: '/profile', label: t.myPage, Icon: ProfileIcon },
+    { href: '/', label: t.home, Icon: HomeIcon, badge: unread },
+    { href: '/search', label: t.search, Icon: SearchIcon, badge: 0 },
+    { href: '/ai', label: t.aiRecommend, Icon: AiIcon, badge: 0 },
+    { href: '/calendar', label: t.calendar, Icon: CalendarIcon, badge: 0 },
+    { href: '/profile', label: t.myPage, Icon: ProfileIcon, badge: 0 },
   ]
 
   return (
     <nav className={styles.nav}>
-      {tabs.map(({ href, label, Icon }) => {
+      {tabs.map(({ href, label, Icon, badge }) => {
         const active = pathname === href
         return (
           <Link key={href} href={href} className={`${styles.tab} ${active ? styles.active : ''}`}>
-            <Icon />
+            <span style={{ position: 'relative', display: 'inline-flex' }}>
+              <Icon />
+              {badge > 0 && (
+                <span
+                  aria-label={`${badge}개 알림`}
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -6,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    background: '#ef4444',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 3px',
+                    lineHeight: 1,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              )}
+            </span>
             <span className={styles.label}>{label}</span>
           </Link>
         )

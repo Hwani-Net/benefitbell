@@ -74,7 +74,7 @@ function SearchContent() {
         const res = await fetch('/api/benefits')
         if (!res.ok) throw new Error('API return not ok')
         const json = await res.json()
-        setBenefits(json.data)
+        setBenefits((json.data as Benefit[]).filter((b: Benefit) => b.status !== 'closed'))
       } catch (err) {
         console.error('Failed to load search benefits', err)
       } finally {

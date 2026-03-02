@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase'
+import { getAdminFirestore } from '@/lib/firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24시간
@@ -30,7 +31,7 @@ function cleanText(text: string): string {
     .trim()
 }
 
-/** Supabase row → API response shape 변환 */
+/** Firestore 행 → API response shape 변환 */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToDetail(row: any, id: string, servId: string) {
   return {
@@ -74,29 +75,25 @@ export async function GET(
   }
 
   // ──────────────────────────────────────────
-  // 1. Supabase 캐시 먼저 확인 (24시간 TTL)
+  // 1. Firestore 캐시 먼저 확인 (24시간 TTL)
   // ──────────────────────────────────────────
   try {
-    const supabase = createServiceClient()
-    const { data: cached } = await supabase
-      .from('welfare_details')
-      .select('*')
-      .eq('serv_id', servId)
-      .single()
-
-    if (cached) {
-      const age = Date.now() - new Date(cached.fetched_at).getTime()
+    const db = getAdminFirestore()
+    const cacheDoc = await db.collection('benefit_cache').doc(servId).get()
+    if (cacheDoc.exists) {
+      const cached = cacheDoc.data()!
+      const cachedAt = cached.fetched_at?.toDate?.() ?? new Date(0)
+      const age = Date.now() - cachedAt.getTime()
       if (age < CACHE_TTL_MS) {
-        // 캐시 히트 — 즉시 반환
         return NextResponse.json({
           success: true,
-          data: rowToDetail(cached, id, servId),
+          data: rowToDetail(cached.data, id, servId),
           source: 'cache',
         })
       }
     }
   } catch {
-    // Supabase 연결 오류는 무시하고 API 호출로 진행
+    // Firestore 오류 시 API 호출로 진행
   }
 
   if (!DATA_GO_KR_SERVICE_KEY || DATA_GO_KR_SERVICE_KEY === 'placeholder') {
@@ -200,9 +197,8 @@ export async function GET(
       }
 
       return NextResponse.json({ success: true, data: detail, source: 'api' })
-      // NOTE: Supabase 저장은 응답 반환 후 처리 (fire-and-forget)
-      // Edge runtime에서 waitUntil을 쓰려면 별도 처리 필요하므로,
-      // 우선 응답을 먼저 반환하고 백그라운드 저장은 cron이 처리
+      // NOTE: Firestore 저장은 응답 반환 후 백그라운드로 (fire-and-forget)
+      // getAdminFirestore().collection('benefit_cache').doc(servId).set({ data: detail, fetched_at: FieldValue.serverTimestamp() })
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

@@ -213,13 +213,12 @@ export default function AiPage() {
         {/* Error state */}
         {error && (
           <div className={styles.errorBox}>
-            <p>⚠️ {error}</p>
-            {error.includes('GEMINI_API_KEY') && (
-              <p className={styles.errorHint}>
-                {isKo
-                  ? '관리자에게 GEMINI_API_KEY 설정을 요청해주세요.'
-                  : 'Please contact admin to configure GEMINI_API_KEY.'}
-              </p>
+            {error === 'AI_KEY_INVALID' ? (
+              <p>⚠️ {isKo ? 'AI 서비스 점검 중입니다. 잠시 후 다시 시도해주세요.' : 'AI service is under maintenance. Please try again later.'}</p>
+            ) : error === 'AI_QUOTA' ? (
+              <p>⚠️ {isKo ? 'AI 서비스 사용량이 일시적으로 초과되었습니다. 잠시 후 다시 시도해주세요.' : 'AI service is temporarily overloaded. Please try again shortly.'}</p>
+            ) : (
+              <p>⚠️ {isKo ? 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.' : 'AI analysis failed. Please try again later.'}</p>
             )}
           </div>
         )}

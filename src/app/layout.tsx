@@ -3,6 +3,7 @@ import { AppProvider } from '@/lib/context'
 import Script from 'next/script'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import InstallBanner from '@/components/pwa/InstallBanner'
+import PushMessageReceiver from '@/components/pwa/PushMessageReceiver'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     siteName: '혜택알리미 BenefitBell',
     images: [
       {
-        url: 'https://naedon-finder.vercel.app/og-image.png',
+        url: 'https://benefitbell.kr/og-image.png',
         width: 1200,
         height: 630,
         alt: '혜택알리미 - 정부 지원금 한눈에',
@@ -94,8 +95,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 '@type': 'SoftwareApplication',
                 name: '혜택알리미',
                 alternateName: 'BenefitBell',
-                description: '정부 지원금·복지 혜택 실시간 알림 서비스. 기초생활수급, 닰애없었던 청년, 노인 등 모든 계층의 혜택을 한 곳에서 확인하세요.',
-                url: 'https://naedon-finder.vercel.app',
+                description: '정부 지원금·복지 혜택 실시간 알림 서비스. 기초생활수급, 청년, 장년, 노인 등 모든 계층의 혜택을 한 곳에서 확인하세요.',
+                url: 'https://benefitbell.kr',
                 applicationCategory: 'GovernmentService',
                 operatingSystem: 'Web, iOS, Android',
                 offers: {
@@ -111,7 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 author: {
                   '@type': 'Organization',
                   name: 'BenefitBell',
-                  url: 'https://naedon-finder.vercel.app',
+                  url: 'https://benefitbell.kr',
                 },
               },
               {
@@ -170,6 +171,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="app-container">
             {children}
             <InstallBanner />
+            <PushMessageReceiver />
           </div>
         </AppProvider>
         {/* Service Worker 등록 */}

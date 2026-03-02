@@ -85,6 +85,15 @@ Respond ONLY in this JSON format:
     })
   } catch (err) {
     console.error('[ai-recommend] Error:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    // API Key invalid
+    if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+      return NextResponse.json({ error: 'AI_KEY_INVALID' }, { status: 503 })
+    }
+    // Quota exceeded
+    if (msg.includes('429') || msg.includes('quota')) {
+      return NextResponse.json({ error: 'AI_QUOTA' }, { status: 429 })
+    }
     return NextResponse.json({ error: 'AI service error' }, { status: 500 })
   }
 }

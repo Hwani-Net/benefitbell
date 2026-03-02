@@ -6,11 +6,18 @@
  *   node scripts/prefetch-details.mjs --dry    # 수집 대상 목록만 출력 (실제 호출 안 함)
  */
 import { createClient } from '@supabase/supabase-js'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
 
-const SUPABASE_URL = 'https://dbolydpnqefusswahfml.supabase.co'
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRib2x5ZHBucWVmdXNzd2FoZm1sIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTg1MzQzMywiZXhwIjoyMDg3NDI5NDMzfQ.F9jmdqaNwKIhNum-JipniKX0NyUE2mZfWxjRXgBoQy4'
-const DATA_GO_KR_KEY = 'ccb9d17949e5cb97d8349992b505b64d97f95b889afd6387c0d919038dfddc1e'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const DATA_GO_KR_KEY = process.env.DATA_GO_KR_SERVICE_KEY
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
+
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !DATA_GO_KR_KEY) {
+  console.error('❌ 필수 환경변수 누락: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DATA_GO_KR_SERVICE_KEY')
+  process.exit(1)
+}
 
 const BATCH = 5         // 동시 처리 수 (쿼터 절약: 10→5)
 const BATCH_DELAY = 2000 // 배치 간 딜레이 ms (429 방지: 1s→2s)

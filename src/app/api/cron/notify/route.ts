@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+import { getAdminMessaging } from '@/lib/firebase-admin'
 import { getSubscriptions, removeSubscription } from '@/lib/push-store'
 import { calculateDDay, fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
 
@@ -25,17 +25,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'No subscriptions', sent: 0 })
   }
 
-  // Setup VAPID
-  try {
-    webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:stayicon@gmail.com',
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-      process.env.VAPID_PRIVATE_KEY!
-    )
-  } catch (err) {
-    console.error('[Cron] VAPID setup failed:', err)
-    return NextResponse.json({ error: 'VAPID config error' }, { status: 500 })
-  }
+  // VAPID Setup is no longer needed with FCM
 
   // Find urgent benefits (D-Day <= 3) from real API
   const apiItems = await fetchAllWelfareList()
@@ -60,14 +50,28 @@ export async function GET(req: Request) {
   })
 
   // Send to all subscribers
+  const messaging = getAdminMessaging()
   const results = await Promise.allSettled(
-    subs.map(sub => webpush.sendNotification(sub, payload))
+    subs.map(async sub => {
+      if (sub.fcmToken) {
+        return messaging.send({
+          token: sub.fcmToken,
+          notification: {
+            title: `🔔 마감 임박! ${urgentBenefits.length}건의 혜택`,
+            body: `${topBenefit.title} - ${dDayText}\n${topBenefit.amount}`,
+          },
+          data: { url: `/detail/${topBenefit.id}` }
+        })
+      } else {
+        throw { code: 'messaging/registration-token-not-registered' }
+      }
+    })
   )
 
   // Cleanup expired
   results.forEach((r, i) => {
-    if (r.status === 'rejected' && (r.reason as { statusCode?: number })?.statusCode === 410) {
-      removeSubscription(subs[i].endpoint).catch(() => {})
+    if (r.status === 'rejected' && ((r.reason as any)?.code === 'messaging/registration-token-not-registered' || (r.reason as any)?.code === 'messaging/invalid-registration-token')) {
+      removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(() => {})
     }
   })
 

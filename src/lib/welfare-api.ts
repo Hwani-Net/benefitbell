@@ -195,9 +195,22 @@ export async function fetchWelfareList(pageNo = 1, numOfRows = 500): Promise<Wel
       return []
     }
 
-    const LIST_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
-    const items = xmlParseItems(text, LIST_FIELDS)
-    return items as unknown as WelfareListItem[]
+    // ⚠️ 실제 XML 태그: jurMnofNm(부처명), lifeArray(생애주기), intrsThemaArray(관심주제)
+    const RAW_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+    const items = xmlParseItems(text, RAW_FIELDS).map(item => ({
+      servId: item.servId,
+      servNm: item.servNm,
+      servDgst: item.servDgst,
+      jurOrgNm: item.jurMnofNm,
+      lifeNmArray: item.lifeArray,
+      intrsThemNmArray: item.intrsThemaArray,
+      trgterIndvdlArray: item.trgterIndvdlArray,
+      servDtlLink: item.servDtlLink,
+      inqNum: Number(item.inqNum) || 0,
+      svcfrstRegTs: item.svcfrstRegTs,
+      lastModYmd: item.lastModYmd,
+    })) as WelfareListItem[]
+    return items
   } catch (err) {
     console.error('[welfare-api] List fetch error:', err)
     return []
@@ -214,7 +227,23 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
 
   const numOfRows = 500
   const allItems: WelfareListItem[] = []
-  const LIST_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+  // ⚠️ 실제 XML 태그: jurMnofNm(부처명), lifeArray(생애주기), intrsThemaArray(관심주제)
+  const RAW_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+
+  const remapItems = (raw: Record<string, string>[]): WelfareListItem[] =>
+    raw.map(item => ({
+      servId: item.servId,
+      servNm: item.servNm,
+      servDgst: item.servDgst,
+      jurOrgNm: item.jurMnofNm,
+      lifeNmArray: item.lifeArray,
+      intrsThemNmArray: item.intrsThemaArray,
+      trgterIndvdlArray: item.trgterIndvdlArray,
+      servDtlLink: item.servDtlLink,
+      inqNum: Number(item.inqNum) || 0,
+      svcfrstRegTs: item.svcfrstRegTs,
+      lastModYmd: item.lastModYmd,
+    }))
 
   try {
     // First page to get totalCount
@@ -230,8 +259,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
     }
 
     const totalCount = parseInt(xmlGet(firstText, 'totalCount') || '0', 10)
-    const firstItems = xmlParseItems(firstText, LIST_FIELDS)
-    allItems.push(...(firstItems as unknown as WelfareListItem[]))
+    allItems.push(...remapItems(xmlParseItems(firstText, RAW_FIELDS)))
 
     console.log(`[welfare-api] Total: ${totalCount}, fetched page 1 (${allItems.length})`)
 
@@ -245,7 +273,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
           const res = await fetch(url, { next: { revalidate: 3600 } })
           if (!res.ok) return []
           const text = await res.text()
-          return xmlParseItems(text, LIST_FIELDS) as unknown as WelfareListItem[]
+          return remapItems(xmlParseItems(text, RAW_FIELDS))
         })
       )
       results.forEach(items => allItems.push(...items))

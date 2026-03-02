@@ -1,34 +1,28 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase'
+import { getAdminFirestore } from '@/lib/firebase-admin'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { subscription, categories = [], age_group, region } = body
+    const { fcmToken, categories = [], age_group, region } = body
 
-    // Support both { subscription, categories } or bare subscription
-    const sub = subscription ?? body
-    const endpoint: string = sub.endpoint
-    const p256dh: string = sub.keys?.p256dh ?? sub.p256dh ?? ''
-    const auth: string = sub.keys?.auth ?? sub.auth ?? ''
-
-    if (!endpoint || !p256dh || !auth) {
-      return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 })
+    if (!fcmToken) {
+      return NextResponse.json({ error: 'Invalid subscription data: fcmToken is required' }, { status: 400 })
     }
 
-    const supabase = createServiceClient()
-    const { error } = await supabase.from('push_subscriptions').upsert(
-      { endpoint, p256dh, auth, categories, age_group, region },
-      { onConflict: 'endpoint' }
+    const db = getAdminFirestore()
+    // 토큰이 길거나 특수문자가 있을 수 있으므로 base64 인코딩하여 docId로 사용
+    const docId = Buffer.from(fcmToken).toString('base64').replace(/[/+=]/g, '_').slice(0, 150)
+    
+    await db.collection('push_subscriptions').doc(docId).set(
+      { fcmToken, categories, age_group, region, updated_at: new Date() },
+      { merge: true }
     )
 
-    if (error) throw error
+    const snapshot = await db.collection('push_subscriptions').count().get()
+    const total = snapshot.data().count
 
-    const { count } = await supabase
-      .from('push_subscriptions')
-      .select('*', { count: 'exact', head: true })
-
-    return NextResponse.json({ success: true, total: count ?? 0 })
+    return NextResponse.json({ success: true, total })
   } catch (err) {
     console.error('[push/subscribe] Error:', err)
     return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
@@ -37,11 +31,9 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const supabase = createServiceClient()
-    const { count } = await supabase
-      .from('push_subscriptions')
-      .select('*', { count: 'exact', head: true })
-    return NextResponse.json({ count: count ?? 0 })
+    const db = getAdminFirestore()
+    const snapshot = await db.collection('push_subscriptions').count().get()
+    return NextResponse.json({ count: snapshot.data().count })
   } catch {
     return NextResponse.json({ count: 0 })
   }
@@ -49,9 +41,13 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
-    const { endpoint } = await req.json()
-    const supabase = createServiceClient()
-    await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
+    const { fcmToken } = await req.json()
+    if (!fcmToken) {
+      return NextResponse.json({ error: 'fcmToken required' }, { status: 400 })
+    }
+    const db = getAdminFirestore()
+    const docId = Buffer.from(fcmToken).toString('base64').replace(/[/+=]/g, '_').slice(0, 150)
+    await db.collection('push_subscriptions').doc(docId).delete()
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Failed to remove subscription' }, { status: 500 })

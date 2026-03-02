@@ -43,6 +43,10 @@ export interface Benefit {
   eligibilityChecks: { label: string; labelEn: string; pass: boolean }[]
   popular?: boolean
   new?: boolean
+  // AI eligibility fields (populated by recommendation engine)
+  aiScore?: number
+  aiSummary?: string
+  aiVerdict?: 'likely' | 'partial' | 'unlikely'
 }
 
 // =====================

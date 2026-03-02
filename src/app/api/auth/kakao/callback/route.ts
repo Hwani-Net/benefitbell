@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import { createKakaoCustomToken } from '@/lib/firebase-admin'
 
 export async function GET(request: Request) {
-  const { searchParams, host } = new URL(request.url)
+  const requestUrl = new URL(request.url)
+  const { host } = requestUrl
+  const searchParams = requestUrl.searchParams
   const code = searchParams.get('code')
   const isDev = host.includes('localhost')
 
@@ -9,20 +12,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/profile', request.url))
   }
 
-  const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID || '2ea24765291ab5909d7c489615615b92'
-  const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || 'LvPP6vSNsLX1FVIAxG9c3LSRMaMEYJWb'
+  const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID!
+  const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET!
 
   const REDIRECT_URI = isDev
-    ? 'http://localhost:3001/api/auth/kakao/callback'
-    : 'https://naedon-finder.vercel.app/api/auth/kakao/callback'
+    ? `${requestUrl.origin}/api/auth/kakao/callback`
+    : `${requestUrl.protocol}//${requestUrl.host}/api/auth/kakao/callback`
 
   try {
     // 1. Get Access Token
     const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: KAKAO_CLIENT_ID,
@@ -33,7 +34,6 @@ export async function GET(request: Request) {
     })
 
     const tokenData = await tokenResponse.json()
-    
     if (!tokenResponse.ok) {
       const errCode = tokenData.error || 'unknown'
       const errDesc = tokenData.error_description || JSON.stringify(tokenData)
@@ -42,7 +42,6 @@ export async function GET(request: Request) {
         new URL(`/profile?error=token_failed&code=${errCode}&msg=${encodeURIComponent(errDesc)}`, request.url)
       )
     }
-
 
     // 2. Get User Profile Info
     const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
@@ -54,31 +53,48 @@ export async function GET(request: Request) {
     })
 
     const userData = await userResponse.json()
-    
     if (!userResponse.ok) {
       console.error('Kakao User Info Error:', userData)
       return NextResponse.redirect(new URL('/profile?error=user_info_failed', request.url))
     }
 
+    const kakaoId = String(userData.id)
     const nickname = userData.kakao_account?.profile?.nickname || '카카오 사용자'
     const profileImage = userData.kakao_account?.profile?.profile_image_url || null
-    // Create response redirecting back to profile
+
+    // 3. Firebase Custom Token 발급
+    let firebaseCustomToken: string | null = null
+    try {
+      firebaseCustomToken = await createKakaoCustomToken(kakaoId, { nickname })
+    } catch (fbErr) {
+      // Firebase Admin 미설정(개발 초기) 시 graceful fallback
+      console.warn('[firebase] createCustomToken failed (fallback to cookie-only):', fbErr)
+    }
+
     const response = NextResponse.redirect(new URL('/profile', request.url))
-    
-    // Set cookie with user data for the client to read
+
+    // 기존 kakao_profile 쿠키 (하위 호환 유지)
     const profileData = {
       id: userData.id,
       name: nickname,
       profile_image: profileImage,
       isKakaoLinked: true,
     }
-
-    
     response.cookies.set('kakao_profile', JSON.stringify(profileData), {
       path: '/',
       maxAge: 60 * 60 * 24, // 1 day
       sameSite: 'lax',
     })
+
+    // Firebase Custom Token 쿠키 (client에서 signInWithCustomToken 호출 후 즉시 삭제)
+    if (firebaseCustomToken) {
+      response.cookies.set('firebase_custom_token', firebaseCustomToken, {
+        path: '/',
+        maxAge: 60 * 5, // 5분 — 즉시 소비용 (Firebase custom token 자체 유효기간 1시간)
+        sameSite: 'lax',
+        httpOnly: false, // 클라이언트 JS에서 읽어야 함
+      })
+    }
 
     return response
   } catch (error) {

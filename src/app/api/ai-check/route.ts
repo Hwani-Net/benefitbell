@@ -1,148 +1,144 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { fetchWelfareDetail } from '@/lib/welfare-api'
+import { getAdminFirestore } from '@/lib/firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
-// Resolve benefit id to servId (handles both "api-WLF000xxx" and raw "WLF000xxx")
+// =====================
+// Rate Limiting (free: 3 req/day, premium: unlimited) — Firestore 기반
+// =====================
+const FREE_DAILY_LIMIT = 3
+
+async function checkRateLimit(req: NextRequest, isPremium: boolean): Promise<{ allowed: boolean; remaining: number }> {
+  if (isPremium) return { allowed: true, remaining: 999 }
+
+  const cookieHeader = req.headers.get('cookie') ?? ''
+  const kakaoMatch = cookieHeader.match(/kakao_profile=([^;]+)/)
+  let identifier = 'ip:' + (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown')
+  if (kakaoMatch) {
+    try {
+      const profile = JSON.parse(decodeURIComponent(kakaoMatch[1]))
+      if (profile.id) identifier = 'kakao:' + profile.id
+    } catch { /* cookie parse failed, use IP */ }
+  }
+
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  const docId = `${identifier.replace(/[^a-zA-Z0-9_-]/g, '_')}:${today}`
+
+  try {
+    const db = getAdminFirestore()
+    const ref = db.collection('ai_rate_limits').doc(docId)
+    const snap = await ref.get()
+    const count = snap.exists ? (snap.data()?.count ?? 0) : 0
+
+    if (count >= FREE_DAILY_LIMIT) return { allowed: false, remaining: 0 }
+
+    await ref.set(
+      { count: FieldValue.increment(1), date: today, updated_at: FieldValue.serverTimestamp() },
+      { merge: true }
+    )
+    return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 }
+  } catch {
+    // Firestore 오류 시 허용 (availability > security)
+    return { allowed: true, remaining: FREE_DAILY_LIMIT }
+  }
+}
+
 function extractServId(benefitId: string): string {
   return benefitId.startsWith('api-') ? benefitId.replace('api-', '') : benefitId
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { benefitId, lang = 'ko' } = await req.json()
+    const body = await req.json()
+    const { benefitId, lang = 'ko', isPremium = false } = body
 
     if (!benefitId) {
       return NextResponse.json({ error: 'benefitId required' }, { status: 400 })
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
+    const { allowed, remaining } = await checkRateLimit(req, isPremium)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: '오늘 AI 분석 횟수를 모두 사용했어요.', code: 'RATE_LIMIT_EXCEEDED', remaining: 0 },
+        { status: 429 }
+      )
     }
 
-    // Fetch real detail from data.go.kr
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'AI 서비스가 설정되지 않았습니다.' }, { status: 500 })
+    }
+
     const servId = extractServId(benefitId)
     const detail = await fetchWelfareDetail(servId)
     if (!detail) {
-      return NextResponse.json({ error: 'Benefit not found' }, { status: 404 })
+      return NextResponse.json({ error: '혜택 정보를 찾을 수 없습니다.' }, { status: 404 })
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     const isKo = lang === 'ko'
-    const benefitInfo = isKo
-      ? `혜택명: ${detail.servNm}
-설명: ${detail.servDgst}
-지원내용: ${detail.alwServCn?.substring(0, 200) ?? ''}
-지원대상: ${detail.trgterIndvdl ?? ''}
-선정기준: ${detail.slctCriteria ?? ''}
-주관부처: ${detail.jurOrgNm}`
-      : `Benefit: ${detail.servNm}
-Description: ${detail.servDgst}
-Support: ${detail.alwServCn?.substring(0, 200) ?? ''}
-Target: ${detail.trgterIndvdl ?? ''}
-Criteria: ${detail.slctCriteria ?? ''}
-Ministry: ${detail.jurOrgNm}`
+    const prompt = isKo ? `
+다음 정부 지원 혜택에 대해 분석해주세요:
 
-    const prompt = isKo
-      ? `${benefitInfo}
+제목: ${detail.servNm}
+대상: ${detail.trgterIndvdl || '정보 없음'}
+선발 기준: ${detail.slctCriteria || '정보 없음'}
+지원 내용: ${detail.alwServCn || '정보 없음'}
+개요: ${detail.servDgst || '정보 없음'}
 
-위 혜택의 자격 조건을 확인하는 Yes/No 질문을 5개 만들어주세요.
-질문은 사용자가 쉽게 이해할 수 있어야 합니다.
-형식:
-{"questions": ["질문1", "질문2", "질문3", "질문4", "질문5"]}`
-      : `${benefitInfo}
+다음 형식의 JSON으로 답해주세요:
+{
+  "summary": ["3줄 요약 첫번째", "3줄 요약 두번째", "3줄 요약 세번째"],
+  "quickVerdict": "likely" | "partial" | "unlikely",
+  "questions": [
+    "자격 확인을 위한 질문 1",
+    "자격 확인을 위한 질문 2",
+    "자격 확인을 위한 질문 3"
+  ]
+}
 
-Create 5 Yes/No questions to check eligibility for the above benefit.
-Questions should be easy for users to understand.
-Format:
-{"questions": ["Q1", "Q2", "Q3", "Q4", "Q5"]}`
+summary는 일반인이 이해하기 쉬운 말로, quickVerdict는 이 혜택을 대부분의 사람이 받을 수 있는지 추정값입니다.
+    ` : `
+Analyze this government benefit:
+
+Title: ${detail.servNm}
+Target: ${detail.trgterIndvdl || 'N/A'}
+Criteria: ${detail.slctCriteria || 'N/A'}
+Support: ${detail.alwServCn || 'N/A'}
+
+Respond in JSON:
+{
+  "summary": ["line1", "line2", "line3"],
+  "quickVerdict": "likely" | "partial" | "unlikely",
+  "questions": ["question1", "question2", "question3"]
+}
+    `
 
     const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
+    const text = result.response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid AI response' }, { status: 500 })
+    let parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] }
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
     }
 
-    const parsed = JSON.parse(jsonMatch[0])
     return NextResponse.json({
-      benefitId,
-      benefitTitle: detail.servNm,
       questions: parsed.questions ?? [],
+      summary: parsed.summary ?? [],
+      quickVerdict: parsed.quickVerdict ?? 'partial',
+      remaining,
     })
   } catch (err) {
     console.error('[ai-check] Error:', err)
-    return NextResponse.json({ error: 'AI service error' }, { status: 500 })
-  }
-}
-
-// POST with answers to get verdict
-export async function PUT(req: NextRequest) {
-  try {
-    const { benefitId, questions, answers, lang = 'ko' } = await req.json()
-
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 })
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('429') || message.toLowerCase().includes('quota')) {
+      return NextResponse.json({ error: 'AI 서비스가 일시적으로 과부하 상태입니다.', code: 'AI_OVERLOADED' }, { status: 503 })
     }
-
-    // Fetch real detail
-    const servId = extractServId(benefitId)
-    const detail = await fetchWelfareDetail(servId)
-    if (!detail) {
-      return NextResponse.json({ error: 'Benefit not found' }, { status: 404 })
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-
-    const isKo = lang === 'ko'
-    const qa = (questions as string[]).map((q: string, i: number) =>
-      `${q}: ${(answers as boolean[])[i] ? (isKo ? '예' : 'Yes') : (isKo ? '아니오' : 'No')}`
-    ).join('\n')
-
-    const prompt = isKo
-      ? `혜택명: ${detail.servNm}
-사용자 답변:
-${qa}
-
-위 답변을 분석하여 해당 혜택을 받을 가능성을 판단해주세요.
-* likely = 80% 이상 가능성 (대부분 조건 충족)
-* partial = 일부 조건 미충족, 추가 확인 필요
-* unlikely = 해당 가능성 낮음
-
-형식:
-{"verdict": "likely|partial|unlikely", "reason": "2~3문장 설명", "tips": "추가 안내 또는 다음 단계 (선택적)"}`
-      : `Benefit: ${detail.servNm}
-User answers:
-${qa}
-
-Analyze answers and judge likelihood of eligibility.
-* likely = 80%+ likely (most conditions met)
-* partial = some conditions unmet, additional check needed
-* unlikely = unlikely to qualify
-
-Format:
-{"verdict": "likely|partial|unlikely", "reason": "2-3 sentence explanation", "tips": "additional guidance (optional)"}`
-
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid AI response' }, { status: 500 })
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
-    return NextResponse.json({
-      verdict: parsed.verdict ?? 'partial',
-      reason: parsed.reason ?? '',
-      tips: parsed.tips ?? '',
-    })
-  } catch (err) {
-    console.error('[ai-check PUT] Error:', err)
-    return NextResponse.json({ error: 'AI service error' }, { status: 500 })
+    return NextResponse.json({ error: 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }
