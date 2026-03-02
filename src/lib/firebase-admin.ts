@@ -14,17 +14,11 @@ function getAdminApp(): App {
     return adminApp
   }
 
-  // 우선순위: B64 인코딩 → JSON 문자열 → 파일 경로
-  const keyB64  = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_B64
+  // 우선순위: JSON 문자열 → 파일 경로
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH
 
-  if (keyB64) {
-    const serviceAccount = JSON.parse(
-      Buffer.from(keyB64, 'base64').toString('utf-8')
-    ) as ServiceAccount
-    adminApp = initializeApp({ credential: cert(serviceAccount) })
-  } else if (keyJson) {
+  if (keyJson) {
     const serviceAccount = JSON.parse(keyJson) as ServiceAccount
     adminApp = initializeApp({ credential: cert(serviceAccount) })
   } else if (keyPath) {
@@ -32,7 +26,7 @@ function getAdminApp(): App {
     adminApp = initializeApp({ credential: cert(require(keyPath) as ServiceAccount) })
   } else {
     throw new Error(
-      'Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY_B64, FIREBASE_SERVICE_ACCOUNT_KEY, 또는 FIREBASE_SERVICE_ACCOUNT_KEY_PATH 환경변수가 필요합니다.'
+      'Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY 또는 FIREBASE_SERVICE_ACCOUNT_KEY_PATH 환경변수가 필요합니다.'
     )
   }
 
