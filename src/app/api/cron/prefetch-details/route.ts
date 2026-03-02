@@ -115,15 +115,19 @@ export async function GET(request: Request) {
 
   // 2. 최근 캐시된 ID는 스킵 (12시간 이내 수집된 것)
   const supabase = createServiceClient()
-  const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
-  const { data: cached } = await supabase
-    .from('welfare_details')
-    .select('serv_id')
-    .gt('fetched_at', cutoff)
-  const cachedIds = new Set((cached ?? []).map((r: { serv_id: string }) => r.serv_id))
-  const toFetch = servIds.filter(id => !cachedIds.has(id))
-
-  console.log(`[prefetch] Total: ${servIds.length}, cached: ${cachedIds.size}, to fetch: ${toFetch.length}`)
+  let toFetch = servIds
+  if (supabase) {
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+    const { data: cached } = await supabase
+      .from('welfare_details')
+      .select('serv_id')
+      .gt('fetched_at', cutoff)
+    const cachedIds = new Set((cached ?? []).map((r: { serv_id: string }) => r.serv_id))
+    toFetch = servIds.filter(id => !cachedIds.has(id))
+    console.log(`[prefetch] Total: ${servIds.length}, cached: ${cachedIds.size}, to fetch: ${toFetch.length}`)
+  } else {
+    console.log('[prefetch] Supabase not configured, fetching all:', servIds.length)
+  }
 
   // 3. 배치 처리 (BATCH_SIZE개씩)
   let success = 0, failed = 0
@@ -132,7 +136,7 @@ export async function GET(request: Request) {
     const results = await Promise.all(batch.map(id => fetchDetailWithRetry(id, serviceKey)))
 
     const rows = results.filter(Boolean) as object[]
-    if (rows.length > 0) {
+    if (rows.length > 0 && supabase) {
       const { error } = await supabase
         .from('welfare_details')
         .upsert(rows, { onConflict: 'serv_id' })
@@ -143,6 +147,9 @@ export async function GET(request: Request) {
         success += rows.length
         failed += batch.length - rows.length
       }
+    } else if (rows.length > 0) {
+      // Supabase 미설정 시 카운트만
+      success += rows.length
     } else {
       failed += batch.length
     }
@@ -155,7 +162,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     total: servIds.length,
-    alreadyCached: cachedIds.size,
+    alreadyCached: servIds.length - toFetch.length,
     fetched: success,
     failed,
     timestamp: new Date().toISOString(),
