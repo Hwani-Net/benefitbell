@@ -2,7 +2,8 @@
 
 > **최종 갱신**: 2026-03-03
 > **경로**: `e:\AI_Programing\naedon-finder`
-> **서버**: `npm run dev -- -p 3007` (포트 3007)
+> **서버**: `npm run dev -- -p 3008` (포트 3008)
+> **Netlify**: https://zippy-lolly-1f23de.netlify.app
 
 ---
 
@@ -31,7 +32,7 @@
 | 5 | 킬러 피처 #2: 맞춤 푸시 (발송 이력 체크) | ✅ 완료 |
 | 6 | 킬러 피처 #3: 서류 안내 + 원스톱 | ✅ 완료 |
 | 7 | FCM 마이그레이션 (VAPID → FCM) | ✅ 완료 |
-| 8 | 배포 + 프리미엄 런칭 | ⏳ |
+| 8 | 배포 + 프리미엄 런칭 | ✅ Netlify 배포 완료 (2026-03-03) |
 
 ## ✅ TODO
 
@@ -107,6 +108,7 @@
 | 삽질 기록 | `docs/PITFALLS.md` |
 | Firebase 키 스킬 | `C:\Users\AIcreator\.agent\skills\firebase-service-account\SKILL.md` |
 | 카카오 API 키 위치 | Obsidian `kakao-api-key-location.md` |
+| **Netlify 배포 가이드** | **Obsidian `뇽죵이Agent/memory/netlify-deployment-guide.md`** |
 
 ---
 
