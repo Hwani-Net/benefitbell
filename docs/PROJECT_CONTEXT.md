@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-03 (13:50 KST)
+> **최종 갱신**: 2026-03-03 (14:10 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Netlify**: https://zippy-lolly-1f23de.netlify.app
@@ -21,7 +21,7 @@
 - ❌ PC 전용 UI / 특정 브라우저 강제 (정부24가 욕먹는 이유)
 - ❌ 시스템 자동 재알림 (김짜증 핑퐁에서 확정 — 스팸이 됨)
 
-## 📊 현재 진행률: ~90%
+## 📊 현재 진행률: ~95%
 
 | Phase | 내용 | 상태 |
 |-------|------|------|
