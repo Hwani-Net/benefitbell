@@ -311,7 +311,17 @@ export default function PremiumPage() {
           </div>
         </section>
 
+        {/* 약관 / 환불 정책 / 문의 */}
         <div style={{ padding: '16px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 8 }}>
+            <a href="/terms" style={{ fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline' }}>
+              이용약관
+            </a>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>|</span>
+            <a href="/refund-policy" style={{ fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline' }}>
+              환불 정책
+            </a>
+          </div>
           <p style={{ fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
             결제 관련 문의는 카카오톡 채널로 연락주세요 💬
           </p>
