@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { CATEGORY_INFO } from '@/data/benefits'
 
-const BASE_URL = 'https://naedon-finder.vercel.app'
+const BASE_URL = 'https://zippy-lolly-1f23de.netlify.app'
 
 // All benefit categories for search page indexing
 const CATEGORIES = Object.keys(CATEGORY_INFO) as (keyof typeof CATEGORY_INFO)[]
@@ -40,6 +40,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/refund-policy`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
     },
     {
       url: `${BASE_URL}/profile`,

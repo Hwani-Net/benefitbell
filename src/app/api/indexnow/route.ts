@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server'
 
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? 'benefitbell2026'
-const BASE_URL = 'https://naedon-finder.vercel.app'
+const BASE_URL = 'https://zippy-lolly-1f23de.netlify.app'
 
 // IndexNow endpoints — Naver + Bing (Bing shares with others)
 const ENDPOINTS = [

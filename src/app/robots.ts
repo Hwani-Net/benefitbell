@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/profile', '/premium', '/ai'],
       },
     ],
-    sitemap: 'https://naedon-finder.vercel.app/sitemap.xml',
+    sitemap: 'https://zippy-lolly-1f23de.netlify.app/sitemap.xml',
   }
 }

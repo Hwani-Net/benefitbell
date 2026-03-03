@@ -93,7 +93,7 @@ export default async function Image() {
               <span key={cat} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, display: 'flex' }}>{cat}</span>
             ))}
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, display: 'flex' }}>naedon-finder.vercel.app</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, display: 'flex' }}>benefitbell.kr</span>
         </div>
       </div>
     ),

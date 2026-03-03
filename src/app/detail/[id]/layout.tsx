@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-const BASE_URL = 'https://naedon-finder.vercel.app'
+const BASE_URL = 'https://zippy-lolly-1f23de.netlify.app'
 
 interface Props {
   params: Promise<{ id: string }>
