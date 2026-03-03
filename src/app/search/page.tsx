@@ -221,6 +221,32 @@ function SearchContent() {
               </div>
             </section>
 
+            {/* 💡 AI 상담 유도 배너 */}
+            <section className="section" style={{ marginBottom: 8 }}>
+              <Link href="/ai" style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)',
+                  borderRadius: 16,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+                }}>
+                  <span style={{ fontSize: 28, flexShrink: 0 }}>💡</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>
+                      {lang === 'ko' ? '원하는 혜택을 말로 물어보세요' : 'Describe the benefit you want'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+                      {lang === 'ko' ? 'AI가 상황을 듣고 딱 맞는 혜택을 찾아드려요' : 'AI will find the right benefits based on your situation'}
+                    </div>
+                  </div>
+                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>→</span>
+                </div>
+              </Link>
+            </section>
+
             {/* 최근 검색어 */}
             <section className="section">
               <div className="section-header">

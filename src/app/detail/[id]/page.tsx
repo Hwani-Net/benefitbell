@@ -305,6 +305,20 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
               📞 {apiDetail.phone}
             </p>
           )}
+          {/* Tags — Hero Card 내부 하단, 클릭 시 검색 이동 */}
+          {(apiDetail?.lifeStages || apiDetail?.targetGroups || apiDetail?.themes) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+              {apiDetail?.lifeStages?.split(',').map((tag, i) => (
+                <Link key={`life-${i}`} href={`/search?q=${encodeURIComponent(tag.trim())}`} className="badge badge-purple-soft" style={{ textDecoration: 'none', cursor: 'pointer' }}>{tag.trim()}</Link>
+              ))}
+              {apiDetail?.targetGroups?.split(',').map((tag, i) => (
+                <Link key={`target-${i}`} href={`/search?q=${encodeURIComponent(tag.trim())}`} className="badge badge-coral-soft" style={{ textDecoration: 'none', cursor: 'pointer' }}>{tag.trim()}</Link>
+              ))}
+              {apiDetail?.themes?.split(',').map((tag, i) => (
+                <Link key={`theme-${i}`} href={`/search?q=${encodeURIComponent(tag.trim())}`} className="badge badge-green-soft" style={{ textDecoration: 'none', cursor: 'pointer' }}>{tag.trim()}</Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* API Detailed Content Sections */}
@@ -333,24 +347,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           <section className="section">
             <h2 className="section-title mb-12">💰 지원 내용</h2>
             <div className={styles.textBlock}>{renderText(apiDetail.supportContent)}</div>
-          </section>
-        )}
-
-        {/* Tags */}
-        {(apiDetail?.lifeStages || apiDetail?.targetGroups || apiDetail?.themes) && (
-          <section className="section">
-            <h2 className="section-title mb-12">🏷️ 관련 태그</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {apiDetail?.lifeStages?.split(',').map((tag, i) => (
-                <span key={`life-${i}`} className="badge badge-purple-soft">{tag.trim()}</span>
-              ))}
-              {apiDetail?.targetGroups?.split(',').map((tag, i) => (
-                <span key={`target-${i}`} className="badge badge-coral-soft">{tag.trim()}</span>
-              ))}
-              {apiDetail?.themes?.split(',').map((tag, i) => (
-                <span key={`theme-${i}`} className="badge badge-green-soft">{tag.trim()}</span>
-              ))}
-            </div>
           </section>
         )}
 

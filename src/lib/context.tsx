@@ -18,7 +18,7 @@ export const translations = {
     search: '검색',
     calendar: '캘린더',
     myPage: '마이페이지',
-    aiRecommend: 'AI추천',
+    aiRecommend: 'AI 상담',
 
     // Home
     greeting: (name: string) => `안녕하세요, ${name}님 👋`,
@@ -163,7 +163,7 @@ export const translations = {
     search: 'Search',
     calendar: 'Calendar',
     myPage: 'My Page',
-    aiRecommend: 'AI',
+    aiRecommend: 'AI Chat',
     greeting: (name: string) => `Hello, ${name}! 👋`,
     guestGreeting: 'Find your benefits! 👋',
     urgentSubtitle: (count: number) => `${count} of your benefits are closing soon!`,

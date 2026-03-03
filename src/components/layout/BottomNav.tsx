@@ -35,12 +35,12 @@ const ProfileIcon = () => (
 
 const AiIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2a2 2 0 012 2v1a2 2 0 01-2 2 2 2 0 01-2-2V4a2 2 0 012-2z"/>
-    <path d="M12 7v10M8 9l4-2 4 2M8 15l4 2 4-2"/>
-    <circle cx="5" cy="12" r="2"/>
-    <circle cx="19" cy="12" r="2"/>
-    <line x1="7" y1="12" x2="10" y2="12"/>
-    <line x1="14" y1="12" x2="17" y2="12"/>
+    <path d="M9 18h6"/>
+    <path d="M10 22h4"/>
+    <path d="M12 2v1"/>
+    <path d="M12 7a4 4 0 014 4c0 1.5-.8 2.8-2 3.4V16H10v-1.6A4 4 0 018 11a4 4 0 014-4z"/>
+    <path d="M20 6l-1 1"/>
+    <path d="M4 6l1 1"/>
   </svg>
 )
 

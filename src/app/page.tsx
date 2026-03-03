@@ -232,6 +232,41 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* 📝 프로필 완성도 배너 (로그인 + 프로필 미입력 시) */}
+        {kakaoUser && !userProfile?.name && !loading && (
+          <section className="section" style={{ padding: '0 16px', marginBottom: 8 }}>
+            <Link href="/profile" style={{ textDecoration: 'none', display: 'block' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderRadius: 16,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, flexShrink: 0,
+                }}>
+                  📝
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>
+                    {lang === 'ko' ? '프로필을 입력하면 AI 추천이 더 정확해져요' : 'Complete your profile for better AI recommendations'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+                    {lang === 'ko' ? '나이·지역·소득 정보를 입력하세요 →' : 'Enter age, region, and income →'}
+                  </div>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>→</span>
+              </div>
+            </Link>
+          </section>
+        )}
+
         {/* 🚀 맞춤 추천 혜택 (로그인 유저 전용) */}
         {kakaoUser && personalizedBenefits.length > 0 && (
           <section className="section" style={{ background: 'var(--bg-secondary)', padding: '24px 16px', borderRadius: 20, margin: '16px' }}>
@@ -345,8 +380,8 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* 💎 프리미엄 업그레이드 배너 (비프리미엄 유저 전용) */}
-        {kakaoUser && !userProfile?.isPremium && (
+        {/* 💎 프리미엄 업그레이드 배너 (비프리미엄 유저 — 로그인 무관) */}
+        {!userProfile?.isPremium && !loading && (
           <section className="section" style={{ padding: '0 16px', marginBottom: 8 }}>
             <Link href="/premium" style={{ textDecoration: 'none', display: 'block' }}>
               <div style={{
