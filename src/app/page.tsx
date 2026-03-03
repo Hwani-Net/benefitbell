@@ -166,18 +166,18 @@ export default function HomePage() {
             </p>
             <p className={styles.subGreeting}>
               {loading
-                ? '혜택 정보를 불러오는 중...'
+                ? (lang === 'ko' ? '혜택 정보를 불러오는 중...' : 'Loading benefits...')
                 : t.urgentSubtitle(urgentBenefits.filter(b => b.dDay <= 14).length)
               }
             </p>
             {!loading && benefits.length > 0 && (
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                📊 실시간 복지서비스 {benefits.length}건 연동
+                {lang === 'ko' ? `📊 실시간 복지서비스 ${benefits.length}건 연동` : `📊 ${benefits.length} welfare services synced`}
               </p>
             )}
             {!loading && apiError && (
               <p style={{ fontSize: 11, color: 'rgba(255,200,100,0.9)', marginTop: 4 }}>
-                ⚠️ 데이터 없데이트 실패 — 잠시 후 다시 시도해주세요
+                {lang === 'ko' ? '⚠️ 데이터 업데이트 실패 — 잠시 후 다시 시도해주세요' : '⚠️ Data update failed — please try again later'}
               </p>
             )}
           </div>
@@ -202,7 +202,9 @@ export default function HomePage() {
               ))
             ) : urgentDisplay.length === 0 ? (
               <div style={{ padding: '24px', color: 'var(--text-secondary)', textAlign: 'center', width: '100%' }}>
-                {apiError ? '⚠️ 데이터를 불러오지 못했습니다. 새로고침 해주세요.' : '현재 마감 임박 혜택이 없습니다.'}
+                {apiError
+                  ? (lang === 'ko' ? '⚠️ 데이터를 불러오지 못했습니다. 새로고침 해주세요.' : '⚠️ Failed to load data. Please refresh.')
+                  : (lang === 'ko' ? '현재 마감 임박 혜택이 없습니다.' : 'No expiring benefits at the moment.')}
               </div>
             ) : (
               urgentDisplay.slice(0, 5).map((benefit, i) => (
@@ -235,15 +237,15 @@ export default function HomePage() {
           <section className="section" style={{ background: 'var(--bg-secondary)', padding: '24px 16px', borderRadius: 20, margin: '16px' }}>
             <div className="section-header">
               <h2 className="section-title">
-                ✨ {kakaoUser.nickname}님 맞춤 추천
+                {lang === 'ko' ? `✨ ${kakaoUser.nickname}님 맞춤 추천` : `✨ Personalized for ${kakaoUser.nickname}`}
                 {allPersonalizedBenefits.length > 0 && (
                   <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-coral)', background: 'var(--color-coral-light)', padding: '2px 8px', borderRadius: 99, marginLeft: 8, verticalAlign: 'middle' }}>
-                    총 {allPersonalizedBenefits.length}건
+                    {lang === 'ko' ? `총 ${allPersonalizedBenefits.length}건` : `${allPersonalizedBenefits.length} total`}
                   </span>
                 )}
               </h2>
               {allPersonalizedBenefits.length > 5 && (
-                <Link href="/search?custom=true" className="section-link">전체보기</Link>
+                <Link href="/search?custom=true" className="section-link">{lang === 'ko' ? '전체보기' : 'View All'}</Link>
               )}
             </div>
             <div className={styles.benefitList}>
@@ -309,9 +311,37 @@ export default function HomePage() {
             {/* AI disclaimer */}
             {aiScores.size > 0 && (
               <p style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8, padding: '0 16px' }}>
-                ⚠️ AI 분석 결과는 참고용이며 실제 자격은 담당 기관에 확인하세요
+                {lang === 'ko' ? '⚠️ AI 분석 결과는 참고용이며 실제 자격은 담당 기관에 확인하세요' : '⚠️ AI results are for reference only. Verify eligibility with the relevant agency.'}
               </p>
             )}
+          </section>
+        )}
+
+        {/* 🤖 비로그인 사용자용 AI 맞춤 CTA 배너 */}
+        {!kakaoUser && !loading && benefits.length > 0 && (
+          <section className="section" style={{ padding: '0 16px', marginBottom: 8 }}>
+            <Link href="/profile" style={{ textDecoration: 'none', display: 'block' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #0EA5E9 0%, #6366F1 50%, #A855F7 100%)',
+                borderRadius: 16,
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.25)',
+              }}>
+                <span style={{ fontSize: 36, flexShrink: 0 }}>🤖</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'white', lineHeight: 1.4 }}>
+                    {lang === 'ko' ? 'AI가 나에게 딱 맞는 혜택을 찾아드려요' : 'AI finds benefits tailored just for you'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>
+                    {lang === 'ko' ? '30초 프로필 입력 → 수령 가능성 % 즉시 확인' : 'Quick profile → See your eligibility % instantly'}
+                  </div>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 20, fontWeight: 700 }}>→</span>
+              </div>
+            </Link>
           </section>
         )}
 
@@ -363,6 +393,56 @@ export default function HomePage() {
               </div>
               <span className={styles.categoryLabel}>{t.allCategories}</span>
             </Link>
+          </div>
+        </section>
+
+        {/* 📊 인기 혜택 (사회적 증거 — 신규보다 먼저 배치) */}
+        <section className="section">
+          <div className="section-header">
+            <h2 className="section-title">{t.popularBenefits}</h2>
+            <span className={styles.liveTag}>{t.now}</span>
+          </div>
+          <div className={styles.benefitList}>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className={`${styles.benefitItem} shimmer`} style={{ height: 72 }} />
+              ))
+            ) : (
+              popularBenefits.slice(0, 5).map((benefit, i) => (
+                <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`}>
+                  <span className={styles.rankNum}>{i + 1}</span>
+                  <div className={styles.benefitInfo}>
+                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
+                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <div className={styles.benefitMeta}>
+                      <span className={`badge badge-gray text-xs`}>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      {benefit.dDay <= 14 && benefit.dDay >= 0 && (
+                        <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
+                          {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
+                        </span>
+                      )}
+                      {benefit.new && <span className={`badge badge-coral-soft text-xs`}>{t.newBadge}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                    <button
+                      className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
+                      onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
+                      aria-label="북마크"
+                    >
+                      {isBookmarked(benefit.id) ? '❤️' : '🤍'}
+                    </button>
+                    <button
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      aria-label={lang === 'ko' ? '공유' : 'Share'}
+                    >
+                      {sharedId === benefit.id ? '✅' : '📤'}
+                    </button>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </section>
 
@@ -419,62 +499,6 @@ export default function HomePage() {
             </div>
           </section>
         )}
-
-        {loading && (
-          <section className="section">
-            <div className="section-header">
-              <h2 className="section-title">🆕 신규 혜택</h2>
-            </div>
-            <div className={styles.benefitList}>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className={`${styles.benefitItem} shimmer`} style={{ height: 72 }} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="section">
-          <div className="section-header">
-            <h2 className="section-title">{t.popularBenefits}</h2>
-            <span className={styles.liveTag}>{t.now}</span>
-          </div>
-          <div className={styles.benefitList}>
-            {popularBenefits.slice(0, 5).map((benefit, i) => (
-              <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`}>
-                <span className={styles.rankNum}>{i + 1}</span>
-                <div className={styles.benefitInfo}>
-                  <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
-                  <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
-                  <div className={styles.benefitMeta}>
-                    <span className={`badge badge-gray text-xs`}>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
-                    {benefit.dDay <= 14 && benefit.dDay >= 0 && (
-                      <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
-                        {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
-                      </span>
-                    )}
-                    {benefit.new && <span className={`badge badge-coral-soft text-xs`}>{t.newBadge}</span>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-                  <button
-                    className={`${styles.bookmarkBtn} ${isBookmarked(benefit.id) ? styles.bookmarked : ''}`}
-                    onClick={e => { e.preventDefault(); toggleBookmark(benefit.id) }}
-                    aria-label="북마크"
-                  >
-                    {isBookmarked(benefit.id) ? '❤️' : '🤍'}
-                  </button>
-                  <button
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
-                    onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
-                    aria-label={lang === 'ko' ? '공유' : 'Share'}
-                  >
-                    {sharedId === benefit.id ? '✅' : '📤'}
-                  </button>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* Google AdSense 광고 */}
         <section className="section">

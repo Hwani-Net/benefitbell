@@ -6,6 +6,35 @@ import BottomNav from '@/components/layout/BottomNav'
 import AiEligibilityCheck from '@/components/ai/AiEligibilityCheck'
 import Link from 'next/link'
 import { use, useEffect, useState, useCallback, useRef } from 'react'
+
+// Floating CTA visibility hook — shows after scrolling down, hides when inline CTA is visible
+function useFloatingCta(ctaRef: React.RefObject<HTMLDivElement | null>) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    let ticking = false
+    const handleScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY
+        // Show after scrolling 400px
+        if (scrollY < 400) { setShow(false); ticking = false; return }
+        // Hide when inline CTA is visible
+        if (ctaRef.current) {
+          const rect = ctaRef.current.getBoundingClientRect()
+          if (rect.top < window.innerHeight && rect.bottom > 0) {
+            setShow(false); ticking = false; return
+          }
+        }
+        setShow(true)
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [ctaRef])
+  return show
+}
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import AdBanner from '@/components/ads/AdBanner'
@@ -46,6 +75,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const [loading, setLoading] = useState(true)
   const [shared, setShared] = useState(false)
   const [kakaoShared, setKakaoShared] = useState(false)
+  const ctaRef = useRef<HTMLDivElement>(null)
+  const showFloatingCta = useFloatingCta(ctaRef)
 
   // 카카오톡 공유
   const handleKakaoShare = useCallback(() => {
@@ -531,7 +562,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         </section>
 
         {/* CTA Buttons */}
-        <div className={styles.ctaArea}>
+        <div ref={ctaRef} className={styles.ctaArea}>
           {/* 카카오톡 공유 버튼 */}
           <button
             className={`btn btn-kakao ${styles.kakaoBtn}`}
@@ -561,6 +592,32 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
           </a>
         </div>
       </main>
+
+      {/* 🚀 Floating CTA Bar — 스크롤 시 하단 고정 */}
+      <div
+        className={styles.floatingCta}
+        style={{
+          transform: showFloatingCta ? 'translateY(0)' : 'translateY(100%)',
+          opacity: showFloatingCta ? 1 : 0,
+        }}
+      >
+        <button
+          className={styles.floatingShare}
+          onClick={handleKakaoShare}
+          aria-label="공유"
+        >
+          📤
+        </button>
+        <a
+          href={benefit.applyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.floatingApplyBtn}
+        >
+          {t.applyNow} →
+        </a>
+      </div>
+
       <BottomNav />
     </>
    )
