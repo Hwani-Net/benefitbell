@@ -43,3 +43,6 @@ next-env.d.ts
 .vercel
 
 test-*.mjs
+
+# Local Netlify folder
+.netlify
