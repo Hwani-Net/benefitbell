@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
 import { fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
 
 // Build a compact summary of all benefits for RAG context (from real API)
@@ -28,12 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userMessage required' }, { status: 400 })
     }
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 503 })
-    }
-
-    const openai = new OpenAI({ apiKey })
+    const client = createAIClient()
 
     const benefitsContext = await buildBenefitsContext()
     const isKo = lang === 'ko'
@@ -64,19 +59,17 @@ Analyze the user's situation and:
 Respond ONLY in this JSON format:
 {"benefitIds": ["id1", "id2"], "message": "explanation", "reasons": {"id1": "reason1", "id2": "reason2"}}`
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: isKo ? `사용자 상황: ${userMessage}` : `User situation: ${userMessage}` },
-      ],
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    })
+    const text = await callAIWithFallback(client, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: isKo ? `사용자 상황: ${userMessage}` : `User situation: ${userMessage}` },
+    ], { temperature: 0.3, maxTokens: 1500, jsonMode: true })
 
-    const text = completion.choices[0]?.message?.content?.trim() ?? '{}'
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return NextResponse.json({ error: 'Invalid AI response format' }, { status: 500 })
+    }
 
-    const parsed = JSON.parse(text)
+    const parsed = JSON.parse(jsonMatch[0])
     return NextResponse.json({
       benefitIds: parsed.benefitIds ?? [],
       message: parsed.message ?? '',
@@ -85,11 +78,9 @@ Respond ONLY in this JSON format:
   } catch (err) {
     console.error('[ai-recommend] Error:', err)
     const msg = err instanceof Error ? err.message : String(err)
-    // API Key invalid
-    if (msg.includes('invalid_api_key') || msg.includes('Incorrect API key')) {
+    if (msg.includes('invalid_api_key') || msg.includes('not configured')) {
       return NextResponse.json({ error: 'AI_KEY_INVALID' }, { status: 503 })
     }
-    // Quota exceeded / rate limit
     if (msg.includes('429') || msg.includes('quota') || msg.includes('rate_limit')) {
       return NextResponse.json({ error: 'AI_QUOTA' }, { status: 429 })
     }

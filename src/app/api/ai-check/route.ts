@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
 import { fetchWelfareDetail } from '@/lib/welfare-api'
 import { getAdminFirestore } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -65,18 +65,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'AI 서비스가 설정되지 않았습니다.' }, { status: 500 })
-    }
+    const client = createAIClient()
 
     const servId = extractServId(benefitId)
     const detail = await fetchWelfareDetail(servId)
     if (!detail) {
       return NextResponse.json({ error: '혜택 정보를 찾을 수 없습니다.' }, { status: 404 })
     }
-
-    const openai = new OpenAI({ apiKey })
 
     const isKo = lang === 'ko'
     const prompt = isKo ? `
@@ -116,24 +111,17 @@ Respond in JSON:
 }
     `
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    })
+    const text = await callAIWithFallback(client, [
+      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
+      { role: 'user', content: prompt },
+    ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
 
-    const text = completion.choices[0]?.message?.content?.trim() ?? '{}'
-
-    let parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] }
-    try {
-      parsed = JSON.parse(text)
-    } catch {
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
       return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
     }
+
+    const parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] } = JSON.parse(jsonMatch[0])
 
     return NextResponse.json({
       questions: parsed.questions ?? [],
