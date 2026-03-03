@@ -71,7 +71,7 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 **날짜**: 2026-02-25~  
 **증상**: dev 서버 시작 시 포트 이미 사용 중 오류.  
 **해결**: 반드시 `C:\Users\AIcreator\.agent\port-registry.json` 확인 후 빈 포트 할당.  
-**현재 사용 포트**: 3007  
+**현재 사용 포트**: 3008  
 **금지**: `taskkill //IM node.exe` (다른 프로젝트 dev 서버 kill 위험)
 
 ---
@@ -83,3 +83,23 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 **원인**: 카카오 OAuth에서 Client Secret은 선택사항. 앱에서 활성화 안 함 = 없어도 정상.  
 **해결**: `KAKAO_CLIENT_ID`만 있으면 됨 (=REST API 키).  
 **키 위치**: 카카오 개발자센터 → 앱 → 내 앱 선택 → 앱 키 → REST API 키
+
+---
+
+## 8. AI API 3단 마이그레이션 삽질 🔥
+
+**날짜**: 2026-03-03  
+**증상**: Gemini API → OpenAI API → OpenRouter로 3번 교체.  
+**원인**:  
+1. **Gemini**: 무료 tier quota 소진 (계정 수준 limit=0, 새 프로젝트 키도 동일)
+2. **OpenAI**: gpt-4o-mini 크레딧 소진 (429 quota exceeded, 충전 필요)
+3. **OpenRouter**: `openrouter/free` 모델만 동작, 나머지 free 모델은 upstream rate limit  
+**해결**:  
+- ✅ `ai-client.ts` 공통 헬퍼 생성 — 다중 모델 fallback 체인
+- ✅ OpenRouter `openrouter/free` (자동 라우팅) 우선 사용
+- ✅ 환경변수 `OPENROUTER_API_KEY` 하나만 관리  
+**교훈**:  
+- 무료 tier는 언제든 죽을 수 있다 → **반드시 fallback 체인** 필요
+- 새 프로젝트 키 발급해도 Google 계정 수준 한도는 공유됨
+- OpenRouter 무료 모델은 upstream provider의 공유 키를 사용 → 혼잡 시 429  
+**금지**: 단일 API provider에 의존하는 코드 작성

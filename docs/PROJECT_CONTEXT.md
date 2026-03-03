@@ -21,7 +21,7 @@
 - ❌ PC 전용 UI / 특정 브라우저 강제 (정부24가 욕먹는 이유)
 - ❌ 시스템 자동 재알림 (김짜증 핑퐁에서 확정 — 스팸이 됨)
 
-## 📊 현재 진행률: ~60%
+## 📊 현재 진행률: ~85%
 
 | Phase | 내용 | 상태 |
 |-------|------|------|
@@ -93,7 +93,8 @@
 | 파일 | 역할 |
 |------|------|
 | `src/lib/recommendation.ts` | **프로필→혜택 매칭 엔진** (키워드 + AI 점수 통합) |
-| `src/lib/ai-eligibility.ts` | **AI 배치 자격 판정 엔진** (Gemini 연동 + 캐싱) |
+| `src/lib/ai-eligibility.ts` | **AI 배치 자격 판정 엔진** (OpenRouter 연동 + 캐싱) |
+| `src/lib/ai-client.ts` | **공통 AI 클라이언트** (OpenRouter + 다중 모델 fallback) |
 | `src/lib/welfare-api.ts` | 공공데이터 API 호출 + XML 파싱 |
 | `src/data/document-urls.ts` | **서류 → 정부24 URL 화이트리스트 매핑** |
 | `src/data/benefits.ts` | Benefit 타입 + 카테고리 정의 |
