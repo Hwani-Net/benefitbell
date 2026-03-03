@@ -403,7 +403,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const auth = getFirebaseAuth()
     if (!auth) {
-      // Firebase 미설정 — kakaoUser.id로 Supabase 방식 fallback 없음, 그냥 skip
+      // Firebase 미설정 — skip premium check
       return
     }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
