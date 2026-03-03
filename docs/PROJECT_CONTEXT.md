@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-03 (14:10 KST)
+> **최종 갱신**: 2026-03-03 (14:18 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Netlify**: https://zippy-lolly-1f23de.netlify.app
@@ -74,6 +74,8 @@
 | 2026-03-03 | web-push 라이브러리 제거 및 FCM 도입 | 기존 VAPID 키 의존성 제거, FCM 토큰 및 firebase-admin messaging 기반 푸시 발송 구조로 완전 전환 | web-push 유지 (기각) |
 | 2026-03-03 | Gemini → OpenAI API 전환 | Gemini API Quota Exceeded 문제 해결, gpt-4o-mini는 가성비 최적 + JSON 모드 지원 | Gemini 유료 tier (기각) |
 | 2026-03-03 | OpenAI → OpenRouter 전환 | OpenAI 키도 quota 소진, Gemini 계정 수준 limit=0. OpenRouter 무료 tier(20RPM/200RPD) + 다중 모델 fallback | Groq (단일 provider 의존) |
+| 2026-03-03 | 이용약관/환불정책 페이지 추가 | 전자상거래법 준수 + 토스 live키 전환 사전 준비 | 약관 없이 결제 (법적 위험) |
+| 2026-03-03 | 토스 에러 코드 매핑 17종 | 사용자 친화적 한국어 에러 메시지 + retryable 플래그 | 영문 에러 메시지 그대로 노출 (기각) |
 
 ## 🔧 기술 스택
 
