@@ -1,4 +1,4 @@
-// Netlify Scheduled Function: 매일 00:00 UTC → /api/push/cron-deadline 호출
+// Netlify Scheduled Function: 매일 00:30 UTC (09:30 KST) → /api/push/cron-deadline 호출
 import type { Config } from "@netlify/functions"
 
 export default async () => {
@@ -11,5 +11,5 @@ export default async () => {
 }
 
 export const config: Config = {
-  schedule: "0 0 * * *",
+  schedule: "30 0 * * *",
 }

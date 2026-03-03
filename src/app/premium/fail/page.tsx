@@ -27,7 +27,7 @@ export default function PremiumFailPage() {
     <>
       <TopBar />
       <main className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', marginTop: -60 }}>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>불러오는 중...</div>}>
           <FailContent />
         </Suspense>
       </main>
