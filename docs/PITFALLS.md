@@ -103,3 +103,26 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 - 새 프로젝트 키 발급해도 Google 계정 수준 한도는 공유됨
 - OpenRouter 무료 모델은 upstream provider의 공유 키를 사용 → 혼잡 시 429  
 **금지**: 단일 API provider에 의존하는 코드 작성
+
+---
+
+## 9. activate API 인증 없이 오픈 — self-claim 보안 취약점 🔥
+
+**날짜**: 2026-03-03  
+**증상**: `/api/premium/activate`에 아무 kakaoId로 POST → 인증 없이 프리미엄 활성화 가능.  
+**원인**: 카카오페이 송금 → self-claim 구조에서 서버 측 검증이 없었음.  
+**해결**:
+- ✅ `PREMIUM_ACTIVATE_SECRET` 환경변수 추가 → 클라이언트/서버 양쪽에서 검증
+- ✅ 중복 프리미엄 활성화 방지 (이미 premium이면 조기 반환)
+- Netlify 환경변수에도 등록 완료  
+**금지**: 결제 관련 API를 인증 없이 오픈하는 것. 최소한 시크릿 키 검증 필수.
+
+---
+
+## 10. firebase-admin.ts — Turbopack에서 require() 외부경로 실패
+
+**날짜**: 2026-03-03  
+**증상**: `FIREBASE_SERVICE_ACCOUNT_KEY_PATH`로 경로를 주면 MODULE_NOT_FOUND 에러.  
+**원인**: Turbopack이 `require()` 호출을 빌드 타임에 resolve 시도 → 외부 절대경로 인식 실패.  
+**해결**: `require(keyPath)` → `readFileSync(keyPath, 'utf-8')` + `JSON.parse()` 로 변경.  
+**금지**: Turbopack/Webpack 번들러 환경에서 런타임 경로를 `require()`에 전달하지 말 것.

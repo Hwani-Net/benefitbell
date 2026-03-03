@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-03 (14:45 KST)
+> **최종 갱신**: 2026-03-03 (17:15 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Netlify**: https://zippy-lolly-1f23de.netlify.app
@@ -77,6 +77,9 @@
 | 2026-03-03 | OpenAI → OpenRouter 전환 | OpenAI 키도 quota 소진, Gemini 계정 수준 limit=0. OpenRouter 무료 tier(20RPM/200RPD) + 다중 모델 fallback | Groq (단일 provider 의존) |
 | 2026-03-03 | 이용약관/환불정책 페이지 추가 | 전자상거래법 준수 + 토스 live키 전환 사전 준비 | 약관 없이 결제 (법적 위험) |
 | 2026-03-03 | 토스 에러 코드 매핑 17종 | 사용자 친화적 한국어 에러 메시지 + retryable 플래그 | 영문 에러 메시지 그대로 노출 (기각) |
+| 2026-03-03 | activate API 시크릿 인증 | self-claim 방지, 외부 curl 차단 (QA에서 발견) | 인증 없이 오픈 (기각) |
+| 2026-03-03 | firebase-admin require→readFileSync | Turbopack에서 require() 외부경로 resolve 실패 | require() 유지 (기각) |
+| 2026-03-03 | success 페이지 useEffect ref 가드 | 중복 confirm API 호출 방지 (무한루프 위험) | userProfile deps 유지 (기각) |
 
 ## 🔧 기술 스택
 
