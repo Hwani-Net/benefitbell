@@ -1,5 +1,5 @@
 /**
- * AI Eligibility Engine — OpenAI-based batch eligibility assessment
+ * AI Eligibility Engine — OpenRouter-based batch eligibility assessment
  * 
  * Assesses user eligibility for benefits using profile data + benefit metadata.
  * Designed for batch processing (multiple benefits per API call) to minimize costs.
@@ -36,7 +36,7 @@ function profileHash(p: UserProfile): string {
 // ── Batch assessment ─────────────────────────────────
 /**
  * Assess eligibility for multiple benefits at once.
- * Uses a single OpenAI API call for up to 10 benefits at a time.
+ * Uses a single OpenRouter API call for up to 10 benefits at a time.
  * Returns cached results when available.
  */
 export async function assessBatch(
@@ -72,7 +72,7 @@ export async function assessBatch(
         results.push(r)
       }
     } catch (err) {
-      console.warn('[ai-eligibility] OpenAI batch failed, using fallback:', err)
+      console.warn('[ai-eligibility] OpenRouter batch failed, using fallback:', err)
       // Fallback: keyword-based scoring
       for (const b of batch) {
         const fallback = keywordFallback(profile, b)

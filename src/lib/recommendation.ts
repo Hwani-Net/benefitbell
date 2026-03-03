@@ -4,7 +4,7 @@ import { assessBatch, EligibilityResult, clearEligibilityCache } from './ai-elig
 
 /**
  * Enhanced recommendation engine.
- * 1. AI-powered: Calls OpenAI for eligibility % scoring (async)
+ * 1. AI-powered: Calls OpenRouter for eligibility % scoring (async)
  * 2. Keyword fallback: Instant scoring without API call (sync)
  * 
  * The AI assessment runs asynchronously via assessBatch().
@@ -69,7 +69,7 @@ export function getPersonalizedBenefits(benefits: Benefit[], profile: UserProfil
 }
 
 /**
- * AI-enhanced personalization (async, uses OpenAI API).
+ * AI-enhanced personalization (async, uses OpenRouter API).
  * Returns benefits with aiScore and aiSummary attached.
  * Falls back to keyword scoring if API fails.
  */
