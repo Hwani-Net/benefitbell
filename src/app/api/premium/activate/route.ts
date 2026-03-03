@@ -2,17 +2,32 @@ import { NextResponse } from 'next/server'
 import { getAdminFirestore } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 
+// Internal API secret — prevents direct external access
+const ACTIVATE_SECRET = process.env.PREMIUM_ACTIVATE_SECRET || ''
+
 export async function POST(req: Request) {
   try {
-    const { kakaoId, nickname } = await req.json()
+    const { kakaoId, nickname, secret } = await req.json()
 
+    // ── Auth Guard ──────────────────────────────────────────
+    // 1. Secret key check (blocks direct curl/Postman calls)
+    if (!ACTIVATE_SECRET || secret !== ACTIVATE_SECRET) {
+      return NextResponse.json({ error: '인증에 실패했습니다.' }, { status: 403 })
+    }
+
+    // 2. Required params
     if (!kakaoId) {
       return NextResponse.json({ error: 'kakaoId 필수' }, { status: 400 })
     }
 
+    // 3. Rate limit: check if already premium (prevent duplicate claims)
     const db = getAdminFirestore()
+    const userDoc = await db.collection('users').doc(String(kakaoId)).get()
+    if (userDoc.exists && userDoc.data()?.is_premium) {
+      return NextResponse.json({ success: true, message: '이미 프리미엄 회원입니다.' })
+    }
 
-    // 1. 결제 청구 기록 (payment_logs 컬렉션)
+    // 4. Log payment claim
     await db.collection('payment_logs').add({
       kakao_id: kakaoId,
       nickname: nickname || '',
@@ -22,8 +37,8 @@ export async function POST(req: Request) {
       created_at: FieldValue.serverTimestamp(),
     })
 
-    // 2. 유저 프리미엄 활성화 (users 컬렉션)
-    await db.collection('users').doc(kakaoId).set(
+    // 5. Activate premium
+    await db.collection('users').doc(String(kakaoId)).set(
       {
         kakao_id: kakaoId,
         nickname: nickname || '',

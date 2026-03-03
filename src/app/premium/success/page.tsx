@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import TopBar from '@/components/layout/TopBar'
@@ -9,8 +9,13 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const { userProfile, setUserProfile } = useApp()
   const [status, setStatus] = useState<'loading' | 'success' | 'checking'>('checking')
+  // Prevent double-invocation of confirm (React.StrictMode / deps change)
+  const confirmedRef = useRef(false)
 
   useEffect(() => {
+    if (confirmedRef.current) return
+    confirmedRef.current = true
+
     const paymentKey = searchParams.get('paymentKey')
     const orderId = searchParams.get('orderId')
     const amount = searchParams.get('amount')
@@ -30,12 +35,19 @@ function SuccessContent() {
           body: JSON.stringify({ paymentKey, orderId, amount, kakaoId: kakaoIdStr }),
         })
 
+        const data = await res.json()
+
         if (!res.ok) {
-          throw new Error('결제 승인 실패')
+          const msg = data.error || '결제 승인 실패'
+          const code = data.code || ''
+          window.location.href = `/premium/fail?message=${encodeURIComponent(msg)}&code=${code}`
+          return
         }
 
-        // 성공 시 클라이언트 전역 상태 프리미엄으로 변경
-        setUserProfile({ ...userProfile, isPremium: true })
+        // Update client-side premium state
+        if (userProfile) {
+          setUserProfile({ ...userProfile, isPremium: true })
+        }
         setStatus('success')
       } catch (err) {
         window.location.href = '/premium/fail?message=' + encodeURIComponent('서버 승인 중 오류가 발생했습니다.')
@@ -43,7 +55,9 @@ function SuccessContent() {
     }
 
     confirm()
-  }, [searchParams, userProfile, setUserProfile])
+    // Only run once on mount — searchParams is stable from useSearchParams()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -52,8 +66,8 @@ function SuccessContent() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>결제가 완료되었습니다</h1>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>이제 프리미엄 혜택을 마음껏 누려보세요!</p>
-          <a href="/profile" className="btn btn-primary btn-lg" style={{ minWidth: 200, display: 'inline-block', textDecoration: 'none' }}>
-            내 프로필로 돌아가기
+          <a href="/" className="btn btn-primary btn-lg" style={{ minWidth: 200, display: 'inline-block', textDecoration: 'none' }}>
+            홈으로 돌아가기
           </a>
         </>
       ) : (

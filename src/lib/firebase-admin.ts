@@ -4,6 +4,7 @@ import { App, getApps, initializeApp, cert, ServiceAccount } from 'firebase-admi
 import { getFirestore, Firestore } from 'firebase-admin/firestore'
 import { getAuth, Auth } from 'firebase-admin/auth'
 import { getMessaging, Messaging } from 'firebase-admin/messaging'
+import { readFileSync } from 'fs'
 
 let adminApp: App | null = null
 
@@ -22,8 +23,10 @@ function getAdminApp(): App {
     const serviceAccount = JSON.parse(keyJson) as ServiceAccount
     adminApp = initializeApp({ credential: cert(serviceAccount) })
   } else if (keyPath) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    adminApp = initializeApp({ credential: cert(require(keyPath) as ServiceAccount) })
+    // Use fs.readFileSync instead of require() for Turbopack compatibility
+    const fileContent = readFileSync(keyPath, 'utf-8')
+    const serviceAccount = JSON.parse(fileContent) as ServiceAccount
+    adminApp = initializeApp({ credential: cert(serviceAccount) })
   } else {
     throw new Error(
       'Firebase Admin SDK: FIREBASE_SERVICE_ACCOUNT_KEY 또는 FIREBASE_SERVICE_ACCOUNT_KEY_PATH 환경변수가 필요합니다.'

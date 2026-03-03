@@ -37,6 +37,7 @@ export default function PremiumPage() {
         body: JSON.stringify({
           kakaoId: String(kakaoUser.id),
           nickname: kakaoUser.nickname,
+          secret: process.env.NEXT_PUBLIC_PREMIUM_ACTIVATE_SECRET || '',
         }),
       })
 
