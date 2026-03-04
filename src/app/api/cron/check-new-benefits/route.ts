@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminFirestore, getAdminMessaging } from '@/lib/firebase-admin'
-import { fetchAllWelfareList, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
+import { fetchAllWelfareSources, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
 
 const CRON_SECRET = process.env.CRON_SECRET
 
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     }
 
     // 2. 마감 7일 이내 OR 오픈 예정 혜택 필터
-    const apiItems = await fetchAllWelfareList()
+    const apiItems = await fetchAllWelfareSources()
     const allBenefits = apiItems.map((item, i) => transformListItemToBenefit(item, i))
     const relevantBenefits = allBenefits
       .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))

@@ -11,7 +11,7 @@
 
 import { NextResponse } from 'next/server'
 import { getAdminFirestore, getAdminMessaging } from '@/lib/firebase-admin'
-import { fetchAllWelfareList, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
+import { fetchAllWelfareSources, transformListItemToBenefit, calculateDDay } from '@/lib/welfare-api'
 import { getSentBenefitIds, markSent } from '@/lib/push-dedup'
 
 const CRON_SECRET = process.env.CRON_SECRET
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   }
 
   // ── 1. 혜택 데이터 로드 ──────────────────────────
-  const apiItems = await fetchAllWelfareList()
+  const apiItems = await fetchAllWelfareSources()
   const allBenefits = apiItems
     .map((item, i) => transformListItemToBenefit(item, i))
     .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))

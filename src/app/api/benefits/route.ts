@@ -1,9 +1,10 @@
 /**
- * GET /api/benefits — Fetch welfare benefits from data.go.kr
+ * GET /api/benefits — Fetch welfare benefits from all government data sources
  * Real government data only. No mock/fake data.
+ * Sources: 중앙부처 + 지자체(인가 시) + 보조금24(키 발급 시)
  */
 import { NextResponse } from 'next/server'
-import { fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
+import { fetchAllWelfareSources, transformListItemToBenefit } from '@/lib/welfare-api'
 import type { Benefit } from '@/data/benefits'
 
 export const revalidate = 3600 // ISR: revalidate every 1 hour
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const apiItems = await fetchAllWelfareList()
+    const apiItems = await fetchAllWelfareSources()
 
     if (apiItems.length === 0) {
       return NextResponse.json({

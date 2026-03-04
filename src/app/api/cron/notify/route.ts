@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminMessaging } from '@/lib/firebase-admin'
 import { getSubscriptions, removeSubscription } from '@/lib/push-store'
-import { calculateDDay, fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
+import { calculateDDay, fetchAllWelfareSources, transformListItemToBenefit } from '@/lib/welfare-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   // VAPID Setup is no longer needed with FCM
 
   // Find urgent benefits (D-Day <= 3) from real API
-  const apiItems = await fetchAllWelfareList()
+  const apiItems = await fetchAllWelfareSources()
   const allBenefits = apiItems.map((item, i) => transformListItemToBenefit(item, i))
   const urgentBenefits = allBenefits
     .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))

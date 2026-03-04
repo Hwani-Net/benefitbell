@@ -507,3 +507,180 @@ export function transformDetailToBenefit(item: WelfareDetailItem): Benefit {
     new: false,
   }
 }
+
+// =====================
+// Source 2: 지자체복지서비스 API (LocalGovernmentWelfareInformations)
+// =====================
+// ⚠️ 필요: data.go.kr에서 "한국사회보장정보원_지자체복지서비스" 활용신청
+// 같은 DATA_GO_KR_SERVICE_KEY를 사용하되, 별도 API에 대한 인가 필요
+
+const LOCAL_GOV_BASE = 'https://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations'
+
+export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
+  const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY
+  if (!serviceKey) return []
+
+  const numOfRows = 500
+  const RAW_FIELDS = ['servId', 'servNm', 'servDgst', 'jurMnofNm', 'lifeArray', 'intrsThemaArray', 'trgterIndvdlArray', 'servDtlLink', 'inqNum', 'svcfrstRegTs', 'lastModYmd']
+
+  const remapItems = (raw: Record<string, string>[]): WelfareListItem[] =>
+    raw.map(item => ({
+      servId: `LG-${item.servId}`, // Prefix to avoid ID collision with national
+      servNm: item.servNm,
+      servDgst: item.servDgst,
+      jurOrgNm: item.jurMnofNm || '지자체',
+      lifeNmArray: item.lifeArray,
+      intrsThemNmArray: item.intrsThemaArray,
+      trgterIndvdlArray: item.trgterIndvdlArray,
+      servDtlLink: item.servDtlLink,
+      inqNum: Number(item.inqNum) || 0,
+      svcfrstRegTs: item.svcfrstRegTs,
+      lastModYmd: item.lastModYmd,
+    }))
+
+  try {
+    // Test with first page
+    const firstUrl = `${LOCAL_GOV_BASE}/LcgvWelfarelist?serviceKey=${serviceKey}&callTp=L&pageNo=1&numOfRows=${numOfRows}&srchKeyCode=001`
+    const firstRes = await fetch(firstUrl, { next: { revalidate: 3600 } })
+
+    if (firstRes.status === 403 || firstRes.status === 401) {
+      console.warn('[welfare-api] 지자체 API 미인가 — data.go.kr에서 활용신청 필요')
+      return []
+    }
+    if (!firstRes.ok) return []
+
+    const firstText = await firstRes.text()
+    const resultCode = xmlGet(firstText, 'resultCode')
+    if (resultCode !== '0' && resultCode !== '00') {
+      console.warn(`[welfare-api] 지자체 API error: ${resultCode}`)
+      return []
+    }
+
+    const allItems: WelfareListItem[] = []
+    const totalCount = parseInt(xmlGet(firstText, 'totalCount') || '0', 10)
+    allItems.push(...remapItems(xmlParseItems(firstText, RAW_FIELDS)))
+
+    console.log(`[welfare-api] 지자체: ${totalCount} total, page 1 (${allItems.length})`)
+
+    // Fetch remaining pages (max 10 pages = 5000 items)
+    const totalPages = Math.min(Math.ceil(totalCount / numOfRows), 10)
+    if (totalPages > 1) {
+      const pageNums = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+      const results = await Promise.all(
+        pageNums.map(async (page) => {
+          try {
+            const url = `${LOCAL_GOV_BASE}/LcgvWelfarelist?serviceKey=${serviceKey}&callTp=L&pageNo=${page}&numOfRows=${numOfRows}&srchKeyCode=001`
+            const res = await fetch(url, { next: { revalidate: 3600 } })
+            if (!res.ok) return []
+            const text = await res.text()
+            return remapItems(xmlParseItems(text, RAW_FIELDS))
+          } catch { return [] }
+        })
+      )
+      results.forEach(items => allItems.push(...items))
+    }
+
+    console.log(`[welfare-api] 지자체 total fetched: ${allItems.length}`)
+    return allItems
+  } catch (err) {
+    console.warn('[welfare-api] 지자체 fetch error:', err)
+    return []
+  }
+}
+
+// =====================
+// Source 3: 보조금24 API (행정안전부)
+// =====================
+// ⚠️ 별도 서비스키 필요: DATA_GO_KR_SUBSIDY_KEY
+// data.go.kr에서 "보조금24" 검색 → 활용신청
+
+const SUBSIDY_BASE = 'https://apis.data.go.kr/1741000/SubsidyService'
+
+export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
+  const subsidyKey = process.env.DATA_GO_KR_SUBSIDY_KEY
+  if (!subsidyKey) return [] // 키 없으면 조용히 스킵
+
+  try {
+    const url = `${SUBSIDY_BASE}/getSubsidyList?serviceKey=${subsidyKey}&pageNo=1&numOfRows=500&type=json`
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+
+    if (res.status === 403 || res.status === 401 || res.status === 500) {
+      console.warn('[welfare-api] 보조금24 API 미인가/에러 — data.go.kr에서 활용신청 필요')
+      return []
+    }
+    if (!res.ok) return []
+
+    const data = await res.json()
+    const items = data?.response?.body?.items?.item
+    if (!items || !Array.isArray(items)) return []
+
+    console.log(`[welfare-api] 보조금24: ${items.length} items fetched`)
+
+    return items.map((item: Record<string, string>) => ({
+      servId: `SUB-${item.servId || item.서비스ID || ''}`,
+      servNm: item.servNm || item.서비스명 || '',
+      servDgst: item.servDgst || item.서비스요약 || '',
+      jurOrgNm: item.jurOrgNm || item.소관기관명 || '행정안전부',
+      lifeNmArray: '',
+      intrsThemNmArray: '',
+      trgterIndvdlArray: '',
+      servDtlLink: item.servDtlLink || '',
+      inqNum: Number(item.inqNum) || 0,
+      svcfrstRegTs: '',
+      lastModYmd: item.lastModYmd || '',
+    }))
+  } catch (err) {
+    console.warn('[welfare-api] 보조금24 fetch error:', err)
+    return []
+  }
+}
+
+// =====================
+// Unified Data Fetcher — All Sources Combined
+// =====================
+
+/**
+ * Fetch and merge welfare data from ALL available sources.
+ * Each source is opt-in based on env variables — no code change needed.
+ *
+ * Sources:
+ * 1. 중앙부처 복지서비스 (always active if DATA_GO_KR_SERVICE_KEY exists)
+ * 2. 지자체 복지서비스 (same key, needs separate API authorization)
+ * 3. 보조금24 (needs DATA_GO_KR_SUBSIDY_KEY)
+ *
+ * Deduplication: by servId (stripped of source prefix for comparison)
+ */
+export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
+  // Fetch all sources in parallel
+  const [national, local, subsidy] = await Promise.all([
+    fetchAllWelfareList(),
+    fetchLocalGovWelfareList(),
+    fetchSubsidy24List(),
+  ])
+
+  // Stats logging
+  const stats = {
+    national: national.length,
+    local: local.length,
+    subsidy: subsidy.length,
+    total: 0,
+  }
+
+  // Merge with deduplication (national has priority)
+  const seen = new Set<string>()
+  const merged: WelfareListItem[] = []
+
+  for (const item of [...national, ...local, ...subsidy]) {
+    // Normalize ID for dedup (strip source prefix)
+    const rawId = item.servId.replace(/^(LG-|SUB-)/, '')
+    if (!rawId || seen.has(rawId)) continue
+    seen.add(rawId)
+    merged.push(item)
+  }
+
+  stats.total = merged.length
+  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy} → 통합 ${stats.total}건`)
+
+  return merged
+}
+
