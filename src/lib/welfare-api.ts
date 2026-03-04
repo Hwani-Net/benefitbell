@@ -682,6 +682,76 @@ export async function fetchBizinfoList(): Promise<WelfareListItem[]> {
 }
 
 // =====================
+// Source 5: K-Startup API (창업진흥원) — 창업지원 사업공고
+// =====================
+// data.go.kr 키 사용 (동일 SERVICE_KEY)
+// https://www.data.go.kr/data/15125364/openapi.do
+
+const KSTARTUP_BASE = 'https://apis.data.go.kr/B552735/kisedKstartupService01'
+
+export async function fetchKStartupList(): Promise<WelfareListItem[]> {
+  const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY
+  if (!serviceKey) return []
+
+  try {
+    // 사업공고 API — 최신 500건 가져오기
+    const url = `${KSTARTUP_BASE}/getAnnouncementInformation01?serviceKey=${encodeURIComponent(serviceKey)}&pageNo=1&numOfRows=500`
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+
+    if (res.status === 403 || res.status === 401) {
+      console.warn('[welfare-api] K-Startup API 미인가 — data.go.kr 활용신청 필요')
+      return []
+    }
+    if (!res.ok) return []
+
+    const xml = await res.text()
+
+    // Parse totalCount
+    const tcMatch = xml.match(/<totalCount>(\d+)<\/totalCount>/)
+    const totalCount = tcMatch ? Number(tcMatch[1]) : 0
+
+    // Parse XML items
+    const itemBlocks = xml.split('<item>').slice(1)
+    const items: WelfareListItem[] = []
+
+    for (const block of itemBlocks) {
+      const getCol = (name: string) => {
+        const m = block.match(new RegExp(`col name="${name}">(.*?)</col`, 's'))
+        return m?.[1]?.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#xD;&#xA;/g, ' ').replace(/&amp;#\d+;/g, '') || ''
+      }
+
+      // 모집중인 공고만 포함
+      const isRecruiting = getCol('rcrt_prgs_yn')
+      if (isRecruiting !== 'Y') continue
+
+      const pbancSn = getCol('pbanc_sn') || getCol('id')
+      const title = getCol('biz_pbanc_nm') || getCol('intg_pbanc_biz_nm') || getCol('pbanc_nm')
+      const detlUrl = getCol('detl_pg_url')
+
+      items.push({
+        servId: `KSU-${pbancSn}`,
+        servNm: title,
+        servDgst: getCol('aply_trgt_ctnt') || getCol('pbanc_ctnt') || title,
+        jurOrgNm: getCol('sprv_inst') || '창업진흥원',
+        lifeNmArray: '',
+        intrsThemNmArray: getCol('supt_biz_clsfc') || '창업지원',
+        trgterIndvdlArray: getCol('aply_trgt') || '',
+        servDtlLink: detlUrl.startsWith('http') ? detlUrl : (detlUrl ? `https://${detlUrl}` : ''),
+        inqNum: 0,
+        svcfrstRegTs: '',
+        lastModYmd: getCol('pbanc_rcpt_bgng_dt')?.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') || '',
+      })
+    }
+
+    console.log(`[welfare-api] K-Startup: ${items.length} recruiting / ${totalCount} total`)
+    return items
+  } catch (err) {
+    console.warn('[welfare-api] K-Startup fetch error:', err)
+    return []
+  }
+}
+
+// =====================
 // Unified Data Fetcher — All Sources Combined
 // =====================
 
@@ -694,16 +764,18 @@ export async function fetchBizinfoList(): Promise<WelfareListItem[]> {
  * 2. 지자체 복지서비스 (same key, separate API auth)
  * 3. 보조금24 (DATA_GO_KR_SUBSIDY_KEY)
  * 4. 기업마당 (BIZINFO_API_KEY) — 중소기업/소상공인 지원사업
+ * 5. K-Startup (DATA_GO_KR_SERVICE_KEY) — 창업지원 사업공고
  *
  * Deduplication: by servId (stripped of source prefix)
  */
 export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   // Fetch all sources in parallel
-  const [national, local, subsidy, bizinfo] = await Promise.all([
+  const [national, local, subsidy, bizinfo, kstartup] = await Promise.all([
     fetchAllWelfareList(),
     fetchLocalGovWelfareList(),
     fetchSubsidy24List(),
     fetchBizinfoList(),
+    fetchKStartupList(),
   ])
 
   // Stats logging
@@ -712,6 +784,7 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
     local: local.length,
     subsidy: subsidy.length,
     bizinfo: bizinfo.length,
+    kstartup: kstartup.length,
     total: 0,
   }
 
@@ -719,18 +792,19 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   const seen = new Set<string>()
   const merged: WelfareListItem[] = []
 
-  for (const item of [...national, ...local, ...subsidy, ...bizinfo]) {
+  for (const item of [...national, ...local, ...subsidy, ...bizinfo, ...kstartup]) {
     // Normalize ID for dedup (strip source prefix)
-    const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-)/, '')
+    const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-|KSU-)/, '')
     if (!rawId || seen.has(rawId)) continue
     seen.add(rawId)
     merged.push(item)
   }
 
   stats.total = merged.length
-  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo} → 통합 ${stats.total}건`)
+  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup} → 통합 ${stats.total}건`)
 
   return merged
 }
+
 
 
