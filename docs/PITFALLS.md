@@ -126,3 +126,16 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 **원인**: Turbopack이 `require()` 호출을 빌드 타임에 resolve 시도 → 외부 절대경로 인식 실패.  
 **해결**: `require(keyPath)` → `readFileSync(keyPath, 'utf-8')` + `JSON.parse()` 로 변경.  
 **금지**: Turbopack/Webpack 번들러 환경에서 런타임 경로를 `require()`에 전달하지 말 것.
+
+---
+
+## 11. Netlify Functions — AWS Lambda 환경변수 4KB 한도 🔥
+
+**날짜**: 2026-03-05  
+**증상**: `git push` 후 Netlify 빌드는 성공하나 Deploy 단계에서 실패: `Your environment variables exceed the 4KB limit imposed by AWS Lambda`.  
+**원인**: `FIREBASE_SERVICE_ACCOUNT_KEY`에 전체 서비스 계정 JSON(~2.5KB)을 넣어놓아서, 다른 환경변수 20+개와 합치면 4KB 초과.  
+**해결**:  
+- ✅ `FIREBASE_SERVICE_ACCOUNT_KEY` 삭제
+- ✅ 3개 개별 필드로 분리: `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_PROJECT_ID` (기존 `NEXT_PUBLIC_FIREBASE_PROJECT_ID` 재사용)
+- ✅ `firebase-admin.ts`에서 개별 필드 우선 → JSON fallback → 파일 경로 fallback 체인 구현  
+**금지**: Netlify/Vercel의 서버리스 함수에 대형 JSON을 환경변수 하나에 통째로 넣지 말 것.
