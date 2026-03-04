@@ -1,6 +1,6 @@
 // Firebase Admin SDK (서버 전용 — API routes, cron jobs)
-// 환경변수: FIREBASE_SERVICE_ACCOUNT_KEY (JSON 문자열) 또는 파일 경로
-import { App, getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app'
+// 인증 우선순위: 개별 필드 → JSON 문자열 → 파일 경로 → ADC (Firebase App Hosting)
+import { App, getApps, initializeApp, cert, applicationDefault, ServiceAccount } from 'firebase-admin/app'
 import { getFirestore, Firestore } from 'firebase-admin/firestore'
 import { getAuth, Auth } from 'firebase-admin/auth'
 import { getMessaging, Messaging } from 'firebase-admin/messaging'
@@ -15,7 +15,7 @@ function getAdminApp(): App {
     return adminApp
   }
 
-  // 우선순위: 개별 필드 (Lambda 4KB 한도 대응) → JSON 문자열 → 파일 경로
+  // 우선순위: 개별 필드 → JSON 문자열 → 파일 경로 → ADC (Firebase App Hosting / Cloud Run)
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
@@ -23,7 +23,7 @@ function getAdminApp(): App {
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH
 
   if (projectId && clientEmail && privateKey) {
-    // 개별 필드 방식 — 환경변수 크기 최소화 (Netlify Lambda 4KB 한도 대응)
+    // 개별 필드 방식 — 환경변수 크기 최소화
     adminApp = initializeApp({
       credential: cert({ projectId, clientEmail, privateKey } as ServiceAccount),
     })
@@ -36,10 +36,14 @@ function getAdminApp(): App {
     const serviceAccount = JSON.parse(fileContent) as ServiceAccount
     adminApp = initializeApp({ credential: cert(serviceAccount) })
   } else {
-    throw new Error(
-      'Firebase Admin SDK: FIREBASE_PROJECT_ID+FIREBASE_CLIENT_EMAIL+FIREBASE_PRIVATE_KEY, ' +
-      'FIREBASE_SERVICE_ACCOUNT_KEY, 또는 FIREBASE_SERVICE_ACCOUNT_KEY_PATH 환경변수가 필요합니다.'
-    )
+    // ADC (Application Default Credentials)
+    // Firebase App Hosting / Cloud Run / GCE에서는 자동 인증
+    // 로컬에서는 GOOGLE_APPLICATION_CREDENTIALS 또는 gcloud auth
+    console.log('[firebase-admin] Using Application Default Credentials (ADC)')
+    adminApp = initializeApp({
+      credential: applicationDefault(),
+      projectId: projectId || undefined,
+    })
   }
 
   return adminApp

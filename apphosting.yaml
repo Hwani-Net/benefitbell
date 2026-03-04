@@ -1,0 +1,70 @@
+# Firebase App Hosting configuration
+# https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  minInstances: 0
+  maxInstances: 4
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+
+env:
+  # ─── Firebase 클라이언트 (빌드타임 필요 → 직접 값) ───────────────────
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyAtIjBHT25aZEc8VVnGiUo4wU_OwcWXkIs
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: benefitbell-565b2.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: benefitbell-565b2
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: benefitbell-565b2.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "441975360101"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:441975360101:web:e6bcb0728d9bb003a4948c
+
+  # ─── 토스 클라이언트 키 (프론트엔드) ─────────────────────────────────
+  - variable: NEXT_PUBLIC_TOSS_CLIENT_KEY
+    value: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
+
+  # ─── 푸시 알림 VAPID 공개키 ──────────────────────────────────────────
+  - variable: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    value: BPz8ovSj10yHojFgCbxzhGU8DziC7xhuhW5G6RfYy2y9lcdbTUfUeufgOpSbkDlGp4rxoGX0P3L0twZKChz7A7E
+
+  # ─── GA / 링크 (공개) ────────────────────────────────────────────────
+  - variable: NEXT_PUBLIC_GA_ID
+    value: G-P74F814W2D
+  - variable: NEXT_PUBLIC_BMC_LINK
+    value: https://www.buymeacoffee.com/stayicond
+  - variable: NEXT_PUBLIC_KAKAOPAY_LINK
+    value: https://qr.kakaopay.com/FVPcVDUAM
+  - variable: NEXT_PUBLIC_KAKAOPAY_PREMIUM_LINK
+    value: https://qr.kakaopay.com/FVPcVDUAM
+
+  # ─── 프리미엄 시크릿 (프론트에서도 참조) ─────────────────────────────
+  - variable: NEXT_PUBLIC_PREMIUM_ACTIVATE_SECRET
+    secret: PREMIUM_ACTIVATE_SECRET
+
+  # ─── 서버 전용 시크릿 (Cloud Secret Manager) ─────────────────────────
+  - variable: DATA_GO_KR_SERVICE_KEY
+    secret: DATA_GO_KR_SERVICE_KEY
+  - variable: PUBLIC_DATA_API_KEY
+    secret: DATA_GO_KR_SERVICE_KEY
+  - variable: OPENROUTER_API_KEY
+    secret: OPENROUTER_API_KEY
+  - variable: TOSS_SECRET_KEY
+    secret: TOSS_SECRET_KEY
+  - variable: VAPID_PRIVATE_KEY
+    secret: VAPID_PRIVATE_KEY
+  - variable: VAPID_SUBJECT
+    value: mailto:stayicon@gmail.com
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+  - variable: PREMIUM_ACTIVATE_SECRET
+    secret: PREMIUM_ACTIVATE_SECRET
+  - variable: KAKAO_CLIENT_ID
+    secret: KAKAO_CLIENT_ID
+  - variable: BIZINFO_API_KEY
+    secret: BIZINFO_API_KEY
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
