@@ -44,20 +44,75 @@ export interface WelfareDetailItem {
 // =====================
 import type { BenefitCategory, Benefit, BenefitStatus } from '@/data/benefits'
 
-const CATEGORY_KEYWORDS: Record<BenefitCategory, string[]> = {
-  'basic-living': ['기초생활', '생계급여', '기초수급', '긴급복지'],
-  'near-poverty': ['차상위', '저소득'],
-  'youth': ['청년', '청소년', '대학생', '도약계좌'],
-  'middle-aged': ['장년', '중장년', '경력단절'],
-  'senior': ['노인', '어르신', '기초연금', '노령'],
-  'housing': ['주거', '월세', '임대', '전세', '주택'],
-  'medical': ['의료', '건강', '보건', '치료', '간병'],
-  'education': ['교육', '장학', '학비', '학자금', '돌봄'],
-  'employment': ['취업', '고용', '일자리', '직업훈련', '취창업'],
-  'small-biz': ['소상공인', '소공인', '자영업', '경영안정', '정책자금'],
-  'startup': ['창업', '예비창업', '스타트업', '벤처'],
-  'closure-restart': ['폐업', '재창업', '재기', '희망리턴'],
-  'debt-relief': ['채무', '회생', '파산', '신용회복', '새출발', '워크아웃'],
+// ── Category classification: score-based system ─────────
+// Each keyword has a weight. Title matches get 2x bonus.
+// "회생" and "채무" use word-boundary regex to avoid false positives
+// (e.g., "사회생활" should NOT match "회생", "채무자에게 회수" should NOT match for non-debt benefits)
+
+interface CategoryRule {
+  keywords: string[]            // simple includes() match
+  patterns?: RegExp[]           // precise regex match (for ambiguous terms)
+  titleBonus?: string[]         // extra score when matched in title specifically
+}
+
+const CATEGORY_RULES: Record<BenefitCategory, CategoryRule> = {
+  'basic-living': {
+    keywords: ['기초생활', '생계급여', '기초수급', '긴급복지', '긴급돌봄'],
+  },
+  'near-poverty': {
+    keywords: ['차상위', '저소득'],
+  },
+  'youth': {
+    keywords: ['청년', '청소년', '대학생', '도약계좌'],
+    titleBonus: ['청년', '청소년'],
+  },
+  'middle-aged': {
+    keywords: ['장년', '중장년', '경력단절'],
+    titleBonus: ['장년', '중장년'],
+  },
+  'senior': {
+    keywords: ['노인', '어르신', '기초연금', '노령'],
+    titleBonus: ['노인', '어르신'],
+  },
+  'housing': {
+    keywords: ['주거', '월세', '임대', '전세', '주택'],
+    titleBonus: ['주거', '임대', '주택'],
+  },
+  'medical': {
+    keywords: ['의료', '보건', '치료', '간병'],
+    // "건강" 제거 — 너무 광범위 ("건강보험", "건강검진" 등 많은 혜택에 포함)
+    titleBonus: ['의료'],
+  },
+  'education': {
+    keywords: ['교육', '장학', '학비', '학자금'],
+    // "돌봄" 제거 — "긴급돌봄"은 basic-living → 별도 처리
+    titleBonus: ['교육', '장학'],
+  },
+  'employment': {
+    keywords: ['취업', '고용', '일자리', '직업훈련', '취창업'],
+    titleBonus: ['취업', '고용', '일자리'],
+  },
+  'small-biz': {
+    keywords: ['소상공인', '소공인', '자영업', '경영안정', '정책자금'],
+    titleBonus: ['소상공인'],
+  },
+  'startup': {
+    keywords: ['창업', '예비창업', '스타트업', '벤처'],
+    titleBonus: ['창업'],
+  },
+  'closure-restart': {
+    keywords: ['폐업', '재창업', '희망리턴'],
+    // "재기" 제거 — "재기지원"은 OK이지만 "재기할 수 있도록" 같은 일반적 문맥과 겹침
+    patterns: [/재기\s*지원/, /재기\s*프로그램/],
+    titleBonus: ['폐업', '재창업'],
+  },
+  'debt-relief': {
+    keywords: ['채무조정', '채무자조정', '신용회복', '새출발', '워크아웃'],
+    // "채무", "회생" 단독 사용 금지 → 복합어로만 매칭 (오분류 방지)
+    // "채무조정", "개인회생", "파산면책" 등 정확한 복합어 패턴
+    patterns: [/개인\s*회생/, /채무\s*조정/, /파산\s*면책/, /파산\s*신청/, /채무\s*감면/],
+    titleBonus: ['채무', '회생', '파산'],
+  },
 }
 
 const CATEGORY_LABELS: Record<BenefitCategory, { ko: string; en: string }> = {
@@ -77,16 +132,56 @@ const CATEGORY_LABELS: Record<BenefitCategory, { ko: string; en: string }> = {
 }
 
 /**
- * Classify benefit into category based on keywords in title and content
+ * Classify benefit into category based on weighted keyword scoring.
+ * - Each keyword match = +1 point
+ * - Each regex pattern match = +2 points (more precise)
+ * - Title match bonus = +2 extra points (title is most indicative)
+ * - Highest scoring category wins (ties: first in declaration order)
  */
 function classifyCategory(title: string, content: string = ''): BenefitCategory {
-  const combined = `${title} ${content}`.toLowerCase()
-  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (keywords.some(kw => combined.includes(kw))) {
-      return category as BenefitCategory
+  const titleLower = title.toLowerCase()
+  const contentLower = content.toLowerCase()
+  const combined = `${titleLower} ${contentLower}`
+
+  let bestCategory: BenefitCategory = 'basic-living'
+  let bestScore = 0
+
+  for (const [category, rule] of Object.entries(CATEGORY_RULES) as [BenefitCategory, CategoryRule][]) {
+    let score = 0
+
+    // Simple keyword matching
+    for (const kw of rule.keywords) {
+      if (combined.includes(kw)) {
+        score += 1
+        // Title bonus: keywords in title are much more indicative
+        if (titleLower.includes(kw)) score += 2
+      }
+    }
+
+    // Regex pattern matching (for ambiguous terms)
+    if (rule.patterns) {
+      for (const pat of rule.patterns) {
+        if (pat.test(combined)) score += 2
+        if (pat.test(titleLower)) score += 2
+      }
+    }
+
+    // Title-specific bonus keywords
+    if (rule.titleBonus) {
+      for (const kw of rule.titleBonus) {
+        if (titleLower.includes(kw) && !rule.keywords.includes(kw)) {
+          score += 3 // strong signal if title-only keyword matches
+        }
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestCategory = category
     }
   }
-  return 'basic-living' // fallback
+
+  return bestCategory
 }
 
 /**
