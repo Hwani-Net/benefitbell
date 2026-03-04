@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
 import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -36,7 +36,7 @@ function parseRegion(region: string) {
 }
 
 // ─── 프리미엄 상태 카드 ───
-function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kakaoUserId?: number }) {
+function PremiumStatusCard({ isPremium, kakaoUserId, lang }: { isPremium: boolean; kakaoUserId?: number; lang: string }) {
   const [paymentDate, setPaymentDate] = useState<string | null>(null)
   const [loadingPayment, setLoadingPayment] = useState(false)
 
@@ -81,33 +81,36 @@ function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kak
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <span style={{ fontSize: 24 }}>👑</span>
             <div>
-              <p style={{ fontSize: 16, fontWeight: 800 }}>프리미엄 이용 중</p>
-              <p style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>모든 프리미엄 혜택이 활성화되어 있습니다</p>
+              <p style={{ fontSize: 16, fontWeight: 800 }}>{lang === 'ko' ? '프리미엄 이용 중' : 'Premium Active'}</p>
+              <p style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>{lang === 'ko' ? '모든 프리미엄 혜택이 활성화되어 있습니다' : 'All premium benefits are active'}</p>
             </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px' }}>
             {loadingPayment ? (
-              <p style={{ fontSize: 13, opacity: 0.8 }}>결제 정보 불러오는 중...</p>
+              <p style={{ fontSize: 13, opacity: 0.8 }}>{lang === 'ko' ? '결제 정보 불러오는 중...' : 'Loading payment info...'}</p>
             ) : paymentDate ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, opacity: 0.8 }}>결제일</span>
+                  <span style={{ fontSize: 12, opacity: 0.8 }}>{lang === 'ko' ? '결제일' : 'Payment Date'}</span>
                   <span style={{ fontSize: 12, fontWeight: 600 }}>{formatDate(paymentDate)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, opacity: 0.8 }}>갱신 안내일 (예정)</span>
+                  <span style={{ fontSize: 12, opacity: 0.8 }}>{lang === 'ko' ? '갱신 안내일 (예정)' : 'Renewal Date (Est.)'}</span>
                   <span style={{ fontSize: 12, fontWeight: 600 }}>{getRenewalDate(paymentDate)}</span>
                 </div>
                 <p style={{ fontSize: 11, opacity: 0.7, marginTop: 8, lineHeight: 1.4 }}>
-                  ※ 갱신 수동 안내 시 카카오톡 채널로 연락드립니다
+                  ※ {lang === 'ko' ? '갱신 수동 안내 시 카카오톡 채널로 연락드립니다' : 'We will contact you via KakaoTalk channel for manual renewal.'}
                 </p>
               </>
             ) : (
-              <p style={{ fontSize: 13, opacity: 0.8 }}>결제 기록을 찾을 수 없습니다.</p>
+              <p style={{ fontSize: 13, opacity: 0.8 }}>{lang === 'ko' ? '결제 기록을 찾을 수 없습니다.' : 'No payment record found.'}</p>
             )}
           </div>
           <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['✨ AI 무제한', '🚫 광고 없음', '⏰ 14일 전 알림', '💬 우선 상담'].map(feat => (
+            {(lang === 'ko'
+              ? ['✨ AI 무제한', '🚫 광고 없음', '⏰ 14일 전 알림', '💬 우선 상담']
+              : ['✨ Unlimited AI', '🚫 No Ads', '⏰ 14-Day Alert', '💬 Priority Support']
+            ).map(feat => (
               <span key={feat} style={{ fontSize: 11, background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: 99 }}>{feat}</span>
             ))}
           </div>
@@ -128,21 +131,26 @@ function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kak
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 22 }}>👑</span>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>프리미엄 혜택</p>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>월 4,900원</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{lang === 'ko' ? '프리미엄 혜택' : 'Premium Benefits'}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{lang === 'ko' ? '월 4,900원' : '₩4,900/mo'}</p>
             </div>
           </div>
           <Link href="/premium" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13, textDecoration: 'none', borderRadius: 10 }}>
-            업그레이드 →
+            {lang === 'ko' ? '업그레이드 →' : 'Upgrade →'}
           </Link>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[
+          {(lang === 'ko' ? [
             { icon: '✨', text: '무제한 AI 혜택 분석', sub: '현재 1일 3회 제한 중' },
             { icon: '🚫', text: '광고 완전 제거', sub: '현재 광고 노출 중' },
             { icon: '⏰', text: '14일 전 얼리버드 알림', sub: '현재 3일 전만 알림' },
             { icon: '💬', text: '1:1 맞춤 상담 우선', sub: '카카오톡 채널 우선 지원' },
-          ].map(item => (
+          ] : [
+            { icon: '✨', text: 'Unlimited AI Analysis', sub: 'Currently limited to 3/day' },
+            { icon: '🚫', text: 'Remove All Ads', sub: 'Ads currently shown' },
+            { icon: '⏰', text: '14-Day Early Alert', sub: 'Currently 3-day only' },
+            { icon: '💬', text: 'Priority 1:1 Support', sub: 'KakaoTalk channel priority' },
+          ]).map(item => (
             <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
               <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{item.icon}</span>
               <div>
@@ -158,7 +166,7 @@ function PremiumStatusCard({ isPremium, kakaoUserId }: { isPremium: boolean; kak
 }
 
 export default function ProfilePage() {
-  const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked } = useApp()
+  const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked, benefits: allBenefits, benefitsLoading } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [profileStep, setProfileStep] = useState<1 | 2>(1)
@@ -179,18 +187,7 @@ export default function ProfilePage() {
   })
   const [categorySaving, setCategorySaving] = useState(false)
 
-  // ─── 북마크 혜택 데이터 ───
-  const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
-  const [benefitsLoading, setBenefitsLoading] = useState(true)
   const [sharedId, setSharedId] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/api/benefits')
-      .then(r => r.json())
-      .then(json => { if (json.data) setAllBenefits(json.data) })
-      .catch(e => console.warn('bookmark benefit preload failed:', e))
-      .finally(() => setBenefitsLoading(false))
-  }, [])
 
   const savedBenefits = allBenefits.filter(b => isBookmarked(b.id))
 
@@ -401,8 +398,8 @@ export default function ProfilePage() {
           <div className={styles.profileHero}>
             <div className={styles.avatarGuest}>👤</div>
             <div className={styles.profileInfo}>
-              <h1 className={styles.profileName} style={{ fontSize: 16 }}>로그인이 필요합니다</h1>
-              <p className={styles.profileSub}>카카오로 로그인하면 맞춤 혜택을 받아볼 수 있어요</p>
+              <h1 className={styles.profileName} style={{ fontSize: 16 }}>{lang === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h1>
+              <p className={styles.profileSub}>{lang === 'ko' ? '카카오로 로그인하면 맞춤 혜택을 받아볼 수 있어요' : 'Login with Kakao to get personalized benefits'}</p>
             </div>
           </div>
         )}
@@ -455,7 +452,7 @@ export default function ProfilePage() {
                     <Link href={`/detail/${b.id}`} className={styles.bookmarkContent}>
                       <div className={styles.bookmarkMeta}>
                         <span className="badge badge-coral-soft" style={{ fontSize: 11 }}>
-                          {lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}
+                          {bText(b, 'categoryLabel', lang)}
                         </span>
                         {b.dDay >= 0 && b.dDay <= 14 && (
                           <span className="badge" style={{ fontSize: 11, color: getDDayColor(b.dDay) }}>
@@ -463,8 +460,8 @@ export default function ProfilePage() {
                           </span>
                         )}
                       </div>
-                      <h3 className={styles.bookmarkTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
-                      <p className={styles.bookmarkAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                      <h3 className={styles.bookmarkTitle}>{bText(b, 'title', lang)}</h3>
+                      <p className={styles.bookmarkAmount}>{bText(b, 'amount', lang)}</p>
                     </Link>
                     <div className={styles.bookmarkActions}>
                       <button
@@ -473,7 +470,7 @@ export default function ProfilePage() {
                           color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
                           padding: '4px', transition: 'color 0.2s',
                         }}
-                        onClick={() => handleShare(b.id, lang === 'ko' ? b.title : b.titleEn)}
+                        onClick={() => handleShare(b.id, bText(b, 'title', lang))}
                         aria-label={lang === 'ko' ? '공유' : 'Share'}
                       >
                         {sharedId === b.id ? '✅' : '📤'}
@@ -501,18 +498,18 @@ export default function ProfilePage() {
           <>
             {/* SNS 연동 */}
             <section className="section">
-              <h2 className="section-title mb-12">소셜 계정 연결</h2>
+              <h2 className="section-title mb-12">{lang === 'ko' ? '소셜 계정 연결' : 'Social Account'}</h2>
               {isKakaoLinked ? (
                 <div className={styles.coffeeCard} style={{ background: '#FEE500', color: '#000000', border: 'none' }}>
-                  <p className={styles.coffeeTitle}>✅ 카카오 계정 연동 완료</p>
-                  <p className={styles.coffeeDesc} style={{ color: '#333333' }}>카카오 계정으로 안전하게 연결되었습니다.</p>
+                  <p className={styles.coffeeTitle}>{lang === 'ko' ? '✅ 카카오 계정 연동 완료' : '✅ Kakao Account Linked'}</p>
+                  <p className={styles.coffeeDesc} style={{ color: '#333333' }}>{lang === 'ko' ? '카카오 계정으로 안전하게 연결되었습니다.' : 'Securely linked with your Kakao account.'}</p>
                 </div>
               ) : (
                 <div className={styles.coffeeCard}>
-                  <p className={styles.coffeeTitle}>🔐 카카오 간편 로그인</p>
-                  <p className={styles.coffeeDesc}>로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.</p>
+                  <p className={styles.coffeeTitle}>{lang === 'ko' ? '🔐 카카오 간편 로그인' : '🔐 Kakao Quick Login'}</p>
+                  <p className={styles.coffeeDesc}>{lang === 'ko' ? '로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.' : 'Login to sync your profile and saved benefits across devices.'}</p>
                   <a href="/api/auth/kakao" className="btn btn-kakao w-full mt-12" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
-                    1초 만에 카카오로 시작하기
+                    {lang === 'ko' ? '1초 만에 카카오로 시작하기' : 'Login with Kakao'}
                   </a>
                 </div>
               )}
@@ -544,7 +541,7 @@ export default function ProfilePage() {
                     📋 {lang === 'ko' ? '기본 정보 (필수)' : 'Basic Info (Required)'}
                   </p>
                   <div className={styles.formRow}>
-                    <label className={styles.label}>이름</label>
+                    <label className={styles.label}>{lang === 'ko' ? '이름' : 'Name'}</label>
                     <input className={styles.input} value={profile.name} onChange={e => update('name', e.target.value)} />
                   </div>
                   <div className={styles.formRowFull}>
@@ -616,7 +613,7 @@ export default function ProfilePage() {
                       <span className={styles.sliderValue}>{lang === 'ko' ? `중위소득 ${profile.incomePercent}%` : `${profile.incomePercent}% Median`}</span>
                     </div>
                     <input type="range" className={styles.slider} min={10} max={200} step={10} value={profile.incomePercent} onChange={e => update('incomePercent', Number(e.target.value))} />
-                    <div className={styles.sliderLabels}><span>기초수급</span><span>차상위</span><span>일반</span></div>
+                    <div className={styles.sliderLabels}>{lang === 'ko' ? <><span>기초수급</span><span>차상위</span><span>일반</span></> : <><span>Basic</span><span>Near-poverty</span><span>General</span></>}</div>
                   </div>
                   <div className={styles.formRow}>
                     <label className={styles.label}>{t.housingType}</label>
@@ -679,7 +676,7 @@ export default function ProfilePage() {
                 <div className={styles.notifRow}>
                   <div>
                     <p className={styles.notifLabel}>💬 {t.kakaoNotification}</p>
-                    <p className={styles.notifDesc}>카카오톡으로 혜택 마감 알림을 받습니다</p>
+                    <p className={styles.notifDesc}>{lang === 'ko' ? '카카오톡으로 혜택 마감 알림을 받습니다' : 'Receive deadline alerts via KakaoTalk'}</p>
                   </div>
                   <button className={`toggle ${profile.kakaoAlerts ? 'on' : ''}`} onClick={() => update('kakaoAlerts', !profile.kakaoAlerts)} />
                 </div>
@@ -698,7 +695,7 @@ export default function ProfilePage() {
                 <div className={styles.notifRow}>
                   <div>
                     <p className={styles.notifLabel}>⭐ {t.personalizedRec}</p>
-                    <p className={styles.notifDesc}>프로필 기반 맞춤 혜택을 추천받습니다</p>
+                    <p className={styles.notifDesc}>{lang === 'ko' ? '프로필 기반 맞춤 혜택을 추천받습니다' : 'Get personalized benefit recommendations'}</p>
                   </div>
                   <div className="toggle on" />
                 </div>
@@ -706,7 +703,7 @@ export default function ProfilePage() {
             </section>
 
             {/* 프리미엄 상태 카드 */}
-            <PremiumStatusCard isPremium={isPremium} kakaoUserId={kakaoUser?.id} />
+            <PremiumStatusCard isPremium={isPremium} kakaoUserId={kakaoUser?.id} lang={lang} />
 
 
             {/* 카카오 채널 */}

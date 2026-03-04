@@ -104,11 +104,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   price: '0',
                   priceCurrency: 'KRW',
                 },
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: '4.8',
-                  ratingCount: '127',
-                },
                 author: {
                   '@type': 'Organization',
                   name: 'BenefitBell',

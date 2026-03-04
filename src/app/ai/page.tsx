@@ -30,26 +30,16 @@ const EXAMPLE_PROMPTS_EN = [
 ]
 
 export default function AiPage() {
-  const { t, lang } = useApp()
+  const { t, lang, userProfile, benefits: allBenefits } = useApp()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AiResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [usageCount, setUsageCount] = useState(0)
-  const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
   const [sharedId, setSharedId] = useState<string | null>(null)
 
   const isKo = lang === 'ko'
   const examples = isKo ? EXAMPLE_PROMPTS_KO : EXAMPLE_PROMPTS_EN
-  const { userProfile } = useApp()
-
-  // 혜택 목록 미리 로드 (결과 카드에서 제목 표시용)
-  useEffect(() => {
-    fetch('/api/benefits')
-      .then(r => r.json())
-      .then(json => { if (json.data) setAllBenefits(json.data) })
-      .catch(e => console.warn('AI page benefit preload failed:', e))
-  }, [])
 
   useEffect(() => {
     if (!userProfile?.isPremium) {

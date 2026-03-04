@@ -87,3 +87,19 @@ export const CATEGORY_INFO: Record<BenefitCategory, { icon: string; color: strin
 export function getUrgentBenefits(benefits: Benefit[], daysThreshold: number): Benefit[] {
   return benefits.filter(b => b.dDay >= 0 && b.dDay <= daysThreshold && b.status !== 'closed')
 }
+
+/**
+ * Safe i18n text accessor for Benefit fields.
+ * Falls back to Korean when English field is empty/undefined.
+ * Usage: bText(benefit, 'title', lang)
+ */
+export function bText(
+  b: Benefit,
+  field: 'title' | 'amount' | 'description' | 'categoryLabel' | 'ministry',
+  lang: string,
+): string {
+  if (lang === 'ko') return b[field]
+  const enKey = `${field}En` as keyof Benefit
+  const en = b[enKey] as string | undefined
+  return en || b[field] // fallback to Korean if English is empty
+}

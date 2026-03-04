@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
 import { fetchAllWelfareList, transformListItemToBenefit } from '@/lib/welfare-api'
 
+// In-memory cache for benefits context (expensive to rebuild every request)
+let cachedContext: string | null = null
+let cacheTimestamp = 0
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 // Build a compact summary of all benefits for RAG context (from real API)
 async function buildBenefitsContext(): Promise<string> {
+  const now = Date.now()
+  if (cachedContext && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedContext
+  }
+
   const items = await fetchAllWelfareList()
   if (items.length === 0) return '(혜택 데이터를 불러오지 못했습니다)'
   // Use first 100 items for context window (too many items = too many tokens)
-  return items.slice(0, 100).map((item, i) => {
+  const context = items.slice(0, 100).map((item, i) => {
     const b = transformListItemToBenefit(item, i)
     return JSON.stringify({
       id: b.id,
@@ -18,6 +28,10 @@ async function buildBenefitsContext(): Promise<string> {
       ministry: b.ministry,
     })
   }).join('\n')
+
+  cachedContext = context
+  cacheTimestamp = now
+  return context
 }
 
 export async function POST(req: NextRequest) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import styles from './InstallBanner.module.css'
+import { useApp } from '@/lib/context'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -13,6 +14,7 @@ export default function InstallBanner() {
   const [show, setShow] = useState(false)
   const [platform, setPlatform] = useState<'android' | 'ios' | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  const { lang } = useApp()
 
   useEffect(() => {
     // Already in standalone mode (already installed)
@@ -60,25 +62,27 @@ export default function InstallBanner() {
   if (!show || dismissed) return null
 
   return (
-    <div className={`${styles.banner} ${show ? styles.visible : ''}`} role="dialog" aria-label="앱 설치 안내">
+    <div className={`${styles.banner} ${show ? styles.visible : ''}`} role="dialog" aria-label={lang === 'ko' ? '앱 설치 안내' : 'Install App'}>
       <div className={styles.icon}>📲</div>
       <div className={styles.content}>
-        <p className={styles.title}>홈 화면에 추가하기</p>
+        <p className={styles.title}>{lang === 'ko' ? '홈 화면에 추가하기' : 'Add to Home Screen'}</p>
         {platform === 'ios' ? (
           <p className={styles.desc}>
-            Safari 하단 <strong>공유 버튼 →</strong> <strong>홈 화면에 추가</strong>
+            {lang === 'ko'
+              ? <> Safari 하단 <strong>공유 버튼 →</strong> <strong>홈 화면에 추가</strong></>
+              : <> Tap <strong>Share →</strong> <strong>Add to Home Screen</strong></>}
           </p>
         ) : (
-          <p className={styles.desc}>앱처럼 빠르게 · 알림 받기 · 오프라인 지원</p>
+          <p className={styles.desc}>{lang === 'ko' ? '앱처럼 빠르게 · 알림 받기 · 오프라인 지원' : 'Fast like an app · Push alerts · Offline support'}</p>
         )}
       </div>
       <div className={styles.actions}>
         {platform === 'android' && (
           <button id="pwa-install-btn" className={styles.installBtn} onClick={handleInstall}>
-            설치
+            {lang === 'ko' ? '설치' : 'Install'}
           </button>
         )}
-        <button id="pwa-dismiss-btn" className={styles.dismissBtn} onClick={handleDismiss} aria-label="닫기">
+        <button id="pwa-dismiss-btn" className={styles.dismissBtn} onClick={handleDismiss} aria-label={lang === 'ko' ? '닫기' : 'Close'}>
           ✕
         </button>
       </div>

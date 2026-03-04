@@ -1,19 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
 import styles from './page.module.css'
 
 export default function CalendarPage() {
-  const { t, lang, toggleBookmark, isBookmarked } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, benefits: allBenefits, benefitsLoading: loading } = useApp()
   const now = new Date()
   const [currentDate, setCurrentDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1))
   const [selectedDay, setSelectedDay] = useState(now.getDate())
-  const [allBenefits, setAllBenefits] = useState<Benefit[]>([])
-  const [loading, setLoading] = useState(true)
   const [sharedId, setSharedId] = useState<string | null>(null)
 
   // Web Share API
@@ -41,22 +39,6 @@ export default function CalendarPage() {
     }
   }, [lang])
 
-  useEffect(() => {
-    async function loadBenefits() {
-      try {
-        const res = await fetch('/api/benefits')
-        if (res.ok) {
-          const json = await res.json()
-          setAllBenefits(json.data || [])
-        }
-      } catch (err) {
-        console.error('Failed to load benefits for calendar', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadBenefits()
-  }, [])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -203,11 +185,11 @@ export default function CalendarPage() {
                   <Link key={b.id} href={`/detail/${b.id}`} className={styles.calCard}>
                     <div className={styles.calCardLeft}>
                       <div className={styles.calCardMeta}>
-                        <span className={`badge badge-coral-soft`}>{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
+                        <span className={`badge badge-coral-soft`}>{bText(b, 'categoryLabel', lang)}</span>
                         <span className={`badge ${getDDayColor(b.dDay)}`}>{getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}</span>
                       </div>
-                      <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
-                      <p className={styles.calCardAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                      <h3 className={styles.calCardTitle}>{bText(b, 'title', lang)}</h3>
+                      <p className={styles.calCardAmount}>{bText(b, 'amount', lang)}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                       <button
@@ -223,7 +205,7 @@ export default function CalendarPage() {
                           color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
                           padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
                         }}
-                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, bText(b, 'title', lang)) }}
                         aria-label={lang === 'ko' ? '공유' : 'Share'}
                       >
                         {sharedId === b.id ? '✅' : '📤'}
@@ -244,10 +226,10 @@ export default function CalendarPage() {
                   <Link key={b.id} href={`/detail/${b.id}`} className={styles.calCard}>
                     <div className={styles.calCardLeft}>
                       <div className={styles.calCardMeta}>
-                        <span className={`badge badge-coral-soft`}>{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
+                        <span className={`badge badge-coral-soft`}>{bText(b, 'categoryLabel', lang)}</span>
                         <span className={`badge ${getDDayColor(b.dDay)}`}>{getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}</span>
                       </div>
-                      <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
+                      <h3 className={styles.calCardTitle}>{bText(b, 'title', lang)}</h3>
                       <p className={styles.calCardDate}>{t.deadlineLabel}: {b.applicationEnd}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
@@ -264,7 +246,7 @@ export default function CalendarPage() {
                           color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
                           padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
                         }}
-                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, bText(b, 'title', lang)) }}
                         aria-label={lang === 'ko' ? '공유' : 'Share'}
                       >
                         {sharedId === b.id ? '✅' : '📤'}
@@ -289,11 +271,11 @@ export default function CalendarPage() {
                   <Link key={b.id} href={`/detail/${b.id}`} className={styles.calCard}>
                     <div className={styles.calCardLeft}>
                       <div className={styles.calCardMeta}>
-                        <span className="badge badge-green-soft">{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
+                        <span className="badge badge-green-soft">{bText(b, 'categoryLabel', lang)}</span>
                         <span className="badge badge-purple-soft">{t.alwaysOpenBadge}</span>
                       </div>
-                      <h3 className={styles.calCardTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
-                      <p className={styles.calCardAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                      <h3 className={styles.calCardTitle}>{bText(b, 'title', lang)}</h3>
+                      <p className={styles.calCardAmount}>{bText(b, 'amount', lang)}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                       <button
@@ -309,7 +291,7 @@ export default function CalendarPage() {
                           color: sharedId === b.id ? '#10b981' : 'var(--text-tertiary)',
                           padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s',
                         }}
-                        onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                        onClick={e => { e.preventDefault(); handleShare(b.id, bText(b, 'title', lang)) }}
                         aria-label={lang === 'ko' ? '공유' : 'Share'}
                       >
                         {sharedId === b.id ? '✅' : '📤'}

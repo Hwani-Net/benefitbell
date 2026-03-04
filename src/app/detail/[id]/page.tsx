@@ -69,7 +69,7 @@ interface ApiDetail {
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { t, lang, toggleBookmark, isBookmarked } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, benefits: allBenefits } = useApp()
   const [benefit, setBenefit] = useState<Benefit | null>(null)
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -138,7 +138,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             return detailJson.data as ApiDetail
           }
         }
-        // 첫 시도 실패 시 1.5초 후 재시도 (data.go.kr 간헐 오류)
         if (!retry) {
           await new Promise(r => setTimeout(r, 1500))
           return fetchDetail(benefitId, true)
@@ -149,39 +148,31 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     async function loadData() {
       try {
-        // 1. 목록 API와 상세 API 병렬 시작
-        const [listRes, detail] = await Promise.all([
-          fetch('/api/benefits'),
-          fetchDetail(id),
-        ])
+        // Find from context benefits (already loaded globally)
+        const found = allBenefits.find(b => b.id === id)
+        const detail = await fetchDetail(id)
 
-        if (listRes.ok) {
-          const listJson = await listRes.json()
-          const found = (listJson.data as Benefit[]).find(b => b.id === id)
-          if (found) {
-            // 상세 API에 날짜 있으면 업데이트
-            if (detail?.applyBgnDt || detail?.applyEndDt) {
-              setBenefit({
-                ...found,
-                applicationStart: detail.applyBgnDt ?? found.applicationStart,
-                applicationEnd: detail.applyEndDt ?? found.applicationEnd,
-              })
-            } else {
-              setBenefit(found)
-            }
+        if (found) {
+          if (detail?.applyBgnDt || detail?.applyEndDt) {
+            setBenefit({
+              ...found,
+              applicationStart: detail.applyBgnDt ?? found.applicationStart,
+              applicationEnd: detail.applyEndDt ?? found.applicationEnd,
+            })
+          } else {
+            setBenefit(found)
           }
         }
 
         if (detail) setApiDetail(detail)
-
       } catch (err) {
         console.error(err)
       } finally {
         setLoading(false)
       }
     }
-    loadData()
-  }, [id])
+    if (allBenefits.length > 0) loadData()
+  }, [id, allBenefits])
 
   if (loading) {
     return (
@@ -620,7 +611,7 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 }
 
 // ── Phase 6: 서류 원스톱 체크리스트 컴포넌트 ──────────────
-const GOV24_HOME = 'https://www.gov.kr/mw/AA020InfoCappView.do'
+const GOV24_HOME = 'https://www.gov.kr'
 
 function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: string }) {
   const enriched = matchDocuments(docs)

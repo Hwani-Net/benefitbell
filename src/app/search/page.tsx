@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
 import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -19,7 +19,7 @@ const SearchFieldIcon = () => (
 )
 
 function SearchContent() {
-  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile } = useApp()
+  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile, benefits, benefitsLoading: loading } = useApp()
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -29,8 +29,6 @@ function SearchContent() {
   const customKey = searchParams.get('custom') ?? ''
   const sort = (searchParams.get('sort') as SortType) ?? 'popular'
 
-  const [benefits, setBenefits] = useState<Benefit[]>([])
-  const [loading, setLoading] = useState(true)
   const [inputValue, setInputValue] = useState(query)
   const [sharedId, setSharedId] = useState<string | null>(null)
 
@@ -59,8 +57,12 @@ function SearchContent() {
     }
   }, [lang])
 
-  const recentSearches = ['기초연금 신청', '서울시 청년지원', '차상위 의료비']
-  const recommendedTags = ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
+  const recentSearches = lang === 'ko'
+    ? ['기초연금 신청', '서울시 청년지원', '차상위 의료비']
+    : ['Basic pension application', 'Seoul youth support', 'Near-poverty medical expenses']
+  const recommendedTags = lang === 'ko'
+    ? ['#청년월세', '#기초수급', '#K패스', '#부모급여', '#도약계좌']
+    : ['#YouthRent', '#BasicLiving', '#KPass', '#ParentalPay', '#LeapAccount']
   const categories = Object.entries(CATEGORY_INFO)
 
   // URL 파라미터 변경 시 inputValue 동기화
@@ -68,21 +70,6 @@ function SearchContent() {
     setInputValue(query)
   }, [query])
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await fetch('/api/benefits')
-        if (!res.ok) throw new Error('API return not ok')
-        const json = await res.json()
-        setBenefits((json.data as Benefit[]).filter((b: Benefit) => b.status !== 'closed'))
-      } catch (err) {
-        console.error('Failed to load search benefits', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadData()
-  }, [])
 
   // 검색어 선택 → URL push
   const applyQuery = useCallback((q: string) => {
@@ -163,8 +150,8 @@ function SearchContent() {
                 >
                   <span style={{ fontSize: 28 }}>✨</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: 'white' }}>{kakaoUser.nickname}님 맞춤 혜택 모아보기</div>
-                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 400, marginTop: 4 }}>저장된 정보를 기반으로 딱 맞는 혜택을 찾아드려요!</div>
+                    <div style={{ color: 'white' }}>{lang === 'ko' ? `${kakaoUser.nickname}님 맞춤 혜택 모아보기` : `Personalized benefits for ${kakaoUser.nickname}`}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 400, marginTop: 4 }}>{lang === 'ko' ? '저장된 정보를 기반으로 딱 맞는 혜택을 찾아드려요!' : 'Find benefits perfectly matched to your saved profile!'}</div>
                   </div>
                   <span style={{ color: 'white' }}>→</span>
                 </button>
@@ -186,8 +173,8 @@ function SearchContent() {
                   }}>
                     <span style={{ fontSize: 26, flexShrink: 0 }}>👑</span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>프리미엄으로 업그레이드</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>AI 무제한 + 광고 제거 + 14일 전 알림 — 월 4,900원</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{lang === 'ko' ? '프리미엄으로 업그레이드' : 'Upgrade to Premium'}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>{lang === 'ko' ? 'AI 무제한 + 광고 제거 + 14일 전 알림 — 월 4,900원' : 'Unlimited AI + No ads + 14-day alerts — ₩4,900/mo'}</div>
                     </div>
                     <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>→</span>
                   </div>
@@ -270,7 +257,7 @@ function SearchContent() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px 4px' }}>
                 <span style={{ fontSize: 20 }}>✨</span>
                 <strong style={{ fontSize: 15, color: 'var(--text-primary)' }}>
-                  맞춤 혜택 추천 결과
+                  {lang === 'ko' ? '맞춤 혜택 추천 결과' : 'Personalized Results'}
                 </strong>
                 <button
                   style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-tertiary)' }}
@@ -313,23 +300,23 @@ function SearchContent() {
             {/* 결과 리스트 */}
             <section className="section">
               {loading ? (
-                <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>불러오는 중...</p>
+                <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>{lang === 'ko' ? '불러오는 중...' : 'Loading...'}</p>
               ) : (
                 <>
-                  <p className={styles.resultCount}>{filtered.length}건</p>
+                  <p className={styles.resultCount}>{lang === 'ko' ? `${filtered.length}건` : `${filtered.length} results`}</p>
                   <div className={styles.resultList}>
                     {filtered.map(b => (
                       <Link key={b.id} href={`/detail/${b.id}`} className={`${styles.resultItem} animate-fade-in`}>
                         <div className={styles.resultLeft}>
                           <div className={styles.resultMeta}>
-                            <span className="badge badge-coral-soft">{lang === 'ko' ? b.categoryLabel : b.categoryLabelEn}</span>
+                            <span className="badge badge-coral-soft">{bText(b, 'categoryLabel', lang)}</span>
                             {b.dDay >= 0 && b.dDay <= 14 && (
                               <span className={`badge ${getDDayColor(b.dDay)}`}>{getDDayText(b.dDay, lang === 'ko' ? 'ko' : 'en')}</span>
                             )}
                             {b.new && <span className="badge badge-coral text-xs">{t.newBadge}</span>}
                           </div>
-                          <h3 className={styles.resultTitle}>{lang === 'ko' ? b.title : b.titleEn}</h3>
-                          <p className={styles.resultAmount}>{lang === 'ko' ? b.amount : b.amountEn}</p>
+                          <h3 className={styles.resultTitle}>{bText(b, 'title', lang)}</h3>
+                          <p className={styles.resultAmount}>{bText(b, 'amount', lang)}</p>
                           <p className={styles.resultPeriod}>📅 {b.applicationStart} ~ {b.applicationEnd}</p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
@@ -350,7 +337,7 @@ function SearchContent() {
                               borderRadius: 6,
                               transition: 'color 0.2s',
                             }}
-                            onClick={e => { e.preventDefault(); handleShare(b.id, lang === 'ko' ? b.title : b.titleEn) }}
+                            onClick={e => { e.preventDefault(); handleShare(b.id, bText(b, 'title', lang)) }}
                             aria-label={lang === 'ko' ? '공유' : 'Share'}
                           >
                             {sharedId === b.id ? '✅' : '📤'}
@@ -361,7 +348,7 @@ function SearchContent() {
                     {filtered.length === 0 && (
                       <div className={styles.emptyState}>
                         <span style={{ fontSize: 40 }}>🔍</span>
-                        <p>검색 결과가 없습니다</p>
+                        <p>{lang === 'ko' ? '검색 결과가 없습니다' : 'No results found'}</p>
                       </div>
                     )}
                   </div>
@@ -383,7 +370,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '80px 20px', textAlign: 'center' }}>데이터를 불러오는 중입니다...</div>}>
+    <Suspense fallback={<div style={{ padding: '80px 20px', textAlign: 'center' }}>Loading...</div>}>
       <SearchContent />
     </Suspense>
   )

@@ -54,14 +54,30 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   const [inlineExpanded, setInlineExpanded] = useState(false)
   const [inlineQuestions, setInlineQuestions] = useState<string[]>([])
 
-  // ── Auto-load for inline variant ──────────────────
+  // ── Auto-load for inline variant (with sessionStorage cache) ──
   useEffect(() => {
     if (variant !== 'inline') return
+
+    // Check sessionStorage cache first
+    const cacheKey = `ai_check_${benefitId}_${lang}`
+    try {
+      const cached = sessionStorage.getItem(cacheKey)
+      if (cached) {
+        const data: AiCheckResponse = JSON.parse(cached)
+        setInlineSummary(data.summary ?? [])
+        setInlineVerdict(data.quickVerdict ?? 'partial')
+        setInlineQuestions(data.questions ?? [])
+        return // Skip API call
+      }
+    } catch { /* cache miss, proceed to fetch */ }
+
+    const controller = new AbortController()
     setInlineLoading(true)
     fetch('/api/ai-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ benefitId, lang, isPremium }),
+      signal: controller.signal,
     })
       .then(async r => {
         const data: AiCheckResponse = await r.json()
@@ -75,9 +91,16 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
         setInlineSummary(data.summary ?? [])
         setInlineVerdict(data.quickVerdict ?? 'partial')
         setInlineQuestions(data.questions ?? [])
+        // Cache successful response
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(data)) } catch { /* storage full */ }
       })
-      .catch(() => setInlineVerdict('partial'))
+      .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setInlineVerdict('partial')
+      })
       .finally(() => setInlineLoading(false))
+
+    return () => controller.abort()
   }, [variant, benefitId, lang, isPremium])
 
   // ── Shared helpers ────────────────────────────────

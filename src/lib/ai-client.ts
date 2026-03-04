@@ -76,6 +76,10 @@ export async function callAIWithFallback(
       if (msg.includes('401') || msg.includes('invalid_api_key')) {
         throw lastError
       }
+      // Wait before trying next model on rate limits
+      if (msg.includes('429') || msg.includes('rate_limit') || msg.includes('quota')) {
+        await new Promise(r => setTimeout(r, 1000))
+      }
       // Continue to next model for rate limits or other errors
       continue
     }

@@ -86,7 +86,7 @@ export default function PremiumSuccessPage() {
     <>
       <TopBar />
       <main className="page-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', marginTop: -60 }}>
-        <Suspense fallback={<div>불러오는 중...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
           <SuccessContent />
         </Suspense>
       </main>

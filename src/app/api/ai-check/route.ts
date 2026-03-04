@@ -138,3 +138,86 @@ Respond in JSON:
     return NextResponse.json({ error: 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }
+
+// =====================
+// PUT — 사용자 답변 기반 자격 판정
+// =====================
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { benefitId, questions, answers, lang = 'ko' } = body
+
+    if (!benefitId || !questions || !answers) {
+      return NextResponse.json({ error: 'benefitId, questions, answers required' }, { status: 400 })
+    }
+
+    const client = createAIClient()
+
+    const servId = extractServId(benefitId)
+    const detail = await fetchWelfareDetail(servId)
+
+    const qa = questions.map((q: string, i: number) =>
+      `Q: ${q}\nA: ${answers[i] ? '예' : '아니오'}`
+    ).join('\n\n')
+
+    const isKo = lang === 'ko'
+    const prompt = isKo ? `
+다음 정부 지원 혜택에 대한 자격 판정을 해주세요:
+
+혜택명: ${detail?.servNm ?? benefitId}
+대상: ${detail?.trgterIndvdl ?? '정보 없음'}
+선발 기준: ${detail?.slctCriteria ?? '정보 없음'}
+
+사용자의 답변:
+${qa}
+
+다음 형식의 JSON으로 답해주세요:
+{
+  "verdict": "likely" | "partial" | "unlikely",
+  "reason": "판정 이유 설명 (2~3문장)",
+  "tips": "다음에 할 행동 제안 (1문장)"
+}
+    ` : `
+Assess eligibility for this government benefit:
+
+Benefit: ${detail?.servNm ?? benefitId}
+Target: ${detail?.trgterIndvdl ?? 'N/A'}
+Criteria: ${detail?.slctCriteria ?? 'N/A'}
+
+User answers:
+${qa}
+
+Respond in JSON:
+{
+  "verdict": "likely" | "partial" | "unlikely",
+  "reason": "2-3 sentence explanation",
+  "tips": "1 sentence action suggestion"
+}
+    `
+
+    const text = await callAIWithFallback(client, [
+      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 자격 판정 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
+      { role: 'user', content: prompt },
+    ], { temperature: 0.3, maxTokens: 600, jsonMode: true })
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return NextResponse.json({ error: 'AI 판정 결과를 파싱할 수 없습니다.' }, { status: 500 })
+    }
+
+    const parsed: { verdict?: string; reason?: string; tips?: string } = JSON.parse(jsonMatch[0])
+
+    return NextResponse.json({
+      verdict: parsed.verdict ?? 'partial',
+      reason: parsed.reason ?? '',
+      tips: parsed.tips ?? '',
+    })
+  } catch (err) {
+    console.error('[ai-check PUT] Error:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('429') || message.toLowerCase().includes('quota') || message.includes('rate_limit')) {
+      return NextResponse.json({ error: 'AI 서비스가 일시적으로 과부하 상태입니다.', code: 'AI_OVERLOADED' }, { status: 503 })
+    }
+    return NextResponse.json({ error: 'AI 판정 중 오류가 발생했습니다.' }, { status: 500 })
+  }
+}

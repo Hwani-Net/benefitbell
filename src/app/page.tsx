@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO } from '@/data/benefits'
+import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
 import { getPersonalizedBenefits, getAiPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -53,9 +53,7 @@ function useDragScroll() {
 }
 
 export default function HomePage() {
-  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile } = useApp()
-  const [benefits, setBenefits] = useState<Benefit[]>([])
-  const [loading, setLoading] = useState(true)
+  const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile, benefits, benefitsLoading: loading } = useApp()
   const [apiError, setApiError] = useState(false)
   const [sharedId, setSharedId] = useState<string | null>(null)
   const [aiScores, setAiScores] = useState<Map<string, { score: number; verdict: string; summary: string }>>(new Map())
@@ -88,26 +86,8 @@ export default function HomePage() {
   }, [lang])
 
   useEffect(() => {
-    async function loadBenefits() {
-      try {
-        const res = await fetch('/api/benefits')
-        const json = await res.json()
-        if (json.success && json.data?.length > 0) {
-          // Phase 6: 만료 혜택 자동 숨김 (closed status 필터)
-          const activeBenefits = (json.data as Benefit[]).filter(b => b.status !== 'closed')
-          setBenefits(activeBenefits)
-        } else {
-          setApiError(true)
-        }
-      } catch (err) {
-        console.error('Failed to load benefits', err)
-        setApiError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadBenefits()
-  }, [])
+    if (!loading && benefits.length === 0) setApiError(true)
+  }, [loading, benefits])
 
   // AI eligibility scoring (runs after benefits load, only for logged-in users)
   useEffect(() => {
@@ -221,10 +201,10 @@ export default function HomePage() {
                     </span>
                     <span className={styles.ministry}>{lang === 'ko' ? benefit.ministry : benefit.ministryEn}</span>
                   </div>
-                  <h3 className={styles.urgentTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</h3>
-                  <p className={styles.urgentAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                  <h3 className={styles.urgentTitle}>{bText(benefit, 'title', lang)}</h3>
+                  <p className={styles.urgentAmount}>{bText(benefit, 'amount', lang)}</p>
                   <div className={styles.urgentCategoryChip}>
-                    <span>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                    <span>{bText(benefit, 'categoryLabel', lang)}</span>
                   </div>
                 </Link>
               ))
@@ -289,8 +269,8 @@ export default function HomePage() {
               return (
                 <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`} style={{ background: 'var(--bg-primary)' }}>
                   <div className={styles.benefitInfo}>
-                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
-                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <p className={styles.benefitTitle}>{bText(benefit, 'title', lang)}</p>
+                    <p className={styles.benefitAmount}>{bText(benefit, 'amount', lang)}</p>
                     <div className={styles.benefitMeta}>
                       {/* AI Score Badge */}
                       {ai ? (
@@ -309,7 +289,7 @@ export default function HomePage() {
                       ) : aiLoading ? (
                         <span className="badge badge-gray text-xs" style={{ opacity: 0.6 }}>🤖 ···</span>
                       ) : null}
-                      <span className={`badge badge-coral text-xs`}>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      <span className={`badge badge-coral text-xs`}>{bText(benefit, 'categoryLabel', lang)}</span>
                       {benefit.dDay <= 14 && benefit.dDay >= 0 && (
                         <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
                           {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
@@ -333,7 +313,7 @@ export default function HomePage() {
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
-                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, bText(benefit, 'title', lang)) }}
                       aria-label={lang === 'ko' ? '공유' : 'Share'}
                     >
                       {sharedId === benefit.id ? '✅' : '📤'}
@@ -395,8 +375,8 @@ export default function HomePage() {
               }}>
                 <span style={{ fontSize: 28, flexShrink: 0 }}>👑</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>프리미엄으로 업그레이드</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>AI 무제한 + 광고 제거 + 14일 전 알림 — 월 4,900원</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{lang === 'ko' ? '프리미엄으로 업그레이드' : 'Upgrade to Premium'}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>{lang === 'ko' ? 'AI 무제한 + 광고 제거 + 14일 전 알림 — 월 4,900원' : 'Unlimited AI + No ads + 14-day alerts — ₩4,900/mo'}</div>
                 </div>
                 <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>→</span>
               </div>
@@ -447,10 +427,10 @@ export default function HomePage() {
                 <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`}>
                   <span className={styles.rankNum}>{i + 1}</span>
                   <div className={styles.benefitInfo}>
-                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
-                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <p className={styles.benefitTitle}>{bText(benefit, 'title', lang)}</p>
+                    <p className={styles.benefitAmount}>{bText(benefit, 'amount', lang)}</p>
                     <div className={styles.benefitMeta}>
-                      <span className={`badge badge-gray text-xs`}>{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      <span className={`badge badge-gray text-xs`}>{bText(benefit, 'categoryLabel', lang)}</span>
                       {benefit.dDay <= 14 && benefit.dDay >= 0 && (
                         <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
                           {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
@@ -469,7 +449,7 @@ export default function HomePage() {
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
-                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, bText(benefit, 'title', lang)) }}
                       aria-label={lang === 'ko' ? '공유' : 'Share'}
                     >
                       {sharedId === benefit.id ? '✅' : '📤'}
@@ -486,7 +466,7 @@ export default function HomePage() {
           <section className="section">
             <div className="section-header">
               <h2 className="section-title">
-                🆕 신규 혜택
+                {lang === 'ko' ? '🆕 신규 혜택' : '🆕 New Benefits'}
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-coral)', background: 'var(--color-coral-light)', padding: '2px 8px', borderRadius: 99, marginLeft: 8, verticalAlign: 'middle' }}>
                   NEW
                 </span>
@@ -501,11 +481,11 @@ export default function HomePage() {
                   className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`}
                 >
                   <div className={styles.benefitInfo}>
-                    <p className={styles.benefitTitle}>{lang === 'ko' ? benefit.title : benefit.titleEn}</p>
-                    <p className={styles.benefitAmount}>{lang === 'ko' ? benefit.amount : benefit.amountEn}</p>
+                    <p className={styles.benefitTitle}>{bText(benefit, 'title', lang)}</p>
+                    <p className={styles.benefitAmount}>{bText(benefit, 'amount', lang)}</p>
                     <div className={styles.benefitMeta}>
-                      <span className="badge badge-coral-soft text-xs">🆕 신규</span>
-                      <span className="badge badge-gray text-xs">{lang === 'ko' ? benefit.categoryLabel : benefit.categoryLabelEn}</span>
+                      <span className="badge badge-coral-soft text-xs">{lang === 'ko' ? '🆕 신규' : '🆕 New'}</span>
+                      <span className="badge badge-gray text-xs">{bText(benefit, 'categoryLabel', lang)}</span>
                       {benefit.dDay >= 0 && benefit.dDay <= 30 && (
                         <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
                           {getDDayText(benefit.dDay, lang === 'ko' ? 'ko' : 'en')}
@@ -523,7 +503,7 @@ export default function HomePage() {
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: sharedId === benefit.id ? '#10b981' : 'var(--text-tertiary)', padding: '2px 4px', borderRadius: 6, transition: 'color 0.2s' }}
-                      onClick={e => { e.preventDefault(); handleShare(benefit.id, lang === 'ko' ? benefit.title : benefit.titleEn) }}
+                      onClick={e => { e.preventDefault(); handleShare(benefit.id, bText(benefit, 'title', lang)) }}
                       aria-label={lang === 'ko' ? '공유' : 'Share'}
                     >
                       {sharedId === benefit.id ? '✅' : '📤'}

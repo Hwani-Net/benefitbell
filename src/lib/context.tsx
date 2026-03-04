@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase'
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
+import type { Benefit } from '@/data/benefits'
 
 // =====================
 // i18n 딕셔너리
@@ -308,6 +309,8 @@ interface AppContextType {
   setUserProfile: (p: UserProfile) => void
   kakaoUser: { id?: number; nickname: string; profile_image?: string } | null
   setKakaoUser: (u: { nickname: string; profile_image?: string } | null) => void
+  benefits: Benefit[]
+  benefitsLoading: boolean
 }
 
 export interface UserProfile {
@@ -348,6 +351,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [bookmarks, setBookmarks] = useState<string[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile)
   const [kakaoUser, setKakaoUser] = useState<{ id?: number; nickname: string; profile_image?: string } | null>(null)
+  const [benefits, setBenefits] = useState<Benefit[]>([])
+  const [benefitsLoading, setBenefitsLoading] = useState(true)
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
@@ -377,6 +382,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+  }, [])
+
+  // Global benefits fetch (single load, shared across all pages)
+  useEffect(() => {
+    fetch('/api/benefits')
+      .then(r => r.json())
+      .then(json => {
+        if (json.data) setBenefits((json.data as Benefit[]).filter((b: Benefit) => b.status !== 'closed'))
+      })
+      .catch(err => console.error('Global benefits fetch failed:', err))
+      .finally(() => setBenefitsLoading(false))
   }, [])
 
   // Firebase Custom Token 감지 → signInWithCustomToken (카카오 로그인 직후)
@@ -459,6 +475,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       bookmarks, toggleBookmark, isBookmarked,
       userProfile, setUserProfile,
       kakaoUser, setKakaoUser,
+      benefits, benefitsLoading,
     }}>
       {children}
     </AppContext.Provider>
