@@ -636,6 +636,52 @@ export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
 }
 
 // =====================
+// Source 4: 기업마당 API (bizinfo.go.kr) — 중소기업/소상공인 지원사업
+// =====================
+// ⚠️ 별도 서비스키 필요: BIZINFO_API_KEY
+// https://www.bizinfo.go.kr/apiDetail.do?id=bizinfoApi 에서 발급
+
+const BIZINFO_URL = 'https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do'
+
+export async function fetchBizinfoList(): Promise<WelfareListItem[]> {
+  const bizKey = process.env.BIZINFO_API_KEY
+  if (!bizKey) return []
+
+  try {
+    const url = `${BIZINFO_URL}?crtfcKey=${bizKey}&dataType=json&searchCnt=1000`
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+
+    if (!res.ok) {
+      console.warn(`[welfare-api] 기업마당 API error: ${res.status}`)
+      return []
+    }
+
+    const data = await res.json()
+    const items = data?.jsonArray
+    if (!items || !Array.isArray(items)) return []
+
+    console.log(`[welfare-api] 기업마당: ${items.length} items (totCnt: ${items[0]?.totCnt || '?'})`)
+
+    return items.map((item: Record<string, string>) => ({
+      servId: `BIZ-${item.pblancId || ''}`,
+      servNm: item.pblancNm || '',
+      servDgst: item.bsnsSumryCn || item.pblancNm || '',
+      jurOrgNm: item.jrsdInsttNm || item.excInsttNm || '중소벤처기업부',
+      lifeNmArray: '',
+      intrsThemNmArray: item.pldirSportRealmLclasCodeNm || '',
+      trgterIndvdlArray: item.trgetNm || '',
+      servDtlLink: item.rceptEngnHmpgUrl || (item.pblancUrl ? `https://www.bizinfo.go.kr${item.pblancUrl}` : ''),
+      inqNum: Number(item.inqireCo) || 0,
+      svcfrstRegTs: item.creatPnttm || '',
+      lastModYmd: item.creatPnttm?.substring(0, 10) || '',
+    }))
+  } catch (err) {
+    console.warn('[welfare-api] 기업마당 fetch error:', err)
+    return []
+  }
+}
+
+// =====================
 // Unified Data Fetcher — All Sources Combined
 // =====================
 
@@ -644,18 +690,20 @@ export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
  * Each source is opt-in based on env variables — no code change needed.
  *
  * Sources:
- * 1. 중앙부처 복지서비스 (always active if DATA_GO_KR_SERVICE_KEY exists)
- * 2. 지자체 복지서비스 (same key, needs separate API authorization)
- * 3. 보조금24 (needs DATA_GO_KR_SUBSIDY_KEY)
+ * 1. 중앙부처 복지서비스 (DATA_GO_KR_SERVICE_KEY)
+ * 2. 지자체 복지서비스 (same key, separate API auth)
+ * 3. 보조금24 (DATA_GO_KR_SUBSIDY_KEY)
+ * 4. 기업마당 (BIZINFO_API_KEY) — 중소기업/소상공인 지원사업
  *
- * Deduplication: by servId (stripped of source prefix for comparison)
+ * Deduplication: by servId (stripped of source prefix)
  */
 export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   // Fetch all sources in parallel
-  const [national, local, subsidy] = await Promise.all([
+  const [national, local, subsidy, bizinfo] = await Promise.all([
     fetchAllWelfareList(),
     fetchLocalGovWelfareList(),
     fetchSubsidy24List(),
+    fetchBizinfoList(),
   ])
 
   // Stats logging
@@ -663,6 +711,7 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
     national: national.length,
     local: local.length,
     subsidy: subsidy.length,
+    bizinfo: bizinfo.length,
     total: 0,
   }
 
@@ -670,17 +719,18 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   const seen = new Set<string>()
   const merged: WelfareListItem[] = []
 
-  for (const item of [...national, ...local, ...subsidy]) {
+  for (const item of [...national, ...local, ...subsidy, ...bizinfo]) {
     // Normalize ID for dedup (strip source prefix)
-    const rawId = item.servId.replace(/^(LG-|SUB-)/, '')
+    const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-)/, '')
     if (!rawId || seen.has(rawId)) continue
     seen.add(rawId)
     merged.push(item)
   }
 
   stats.total = merged.length
-  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy} → 통합 ${stats.total}건`)
+  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo} → 통합 ${stats.total}건`)
 
   return merged
 }
+
 
