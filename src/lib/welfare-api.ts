@@ -752,6 +752,59 @@ export async function fetchKStartupList(): Promise<WelfareListItem[]> {
 }
 
 // =====================
+// Source 6: 민간복지서비스 (정적 CSV 데이터 — data.go.kr 15116392)
+// =====================
+// 한국사회보장정보원에서 제공하는 민간 복지서비스 정보 (335건)
+// API가 아닌 파일데이터 → JSON으로 변환하여 정적 임포트
+
+import privateWelfareData from '@/data/private-welfare.json'
+
+interface PrivateWelfareItem {
+  id: string
+  orgName: string
+  name: string
+  startDate: string
+  endDate: string
+  purpose: string
+  target: string
+  content: string
+  howToApply: string
+  documents: string
+  etc: string
+  lifeCycle: string
+  household: string
+  interest: string
+}
+
+function getPrivateWelfareList(): WelfareListItem[] {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return (privateWelfareData as PrivateWelfareItem[])
+    .filter(item => {
+      // 만료된 사업 제외 (endDate가 오늘 이전이면 스킵)
+      if (item.endDate) {
+        const end = new Date(item.endDate)
+        if (!isNaN(end.getTime()) && end < today) return false
+      }
+      return true
+    })
+    .map(item => ({
+      servId: item.id,
+      servNm: item.name,
+      servDgst: item.content || item.purpose || item.name,
+      jurOrgNm: item.orgName || '민간',
+      lifeNmArray: item.lifeCycle || '',
+      intrsThemNmArray: item.interest || '',
+      trgterIndvdlArray: item.household || '',
+      servDtlLink: '',
+      inqNum: 0,
+      svcfrstRegTs: item.startDate || '',
+      lastModYmd: item.endDate || '',
+    }))
+}
+
+// =====================
 // Unified Data Fetcher — All Sources Combined
 // =====================
 
@@ -765,11 +818,15 @@ export async function fetchKStartupList(): Promise<WelfareListItem[]> {
  * 3. 보조금24 (DATA_GO_KR_SUBSIDY_KEY)
  * 4. 기업마당 (BIZINFO_API_KEY) — 중소기업/소상공인 지원사업
  * 5. K-Startup (DATA_GO_KR_SERVICE_KEY) — 창업지원 사업공고
+ * 6. 민간복지서비스 (정적 JSON 데이터) — 335건
  *
  * Deduplication: by servId (stripped of source prefix)
  */
 export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
-  // Fetch all sources in parallel
+  // Source 6: 정적 데이터 (동기)
+  const privateWelfare = getPrivateWelfareList()
+
+  // Fetch all API sources in parallel
   const [national, local, subsidy, bizinfo, kstartup] = await Promise.all([
     fetchAllWelfareList(),
     fetchLocalGovWelfareList(),
@@ -785,6 +842,7 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
     subsidy: subsidy.length,
     bizinfo: bizinfo.length,
     kstartup: kstartup.length,
+    privateWelfare: privateWelfare.length,
     total: 0,
   }
 
@@ -792,16 +850,16 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   const seen = new Set<string>()
   const merged: WelfareListItem[] = []
 
-  for (const item of [...national, ...local, ...subsidy, ...bizinfo, ...kstartup]) {
+  for (const item of [...national, ...local, ...subsidy, ...bizinfo, ...kstartup, ...privateWelfare]) {
     // Normalize ID for dedup (strip source prefix)
-    const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-|KSU-)/, '')
+    const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-|KSU-|PW-)/, '')
     if (!rawId || seen.has(rawId)) continue
     seen.add(rawId)
     merged.push(item)
   }
 
   stats.total = merged.length
-  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup} → 통합 ${stats.total}건`)
+  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup}, 민간복지=${stats.privateWelfare} → 통합 ${stats.total}건`)
 
   return merged
 }
