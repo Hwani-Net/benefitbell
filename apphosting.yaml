@@ -1,4 +1,4 @@
-# Firebase App Hosting configuration
+# Firebase App Hosting configuration — ai-project-ce41f
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
@@ -11,17 +11,17 @@ runConfig:
 env:
   # ─── Firebase 클라이언트 (빌드타임 필요 → 직접 값) ───────────────────
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyAtIjBHT25aZEc8VVnGiUo4wU_OwcWXkIs
+    value: AIzaSyD661gFi59xD6kDYcbqpr4XOghQtGX9_JI
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: benefitbell-565b2.firebaseapp.com
+    value: ai-project-ce41f.firebaseapp.com
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: benefitbell-565b2
+    value: ai-project-ce41f
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: benefitbell-565b2.firebasestorage.app
+    value: ai-project-ce41f.firebasestorage.app
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "441975360101"
+    value: "287186253524"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: 1:441975360101:web:e6bcb0728d9bb003a4948c
+    value: 1:287186253524:web:98d9a50c0d48dabafa2d41
 
   # ─── 토스 클라이언트 키 (프론트엔드) ─────────────────────────────────
   - variable: NEXT_PUBLIC_TOSS_CLIENT_KEY
@@ -33,7 +33,7 @@ env:
 
   # ─── GA / 링크 (공개) ────────────────────────────────────────────────
   - variable: NEXT_PUBLIC_GA_ID
-    value: G-P74F814W2D
+    value: G-JQHPW3JBJP
   - variable: NEXT_PUBLIC_BMC_LINK
     value: https://www.buymeacoffee.com/stayicond
   - variable: NEXT_PUBLIC_KAKAOPAY_LINK
