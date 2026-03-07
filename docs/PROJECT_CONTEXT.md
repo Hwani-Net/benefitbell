@@ -1,9 +1,11 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-03 (17:15 KST)
+> **최종 갱신**: 2026-03-08 (08:25 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
-> **Netlify**: https://zippy-lolly-1f23de.netlify.app
+> **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
+> **Firebase 프로젝트**: `ai-project-ce41f` (결제: 토스뱅크 / Blaze 요금제)
+> **GitHub**: Hwani-Net/benefitbell → main 브랜치 자동 배포
 
 ---
 
@@ -35,6 +37,7 @@
 | 8 | 배포 + 프리미엄 런칭 | ✅ Netlify 배포 완료 (2026-03-03) |
 | 9 | AI 프로덕션 검증 | ✅ OpenRouter API 연동 + 실사용 테스트 통과 (2026-03-03) |
 | 10 | **UX 개선 (페르소나 자문 기반)** | ✅ P0~P3 전체 완료 (2026-03-03) |
+| 11 | **Netlify → Firebase App Hosting 이전** | ✅ 백엔드 생성 + 시크릿 9개 등록 완료 (2026-03-07) |
 
 ## ✅ TODO
 
@@ -80,6 +83,9 @@
 | 2026-03-03 | activate API 시크릿 인증 | self-claim 방지, 외부 curl 차단 (QA에서 발견) | 인증 없이 오픈 (기각) |
 | 2026-03-03 | firebase-admin require→readFileSync | Turbopack에서 require() 외부경로 resolve 실패 | require() 유지 (기각) |
 | 2026-03-03 | success 페이지 useEffect ref 가드 | 중복 confirm API 호출 방지 (무한루프 위험) | userProfile deps 유지 (기각) |
+| 2026-03-07 | Netlify → Firebase App Hosting 이전 | Firebase 단일 스택 통일 + GitHub 자동 배포 | Vercel (무료 리밋), Netlify 유지 (기각) |
+| 2026-03-07 | GCP 결제 계정: 토스뱅크 (hwanizero01) | stayicon 결제 문제 → hwanizero01로 전환 | stayicon 결제 수정 (기각) |
+| 2026-03-07 | 시크릿 9개 Cloud Secret Manager 등록 | apphosting.yaml에서 참조, IAM 바인딩 완료 | .env 파일 직접 배포 (보안 위험) |
 
 ## 🔧 기술 스택
 
@@ -92,7 +98,8 @@
 | AI | OpenRouter API (무료 tier, 다중 모델 fallback) |
 | 푸시 | Firebase Cloud Messaging (FCM) |
 | 공공데이터 | data.go.kr 복지서비스 API |
-| 호스팅 | Netlify (상업적 사용 허용) |
+| 호스팅 | **Firebase App Hosting** (asia-east1, Blaze 요금제) |
+| 배포 | GitHub main 브랜치 push → 자동 빌드·배포 |
 | 결제 | 토스페이먼츠 (test키 사용 중) |
 
 ## 📂 핵심 파일 지도
@@ -118,7 +125,8 @@
 | 삽질 기록 | `docs/PITFALLS.md` |
 | Firebase 키 스킬 | `C:\Users\AIcreator\.agent\skills\firebase-service-account\SKILL.md` |
 | 카카오 API 키 위치 | Obsidian `kakao-api-key-location.md` |
-| **Netlify 배포 가이드** | **Obsidian `뇽죵이Agent/memory/netlify-deployment-guide.md`** |
+| App Hosting 설정 | `apphosting.yaml` (시크릿 매핑 + 런타임 설정) |
+| Firebase 프로젝트 설정 | `.firebaserc` + `firebase.json` |
 
 ---
 

@@ -139,3 +139,31 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 - ✅ 3개 개별 필드로 분리: `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_PROJECT_ID` (기존 `NEXT_PUBLIC_FIREBASE_PROJECT_ID` 재사용)
 - ✅ `firebase-admin.ts`에서 개별 필드 우선 → JSON fallback → 파일 경로 fallback 체인 구현  
 **금지**: Netlify/Vercel의 서버리스 함수에 대형 JSON을 환경변수 하나에 통째로 넣지 말 것.
+
+---
+
+## 2026-03-07: Firebase App Hosting 배포
+
+### GCP 결제 계정 "카드 비밀번호 틀림"
+**증상**: GCP 결제 계정 생성 시 "잘못된 비밀번호" 반복.
+**원인**: "카드 비밀번호 앞 2자리"는 ATM PIN이며, 카드 만료일도 오입력.
+**해결**: 카드 만료일 수정 후 "토스뱅크" 결제 계정 재생성.
+**금지**: 결제 계정 여러 개 만들지 말 것. 해지된 계정은 "다시 열기" 어려움.
+
+### Firebase CLI GitHub 연동 실패
+**증상**: `firebase apphosting:backends:create`에서 GitHub 계정 목록에 Hwani-Net 안 보임.
+**원인**: GitHub App 설치 완료됐지만 CLI가 인식 못함 (인터랙티브 프롬프트 한계).
+**해결**: Firebase 콘솔 UI(브라우저)에서 직접 App Hosting 설정.
+**금지**: CLI만으로 해결하려 고집하지 말 것.
+
+### gcloud vs Firebase CLI 계정 불일치
+**증상**: `gcloud secrets create` 시 "permission denied".
+**원인**: gcloud = stayicon (프로젝트 접근 불가), Firebase CLI = hwanizero01 (프로젝트 소유자).
+**해결**: `firebase apphosting:secrets:set` 사용 (Firebase CLI 인증 활용).
+**금지**: `gcloud secrets create`를 stayicon 계정으로 실행하지 말 것.
+
+### 시크릿 등록 파이프 실패
+**증상**: `echo "value" | firebase apphosting:secrets:set` 실행 시 에러.
+**원인**: Windows bash에서 인터랙티브 프롬프트가 파이프 입력을 씹음.
+**해결**: 각 시크릿을 개별 실행 + 수동 입력 (값 → Enter → Production → Enter → Y → Enter).
+**금지**: 여러 시크릿을 한꺼번에 파이프로 등록하려 하지 말 것.
