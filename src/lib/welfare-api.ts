@@ -40,6 +40,29 @@ export interface WelfareDetailItem {
 }
 
 // =====================
+// HTML Sanitization — API data may contain raw HTML tags
+// =====================
+
+/** Strip HTML tags, decode entities, normalize whitespace */
+function stripHtml(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/[ ]{2,}/g, ' ')
+    .trim()
+}
+
+// =====================
 // Category Mapping
 // =====================
 import type { BenefitCategory, Benefit, BenefitStatus } from '@/data/benefits'
@@ -423,10 +446,10 @@ export function transformListItemToBenefit(item: WelfareListItem, index: number)
     category,
     categoryLabel: labels.ko,
     categoryLabelEn: labels.en,
-    amount: item.servDgst || '상세 페이지 확인',
-    amountEn: item.servDgst || 'See details',
-    description: item.servDgst || '',
-    descriptionEn: item.servDgst || '',
+    amount: stripHtml(item.servDgst) || '상세 페이지 확인',
+    amountEn: stripHtml(item.servDgst) || 'See details',
+    description: stripHtml(item.servDgst) || '',
+    descriptionEn: stripHtml(item.servDgst) || '',
     applicationStart: '',
     applicationEnd: '',
     dDay: 365,
@@ -486,10 +509,10 @@ export function transformDetailToBenefit(item: WelfareDetailItem): Benefit {
     category,
     categoryLabel: labels.ko,
     categoryLabelEn: labels.en,
-    amount: item.alwServCn?.substring(0, 60) || '상세 페이지 확인',
-    amountEn: item.alwServCn?.substring(0, 60) || 'See details',
-    description: item.alwServCn || item.servDgst || '',
-    descriptionEn: item.alwServCn || item.servDgst || '',
+    amount: stripHtml(item.alwServCn)?.substring(0, 60) || '상세 페이지 확인',
+    amountEn: stripHtml(item.alwServCn)?.substring(0, 60) || 'See details',
+    description: stripHtml(item.alwServCn || item.servDgst) || '',
+    descriptionEn: stripHtml(item.alwServCn || item.servDgst) || '',
     targetAge: item.trgterIndvdl || undefined,
     incomeLevel: item.slctCriteria || undefined,
     applicationStart: startDate,
