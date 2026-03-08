@@ -1,8 +1,7 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase'
+import { getFirebaseAuth } from '@/lib/firebase'
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
 import type { Benefit } from '@/data/benefits'
 
 // =====================
@@ -415,26 +414,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
-  // Firebase Auth 상태 감지 → Firestore에서 premium 조회
+  // Firebase Auth 상태 감지 → Firestore에서 전체 프로필 + 개인화 데이터 복원
   useEffect(() => {
     const auth = getFirebaseAuth()
-    if (!auth) {
-      // Firebase 미설정 — skip premium check
-      return
-    }
+    if (!auth) return
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) return
       try {
-        const db = getFirebaseDb()
-        if (!db) return
         const kakaoId = firebaseUser.uid.replace('kakao_', '')
-        const userDoc = await getDoc(doc(db, 'users', kakaoId))
-        if (userDoc.exists()) {
-          const data = userDoc.data()
-          setUserProfile(prev => ({ ...prev, isPremium: !!data.is_premium }))
+        // API를 통해 전체 프로필 로드
+        const res = await fetch(`/api/user/profile?kakaoId=${kakaoId}`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.data) return
+        const d = json.data
+
+        // 프로필 복원 (Firestore에 저장된 값이 있는 필드만 덮어쓰기)
+        setUserProfile(prev => ({
+          ...prev,
+          ...(d.name ? { name: d.name } : {}),
+          ...(d.birthYear != null ? { birthYear: d.birthYear } : {}),
+          ...(d.gender ? { gender: d.gender } : {}),
+          ...(d.region ? { region: d.region } : {}),
+          ...(d.householdSize != null ? { householdSize: d.householdSize } : {}),
+          ...(d.incomePercent != null ? { incomePercent: d.incomePercent } : {}),
+          ...(d.housingType ? { housingType: d.housingType } : {}),
+          ...(d.employmentStatus ? { employmentStatus: d.employmentStatus } : {}),
+          ...(d.specialStatus?.length ? { specialStatus: d.specialStatus } : {}),
+          ...(d.kakaoAlerts != null ? { kakaoAlerts: d.kakaoAlerts } : {}),
+          ...(d.alertDays?.length ? { alertDays: d.alertDays } : {}),
+          isPremium: !!d.isPremium,
+        }))
+
+        // 북마크 복원 (Firestore 데이터가 있으면)
+        if (d.bookmarks?.length) {
+          setBookmarks(prev => {
+            // 로컬 + 서버 합치기 (중복 제거)
+            const merged = [...new Set([...prev, ...d.bookmarks])]
+            return merged
+          })
+        }
+
+        // 푸시 카테고리 복원
+        if (d.categories?.length) {
+          try {
+            const local = JSON.parse(localStorage.getItem('push_categories') || '[]')
+            if (!local.length) {
+              localStorage.setItem('push_categories', JSON.stringify(d.categories))
+            }
+          } catch { /* ignore */ }
         }
       } catch (e) {
-        console.warn('[firebase] Firestore premium check failed:', e)
+        console.warn('[firebase] Firestore profile load failed:', e)
       }
     })
     return () => unsubscribe()
@@ -451,7 +482,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('bookmarks', JSON.stringify(bookmarks))
-  }, [bookmarks])
+    // Firestore에도 북마크 동기화 (로그인 상태일 때만, 디바운스)
+    if (kakaoUser?.id) {
+      const timer = setTimeout(() => {
+        fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kakaoId: String(kakaoUser.id), bookmarks }),
+        }).catch(() => { /* silent fail */ })
+      }, 1000) // 1초 디바운스
+      return () => clearTimeout(timer)
+    }
+  }, [bookmarks, kakaoUser])
 
   useEffect(() => {
     localStorage.setItem('userProfile', JSON.stringify(userProfile))

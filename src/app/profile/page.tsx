@@ -302,20 +302,34 @@ export default function ProfilePage() {
 
     if (kakaoUser?.id) {
       try {
-        // Firestore users 컬렉션 업데이트 via API
+        // Firestore users 컬렉션 — 전체 프로필 + 개인화 데이터 저장
         await fetch('/api/user/profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kakaoId: String(kakaoUser.id),
             nickname: kakaoUser.nickname,
+            // 프로필 전체 필드
+            name: profile.name,
+            birthYear: profile.birthYear,
+            gender: profile.gender,
+            region: profile.region,
+            householdSize: profile.householdSize,
+            incomePercent: profile.incomePercent,
+            housingType: profile.housingType,
+            employmentStatus: profile.employmentStatus,
+            specialStatus: profile.specialStatus,
+            kakaoAlerts: profile.kakaoAlerts,
+            alertDays: profile.alertDays,
+            // 개인화 데이터
             categories: selectedCategories,
+            bookmarks: bookmarks,
+            // 호환성 유지
             age_group: profile.birthYear
               ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
                 : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
                 : 'senior')
               : undefined,
-            region: profile.region,
           }),
         })
       } catch (e) {
