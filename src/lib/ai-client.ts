@@ -7,11 +7,13 @@
  */
 import OpenAI from 'openai'
 
-// OpenRouter free model fallback list
+// OpenRouter free model fallback list — try auto-router first, then individual models
 const FREE_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'mistralai/mistral-small-3.1-24b-instruct:free',
-  'google/gemma-3-27b-it:free',
+  'openrouter/free',                                    // Auto-router: picks available free model
+  'deepseek/deepseek-r1:free',                          // DeepSeek R1 reasoning
+  'meta-llama/llama-3.3-70b-instruct:free',             // Llama 3.3 70B
+  'mistralai/mistral-small-3.1-24b-instruct:free',      // Mistral Small 3.1
+  'google/gemma-3-27b-it:free',                         // Gemma 3 27B
 ] as const
 
 export function createAIClient(): OpenAI {

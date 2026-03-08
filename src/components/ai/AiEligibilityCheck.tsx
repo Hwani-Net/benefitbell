@@ -71,7 +71,7 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
     fetch('/api/ai-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ benefitId, lang, isPremium }),
+      body: JSON.stringify({ benefitId, benefitTitle, lang, isPremium }),
       signal: controller.signal,
     })
       .then(async r => {
@@ -107,8 +107,9 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           benefitId,
+          benefitTitle, // Fallback: API가 혜택 정보를 못 찾을 때 사용
           lang,
-          mode: 'detailed', // Signal to API: skip questions, give direct analysis
+          mode: 'detailed',
         }),
       })
       const data = await res.json()

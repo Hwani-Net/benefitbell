@@ -86,6 +86,7 @@
 | 2026-03-07 | Netlify → Firebase App Hosting 이전 | Firebase 단일 스택 통일 + GitHub 자동 배포 | Vercel (무료 리밋), Netlify 유지 (기각) |
 | 2026-03-07 | GCP 결제 계정: 토스뱅크 (hwanizero01) | stayicon 결제 문제 → hwanizero01로 전환 | stayicon 결제 수정 (기각) |
 | 2026-03-07 | 시크릿 9개 Cloud Secret Manager 등록 | apphosting.yaml에서 참조, IAM 바인딩 완료 | .env 파일 직접 배포 (보안 위험) |
+| 2026-03-08 | GCP 예산 알림 ₩5,000/월 설정 | 과금 안전 필수 — 50/90/100/150% 임계값 이메일 알림 | 예산 미설정 (과금 폭탄 위험) |
 
 ## 🔧 기술 스택
 
