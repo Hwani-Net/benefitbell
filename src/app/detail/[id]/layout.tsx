@@ -1,6 +1,20 @@
 import type { Metadata } from 'next'
 
-const BASE_URL = 'https://zippy-lolly-1f23de.netlify.app'
+const BASE_URL = 'https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app'
+
+// Strip HTML tags for safe OG descriptions (defense against cached data with HTML)
+function stripHtml(text: string): string {
+  return text
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/[ ]{2,}/g, ' ')
+    .trim()
+}
 
 interface Props {
   params: Promise<{ id: string }>
@@ -42,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const { title, ministry, overview, supportContent } = json.data
 
         const ogTitle = `${title} | 혜택알리미`
-        const rawDesc = overview || supportContent || '나에게 맞는 정부 복지 혜택을 확인하세요.'
+        const rawDesc = stripHtml(overview || supportContent || '나에게 맞는 정부 복지 혜택을 확인하세요.')
         // OG description은 160자 이하로
         const ogDesc = rawDesc.length > 155
           ? rawDesc.slice(0, 155) + '…'

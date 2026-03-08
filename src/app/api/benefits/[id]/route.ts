@@ -22,12 +22,30 @@ function getXmlValues(xml: string, parentTag: string, childTag: string): string[
   return results
 }
 
-// Clean up text from API (remove excessive whitespace, keep line breaks meaningful)
+// Clean up text from API (strip HTML tags, decode entities, normalize whitespace)
 function cleanText(text: string): string {
   return text
+    // 1. Block-level HTML tags → newline (before stripping, so structure is preserved)
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    // 2. Remove all remaining HTML tags (including inline styles, attributes)
+    .replace(/<[^>]*>/g, '')
+    // 3. Decode common HTML entities
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    // 4. Normalize whitespace
     .replace(/\r\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+/g, ' ')
+    // 5. Clean up leading/trailing whitespace per line
+    .split('\n').map(l => l.trim()).join('\n')
     .trim()
 }
 
