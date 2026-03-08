@@ -88,9 +88,27 @@ export function getUrgentBenefits(benefits: Benefit[], daysThreshold: number): B
   return benefits.filter(b => b.dDay >= 0 && b.dDay <= daysThreshold && b.status !== 'closed')
 }
 
+/** Strip HTML tags + decode entities (defense-in-depth for API data) */
+function stripHtml(text: string): string {
+  if (!text || !text.includes('<')) return text
+  return text
+    .replace(/<\/(p|div|li|tr|h[1-6])\s*>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/[ ]{2,}/g, ' ')
+    .trim()
+}
+
 /**
  * Safe i18n text accessor for Benefit fields.
  * Falls back to Korean when English field is empty/undefined.
+ * Always strips HTML tags for safety (API data may contain raw HTML).
  * Usage: bText(benefit, 'title', lang)
  */
 export function bText(
@@ -98,8 +116,8 @@ export function bText(
   field: 'title' | 'amount' | 'description' | 'categoryLabel' | 'ministry',
   lang: string,
 ): string {
-  if (lang === 'ko') return b[field]
+  if (lang === 'ko') return stripHtml(b[field])
   const enKey = `${field}En` as keyof Benefit
   const en = b[enKey] as string | undefined
-  return en || b[field] // fallback to Korean if English is empty
+  return stripHtml(en || b[field]) // fallback to Korean if English is empty
 }
