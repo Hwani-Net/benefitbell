@@ -107,7 +107,7 @@ export default function PremiumPage() {
                   🚀 프리미엄 혜택
                 </h2>
                 <ul className={styles.featureList}>
-                  <li>✨ 무제한 AI 혜택 분석 (무료: 1일 3회)</li>
+                  <li>✨ 무제한 AI 혜택 분석 (무료: 1일 10회)</li>
                   <li>⏰ 마감 14일 전 얼리버드 알림</li>
                   <li>🚫 서비스 내 모든 광고 제거</li>
                   <li>💬 카카오톡 1:1 맞춤 상담 우선 지원</li>
@@ -255,7 +255,7 @@ export default function PremiumPage() {
                     {[
                       { feature: '혜택 검색/조회', free: '✅', premium: '✅' },
                       { feature: '맞춤 추천', free: '✅', premium: '✅' },
-                      { feature: 'AI 분석', free: '3회/일', premium: '무제한' },
+                      { feature: 'AI 분석', free: '10회/일', premium: '무제한' },
                       { feature: '마감 알림', free: '3일 전', premium: '14일 전' },
                       { feature: '광고', free: '있음', premium: '없음' },
                       { feature: '1:1 상담', free: '—', premium: '우선 지원' },

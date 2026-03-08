@@ -135,8 +135,8 @@ export default function AiPage() {
       const usageStr = localStorage.getItem('ai_usage_limit')
       let usage = usageStr ? JSON.parse(usageStr) : { date: today, count: 0 }
       if (usage.date !== today) usage = { date: today, count: 0 }
-      if (usage.count >= 3) {
-        if (confirm(isKo ? '무료 제공량(일 3회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?' : 'You have exhausted your free daily limit (3 times).\nWould you like to upgrade to Premium for unlimited analysis?')) {
+      if (usage.count >= 10) {
+        if (confirm(isKo ? '무료 제공량(일 10회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?' : 'You have exhausted your free daily limit (10 times).\nWould you like to upgrade to Premium for unlimited analysis?')) {
           window.location.href = '/premium'
         }
         return

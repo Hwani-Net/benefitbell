@@ -141,7 +141,7 @@ function PremiumStatusCard({ isPremium, kakaoUserId, lang }: { isPremium: boolea
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {(lang === 'ko' ? [
-            { icon: '✨', text: '무제한 AI 혜택 분석', sub: '현재 1일 3회 제한 중' },
+            { icon: '✨', text: '무제한 AI 혜택 분석', sub: '현재 1일 10회 제한 중' },
             { icon: '🚫', text: '광고 완전 제거', sub: '현재 광고 노출 중' },
             { icon: '⏰', text: '14일 전 얼리버드 알림', sub: '현재 3일 전만 알림' },
             { icon: '💬', text: '1:1 맞춤 상담 우선', sub: '카카오톡 채널 우선 지원' },
