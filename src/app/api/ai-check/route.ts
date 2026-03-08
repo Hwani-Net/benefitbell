@@ -118,16 +118,26 @@ Respond in JSON:
     `
 
     const text = await callAIWithFallback(client, [
-      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요.' },
+      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.' },
       { role: 'user', content: prompt },
     ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    // 마크다운 코드블록 제거 (일부 모델이 ```json ... ``` 로 감싸는 경우)
+    let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
+      console.error('[ai-check] 파싱 실패 - AI 원본 응답:', text.substring(0, 500))
       return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
     }
 
-    const parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] } = JSON.parse(jsonMatch[0])
+    let parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] }
+    try {
+      parsed = JSON.parse(jsonMatch[0])
+    } catch (parseErr) {
+      console.error('[ai-check] JSON 파싱 오류:', parseErr, '\n원본:', jsonMatch[0].substring(0, 300))
+      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+    }
 
     return NextResponse.json({
       questions: parsed.questions ?? [],
@@ -220,16 +230,26 @@ Respond in JSON:
     `
 
     const text = await callAIWithFallback(client, [
-      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 자격 분석 전문가입니다. 사용자에게 질문하지 말고 혜택 정보만으로 직접 판단하세요. 반드시 JSON 형식으로만 응답하세요.' },
+      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 자격 분석 전문가입니다. 사용자에게 질문하지 말고 혜택 정보만으로 직접 판단하세요. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.' },
       { role: 'user', content: prompt },
     ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    // 마크다운 코드블록 제거
+    let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
+      console.error('[ai-check PUT] 파싱 실패 - AI 원본 응답:', text.substring(0, 500))
       return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
     }
 
-    const parsed: { verdict?: string; reason?: string; tips?: string; details?: string[] } = JSON.parse(jsonMatch[0])
+    let parsed: { verdict?: string; reason?: string; tips?: string; details?: string[] }
+    try {
+      parsed = JSON.parse(jsonMatch[0])
+    } catch (parseErr) {
+      console.error('[ai-check PUT] JSON 파싱 오류:', parseErr, '\n원본:', jsonMatch[0].substring(0, 300))
+      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+    }
 
     return NextResponse.json({
       verdict: parsed.verdict ?? 'partial',
