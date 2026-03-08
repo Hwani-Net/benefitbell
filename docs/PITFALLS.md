@@ -167,3 +167,16 @@ npm run build > "e:/AI_Programing/프로젝트/build.log" 2>&1
 **원인**: Windows bash에서 인터랙티브 프롬프트가 파이프 입력을 씹음.
 **해결**: 각 시크릿을 개별 실행 + 수동 입력 (값 → Enter → Production → Enter → Y → Enter).
 **금지**: 여러 시크릿을 한꺼번에 파이프로 등록하려 하지 말 것.
+
+---
+
+### 시크릿 IAM 바인딩 누락 — "Backend Not Found" 🔥
+**날짜**: 2026-03-08  
+**증상**: 시크릿 9개를 `firebase apphosting:secrets:set`으로 등록 완료했는데, 배포 시 `fah/misconfigured-secret` 에러 발생. 프로덕션 사이트는 "Backend Not Found" 표시.  
+**원인**: `secrets:set`으로 값은 Cloud Secret Manager에 저장됐지만, **App Hosting 서비스 어카운트에 IAM 접근 권한이 부여되지 않음**. `preparer` 단계에서 시크릿을 resolve할 수 없어 빌드 실패.  
+**해결**:
+```bash
+firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web --project ai-project-ce41f
+```
+모든 시크릿(9개)에 대해 개별적으로 `grantaccess` 실행 → 빌드 성공.  
+**금지**: `secrets:set`만 하고 `grantaccess` 없이 배포하지 말 것. 시크릿 등록 후 반드시 IAM 바인딩 확인.

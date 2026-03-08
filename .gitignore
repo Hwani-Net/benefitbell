@@ -46,3 +46,4 @@ test-*.mjs
 
 # Local Netlify folder
 .netlify
+private_welfare.csv
