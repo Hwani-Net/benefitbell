@@ -64,6 +64,8 @@ env:
     secret: PREMIUM_ACTIVATE_SECRET
   - variable: KAKAO_CLIENT_ID
     secret: KAKAO_CLIENT_ID
+  - variable: KAKAO_CLIENT_SECRET
+    secret: KAKAO_CLIENT_SECRET
   - variable: BIZINFO_API_KEY
     secret: BIZINFO_API_KEY
   - variable: GEMINI_API_KEY
