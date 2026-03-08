@@ -203,3 +203,20 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 **금지**: Firebase App Hosting, Cloud Run 등 컨테이너 기반 호스팅에서 `request.url.host`를 공개 도메인으로 사용하지 말 것. 반드시 forwarded 헤더 확인.  
 **추가**: 카카오 개발자 콘솔에서도 Firebase 도메인 Redirect URI 등록 필요 (앱 → 플랫폼 키 → REST API 키 수정 → 카카오 로그인 리다이렉트 URI).
 
+---
+
+### AI 상세 분석 전면 실패 — 이중 원인 🔥
+**날짜**: 2026-03-08  
+**증상**: 혜택 상세 페이지에서 "AI 상세 분석" 클릭 시 "⚠ AI분석 중 오류가 발생했습니다" 에러.  
+**원인 1 (404)**: `/api/ai-check` PUT route에서 `fetchWelfareDetail(servId)` 호출 → null 반환 → 404 에러. 비중앙부처 혜택(LG-, BIZ-, KSU-, SUB- 접두사)은 중앙부처 상세 API에서 조회 불가.  
+**원인 2 (500)**: Gemini API 403 (Generative Language API 미활성화) + OpenRouter 무료 모델 3개 모두 429/400 rate limit → 전체 AI 모델 체인 실패.  
+**해결**:
+- ✅ fetchWelfareDetail 실패 시 클라이언트가 보낸 `benefitTitle`로 fallback (404 대신 AI가 제한된 정보로 분석)
+- ✅ `extractServId`에서 LG-/BIZ-/KSU-/SUB- 접두사 제거
+- ✅ `openrouter/free` 자동 라우터를 모델 체인 최우선 배치 (개별 모델 rate limit 우회)
+- ✅ `deepseek/deepseek-r1:free` fallback 추가
+- ✅ GCP 프로젝트에 Generative Language API 활성화  
+**금지**: 
+- fetchWelfareDetail 실패 시 무조건 404 반환하지 말 것 — 제한된 정보로도 AI 분석은 가능
+- OpenRouter 개별 무료 모델만 사용하지 말 것 — 반드시 `openrouter/free` 라우터를 포함
+
