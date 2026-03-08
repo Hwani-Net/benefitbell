@@ -6,18 +6,12 @@ import styles from './AiEligibilityCheck.module.css'
 interface Props {
   benefitId: string
   benefitTitle: string
-  /** 'modal' (기본): 버튼 클릭 시 모달 열림 (기존 동작)
+  /** 'modal' (기본): 버튼 클릭 시 모달 열림
    *  'inline': 마운트 즉시 AI 3줄 요약+배지 자동 로드, 상단 카드 표시 */
   variant?: 'modal' | 'inline'
 }
 
 type Verdict = 'likely' | 'partial' | 'unlikely'
-
-interface CheckResult {
-  verdict: Verdict
-  reason: string
-  tips?: string
-}
 
 interface AiCheckResponse {
   questions: string[]
@@ -25,6 +19,13 @@ interface AiCheckResponse {
   quickVerdict?: Verdict
   error?: string
   code?: string
+}
+
+interface DetailedResult {
+  verdict: Verdict
+  reason: string
+  tips?: string
+  details?: string[]
 }
 
 const verdictInfo = {
@@ -38,27 +39,22 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   const isKo = lang === 'ko'
   const isPremium = !!userProfile?.isPremium
 
-  // ── Modal variant state ────────────────────────────
-  const [open, setOpen] = useState(false)
-  const [phase, setPhase] = useState<'idle' | 'loading-q' | 'questions' | 'loading-v' | 'result'>('idle')
-  const [questions, setQuestions] = useState<string[]>([])
-  const [answers, setAnswers] = useState<boolean[]>([])
-  const [result, setResult] = useState<CheckResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [rateLimited, setRateLimited] = useState(false)
-
   // ── Inline variant state ───────────────────────────
   const [inlineSummary, setInlineSummary] = useState<string[]>([])
   const [inlineVerdict, setInlineVerdict] = useState<Verdict | null>(null)
   const [inlineLoading, setInlineLoading] = useState(false)
-  const [inlineExpanded, setInlineExpanded] = useState(false)
-  const [inlineQuestions, setInlineQuestions] = useState<string[]>([])
+  const [rateLimited, setRateLimited] = useState(false)
+
+  // ── Detail modal state ─────────────────────────────
+  const [open, setOpen] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailResult, setDetailResult] = useState<DetailedResult | null>(null)
+  const [detailError, setDetailError] = useState<string | null>(null)
 
   // ── Auto-load for inline variant (with sessionStorage cache) ──
   useEffect(() => {
     if (variant !== 'inline') return
 
-    // Check sessionStorage cache first
     const cacheKey = `ai_check_${benefitId}_${lang}`
     try {
       const cached = sessionStorage.getItem(cacheKey)
@@ -66,10 +62,9 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
         const data: AiCheckResponse = JSON.parse(cached)
         setInlineSummary(data.summary ?? [])
         setInlineVerdict(data.quickVerdict ?? 'partial')
-        setInlineQuestions(data.questions ?? [])
-        return // Skip API call
+        return
       }
-    } catch { /* cache miss, proceed to fetch */ }
+    } catch { /* cache miss */ }
 
     const controller = new AbortController()
     setInlineLoading(true)
@@ -90,8 +85,6 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
       .then(data => {
         setInlineSummary(data.summary ?? [])
         setInlineVerdict(data.quickVerdict ?? 'partial')
-        setInlineQuestions(data.questions ?? [])
-        // Cache successful response
         try { sessionStorage.setItem(cacheKey, JSON.stringify(data)) } catch { /* storage full */ }
       })
       .catch(err => {
@@ -103,66 +96,46 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
     return () => controller.abort()
   }, [variant, benefitId, lang, isPremium])
 
-  // ── Shared helpers ────────────────────────────────
-  async function loadQuestions(fromInline = false) {
-    if (fromInline && inlineQuestions.length > 0) {
-      // Reuse already-fetched questions
-      setQuestions(inlineQuestions)
-      setAnswers(new Array(inlineQuestions.length).fill(null))
-      setPhase('questions')
-      return
-    }
-    setPhase('loading-q')
-    setError(null)
-    setRateLimited(false)
-    try {
-      const res = await fetch('/api/ai-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ benefitId, lang, isPremium }),
-      })
-      const data: AiCheckResponse = await res.json()
-      if (!res.ok) {
-        if (data.code === 'RATE_LIMIT_EXCEEDED') setRateLimited(true)
-        throw new Error(data.error || 'Error')
-      }
-      setQuestions(data.questions)
-      setAnswers(new Array(data.questions.length).fill(null))
-      setPhase('questions')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error')
-      setPhase('idle')
-    }
-  }
-
-  async function submitAnswers() {
-    setPhase('loading-v')
-    setError(null)
+  // ── Load detailed analysis (no questions!) ─────────
+  async function loadDetailedAnalysis() {
+    setDetailLoading(true)
+    setDetailError(null)
+    setDetailResult(null)
     try {
       const res = await fetch('/api/ai-check', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ benefitId, questions, answers, lang }),
+        body: JSON.stringify({
+          benefitId,
+          lang,
+          mode: 'detailed', // Signal to API: skip questions, give direct analysis
+        }),
       })
-      if (!res.ok) throw new Error((await res.json()).error || 'Error')
-      const data: CheckResult = await res.json()
-      setResult(data)
-      setPhase('result')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
+      setDetailResult({
+        verdict: data.verdict ?? 'partial',
+        reason: data.reason ?? '',
+        tips: data.tips ?? '',
+        details: data.details ?? [],
+      })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error')
-      setPhase('questions')
+      setDetailError(e instanceof Error ? e.message : 'Error')
+    } finally {
+      setDetailLoading(false)
     }
   }
 
-  function reset() {
-    setPhase('idle')
-    setQuestions([])
-    setAnswers([])
-    setResult(null)
-    setError(null)
+  function openDetail() {
+    setOpen(true)
+    loadDetailedAnalysis()
   }
 
-  const allAnswered = answers.length > 0 && answers.every(a => a !== null)
+  function closeDetail() {
+    setOpen(false)
+    setDetailResult(null)
+    setDetailError(null)
+  }
 
   // ══════════════════════════════════════════════════
   // INLINE VARIANT RENDER
@@ -217,7 +190,7 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
               ) : (
                 <button
                   className={styles.inlineDetailBtn}
-                  onClick={() => { setInlineExpanded(true); setOpen(true); loadQuestions(true) }}
+                  onClick={openDetail}
                   id={`ai-check-inline-btn-${benefitId}`}
                 >
                   {isKo ? '🔍 내가 해당되는지 자세히 확인하기' : '🔍 Check My Eligibility in Detail'}
@@ -227,18 +200,18 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
           )}
         </div>
 
-        {/* Modal for inline detail */}
-        {inlineExpanded && open && (
-          <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) { setOpen(false); setInlineExpanded(false); reset() } }}>
+        {/* Detail analysis modal */}
+        {open && (
+          <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) closeDetail() }}>
             <div className={styles.modal}>
               <div className={styles.modalHeader}>
                 <div>
-                  <p className={styles.modalSub}>🤖 AI 자격 체크</p>
+                  <p className={styles.modalSub}>🤖 AI 상세 분석</p>
                   <h2 className={styles.modalTitle}>{benefitTitle}</h2>
                 </div>
-                <button className={styles.closeBtn} onClick={() => { setOpen(false); setInlineExpanded(false); reset() }}>✕</button>
+                <button className={styles.closeBtn} onClick={closeDetail}>✕</button>
               </div>
-              {renderModalBody()}
+              {renderDetailBody()}
             </div>
           </div>
         )}
@@ -247,13 +220,13 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   }
 
   // ══════════════════════════════════════════════════
-  // MODAL VARIANT RENDER (기존 동작 유지)
+  // MODAL VARIANT RENDER (버튼 → 바로 상세 분석)
   // ══════════════════════════════════════════════════
   if (!open) {
     return (
       <button
         className={styles.trigger}
-        onClick={() => { setOpen(true); loadQuestions() }}
+        onClick={openDetail}
         id={`ai-check-btn-${benefitId}`}
       >
         🤖 {isKo ? '내가 해당되나요? AI 자격 체크' : 'Am I Eligible? AI Check'}
@@ -262,111 +235,68 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   }
 
   return (
-    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
+    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) closeDetail() }}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <div>
-            <p className={styles.modalSub}>🤖 AI 자격 체크</p>
+            <p className={styles.modalSub}>🤖 AI 상세 분석</p>
             <h2 className={styles.modalTitle}>{benefitTitle}</h2>
           </div>
-          <button className={styles.closeBtn} onClick={() => { setOpen(false); reset() }}>✕</button>
+          <button className={styles.closeBtn} onClick={closeDetail}>✕</button>
         </div>
-        {renderModalBody()}
+        {renderDetailBody()}
       </div>
     </div>
   )
 
-  // ── Shared modal body renderer ────────────────────
-  function renderModalBody() {
-    const vInfo = result ? verdictInfo[result.verdict] : null
-    return (
-      <>
-        {phase === 'loading-q' && (
-          <div className={styles.centerState}>
-            <div className={styles.spinner} />
-            <p>{isKo ? 'AI가 자격 조건을 분석 중...' : 'AI analyzing eligibility conditions...'}</p>
+  function renderDetailBody() {
+    if (detailLoading) {
+      return (
+        <div className={styles.centerState}>
+          <div className={styles.spinner} />
+          <p>{isKo ? 'AI가 자격 조건을 상세 분석 중...' : 'AI analyzing eligibility in detail...'}</p>
+        </div>
+      )
+    }
+
+    if (detailError) {
+      return (
+        <div className={styles.errorBox}>
+          <p>⚠️ {detailError}</p>
+          <button className={styles.resetBtn} onClick={loadDetailedAnalysis}>
+            {isKo ? '다시 시도' : 'Retry'}
+          </button>
+        </div>
+      )
+    }
+
+    if (detailResult) {
+      const vInfo = verdictInfo[detailResult.verdict]
+      return (
+        <div className={styles.result}>
+          <div className={styles.verdictBadge} style={{ borderColor: vInfo.color, color: vInfo.color }}>
+            <span className={styles.verdictIcon}>{vInfo.icon}</span>
+            <span className={styles.verdictLabel}>{isKo ? vInfo.label.ko : vInfo.label.en}</span>
           </div>
-        )}
-        {phase === 'questions' && (
-          <div className={styles.questions}>
-            <p className={styles.qIntro}>
-              {isKo ? '아래 질문에 답하시면 자격 여부를 AI가 분석합니다.' : 'Answer the questions below and AI will analyze your eligibility.'}
-            </p>
-            {questions.map((q, i) => (
-              <div key={i} className={styles.questionItem}>
-                <p className={styles.questionText}>
-                  <span className={styles.qNum}>{i + 1}</span> {q}
-                </p>
-                <div className={styles.yesNo}>
-                  <button
-                    className={`${styles.yesNoBtn} ${answers[i] === true ? styles.yes : ''}`}
-                    onClick={() => { const next = [...answers]; next[i] = true; setAnswers(next) }}
-                  >
-                    {isKo ? '예 ✓' : 'Yes ✓'}
-                  </button>
-                  <button
-                    className={`${styles.yesNoBtn} ${answers[i] === false ? styles.no : ''}`}
-                    onClick={() => { const next = [...answers]; next[i] = false; setAnswers(next) }}
-                  >
-                    {isKo ? '아니오 ✗' : 'No ✗'}
-                  </button>
-                </div>
-              </div>
-            ))}
-            {allAnswered && (
-              <button className={styles.analyzeBtn} onClick={submitAnswers}>
-                {isKo ? '🔍 AI 분석 시작' : '🔍 Analyze'}
-              </button>
-            )}
-          </div>
-        )}
-        {phase === 'loading-v' && (
-          <div className={styles.centerState}>
-            <div className={styles.spinner} />
-            <p>{isKo ? 'AI가 결과를 분석 중...' : 'AI analyzing result...'}</p>
-          </div>
-        )}
-        {phase === 'result' && result && vInfo && (
-          <div className={styles.result}>
-            <div className={styles.verdictBadge} style={{ borderColor: vInfo.color, color: vInfo.color }}>
-              <span className={styles.verdictIcon}>{vInfo.icon}</span>
-              <span className={styles.verdictLabel}>{isKo ? vInfo.label.ko : vInfo.label.en}</span>
+          <p className={styles.reasonText}>{detailResult.reason}</p>
+          {detailResult.details && detailResult.details.length > 0 && (
+            <ul className={styles.inlineSummaryList} style={{ marginTop: 12 }}>
+              {detailResult.details.map((d, i) => <li key={i}>{d}</li>)}
+            </ul>
+          )}
+          {detailResult.tips && (
+            <div className={styles.tipsBox}>
+              <p className={styles.tipsLabel}>{isKo ? '💡 다음 단계' : '💡 Next Steps'}</p>
+              <p>{detailResult.tips}</p>
             </div>
-            <p className={styles.reasonText}>{result.reason}</p>
-            {result.tips && (
-              <div className={styles.tipsBox}>
-                <p className={styles.tipsLabel}>{isKo ? '💡 다음 단계' : '💡 Next Steps'}</p>
-                <p>{result.tips}</p>
-              </div>
-            )}
-            <div className={styles.disclaimer}>
-              {isKo ? '⚠️ AI 분석 결과는 참고용이며 법적 효력이 없습니다.' : '⚠️ AI results are for reference only and have no legal effect.'}
-            </div>
-            <button className={styles.resetBtn} onClick={reset}>
-              {isKo ? '다시 체크하기' : 'Check Again'}
-            </button>
+          )}
+          <div className={styles.disclaimer}>
+            {isKo ? '⚠️ AI 분석 결과는 참고용이며 법적 효력이 없습니다.' : '⚠️ AI results are for reference only.'}
           </div>
-        )}
-        {error && (
-          rateLimited ? (
-            <div className={styles.upgradeBox}>
-              <p className={styles.upgradeTitle}>
-                {isKo ? '⏰ 오늘의 AI 분석 횟수를 모두 사용했어요' : '⏰ Daily AI Analysis Limit Reached'}
-              </p>
-              <p className={styles.upgradeDesc}>
-                {isKo
-                  ? '무료 플랜은 하루 3회 AI 분석을 제공합니다. 프리미엄으로 업그레이드하면 무제한으로 사용할 수 있어요.'
-                  : 'Free plan allows 3 AI analyses per day. Upgrade to Premium for unlimited access.'}
-              </p>
-              <a href="/premium" className={styles.upgradeBtn}>
-                {isKo ? '⭐ 프리미엄 업그레이드 — 월 4,900원' : '⭐ Upgrade to Premium'}
-              </a>
-            </div>
-          ) : (
-            <div className={styles.errorBox}><p>⚠️ {error}</p></div>
-          )
-        )}
-      </>
-    )
+        </div>
+      )
+    }
+
+    return null
   }
 }

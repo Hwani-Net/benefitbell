@@ -418,10 +418,36 @@ export async function fetchWelfareDetail(servId: string): Promise<WelfareDetailI
     const res = await fetch(url, { next: { revalidate: 3600 } })
     if (!res.ok) return null
 
-    const data = await res.json()
-    const item = data?.response?.body?.items?.item
-    if (!item) return null
-    return Array.isArray(item) ? item[0] : item
+    const text = await res.text()
+
+    // Try JSON first
+    if (text.trim().startsWith('{')) {
+      try {
+        const data = JSON.parse(text)
+        const item = data?.response?.body?.items?.item
+        if (!item) return null
+        return Array.isArray(item) ? item[0] : item
+      } catch { /* JSON parse failed, try XML */ }
+    }
+
+    // Fallback: parse XML response with regex
+    if (text.includes('<servNm>') || text.includes('<item>')) {
+      const extract = (tag: string) => {
+        const match = text.match(new RegExp(`<${tag}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}>([^<]*)</${tag}>`))
+        return match ? (match[1] || match[2] || '').trim() : ''
+      }
+      return {
+        servId: extract('servId') || servId,
+        servNm: extract('servNm'),
+        servDgst: extract('servDgst'),
+        trgterIndvdl: extract('trgterIndvdl'),
+        slctCriteria: extract('slctCriteria'),
+        alwServCn: extract('alwServCn'),
+        aplWayContent: extract('aplWayContent'),
+      } as unknown as WelfareDetailItem
+    }
+
+    return null
   } catch (err) {
     console.error('[welfare-api] Detail fetch error:', err)
     return null

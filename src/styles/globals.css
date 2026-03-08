@@ -125,7 +125,10 @@ ul, ol { list-style: none; }
   overflow-y: auto;
   overflow-x: hidden;
   height: 100dvh;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
+.page-content::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
 
 .section {
   padding: 0 16px;

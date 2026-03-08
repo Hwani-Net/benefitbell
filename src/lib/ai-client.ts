@@ -1,18 +1,17 @@
 /**
- * AI Client helper — OpenRouter (free tier)
+ * AI Client helper — Gemini (primary) + OpenRouter (fallback)
  * 
- * Uses OpenRouter's free endpoint via OpenAI-compatible SDK.
- * Model fallback: tries multiple models if primary fails.
- * Free tier: 20 req/min, 200 req/day — sufficient for MVP.
+ * Priority:
+ * 1. Gemini API (free tier, 15 req/min)
+ * 2. OpenRouter free models (fallback)
  */
 import OpenAI from 'openai'
 
-// Model priority list — first available wins
+// OpenRouter free model fallback list
 const FREE_MODELS = [
-  'openrouter/free',                              // Auto-routes to best available free model
-  'meta-llama/llama-3.3-70b-instruct:free',       // Great general purpose
-  'mistralai/mistral-small-3.1-24b-instruct:free', // Good for structured output
-  'google/gemma-3-27b-it:free',                    // Google's open model
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'google/gemma-3-27b-it:free',
 ] as const
 
 export function createAIClient(): OpenAI {
@@ -23,15 +22,15 @@ export function createAIClient(): OpenAI {
     apiKey,
     baseURL: 'https://openrouter.ai/api/v1',
     defaultHeaders: {
-      'HTTP-Referer': 'https://zippy-lolly-1f23de.netlify.app',
+      'HTTP-Referer': 'https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app',
       'X-Title': 'BenefitBell',
     },
   })
 }
 
 /**
- * Call AI with automatic model fallback.
- * Tries each model in priority order; returns first successful response.
+ * Call AI with Gemini-first, OpenRouter fallback.
+ * Tries Gemini API first (faster, more reliable), then falls back to OpenRouter free models.
  */
 export async function callAIWithFallback(
   client: OpenAI,
@@ -42,23 +41,31 @@ export async function callAIWithFallback(
     jsonMode?: boolean
   }
 ): Promise<string> {
-  const { temperature = 0.3, maxTokens = 1000, jsonMode = false } = options ?? {}
+  const { temperature = 0.3, maxTokens = 1000 } = options ?? {}
 
+  // ── 1. Try Gemini API first ──────────────────────
+  const geminiKey = process.env.GEMINI_API_KEY
+  if (geminiKey) {
+    try {
+      const result = await callGemini(geminiKey, messages, { temperature, maxTokens })
+      if (result) return result
+    } catch (err) {
+      console.warn('[ai-client] Gemini failed, falling back to OpenRouter:', 
+        err instanceof Error ? err.message.substring(0, 100) : String(err))
+    }
+  }
+
+  // ── 2. Fallback to OpenRouter free models ────────
   let lastError: Error | null = null
 
   for (const model of FREE_MODELS) {
     try {
-      const params: OpenAI.Chat.ChatCompletionCreateParams = {
+      const completion = await client.chat.completions.create({
         model,
         messages,
         temperature,
         max_tokens: maxTokens,
-      }
-
-      // Note: response_format may not work on all free models
-      // We rely on prompt engineering for JSON output instead
-
-      const completion = await client.chat.completions.create(params)
+      })
       const content = completion.choices[0]?.message?.content?.trim()
 
       if (!content) {
@@ -72,18 +79,62 @@ export async function callAIWithFallback(
       const msg = lastError.message
       console.warn(`[ai-client] Model ${model} failed: ${msg.substring(0, 100)}`)
 
-      // Don't retry on auth errors
-      if (msg.includes('401') || msg.includes('invalid_api_key')) {
-        throw lastError
-      }
-      // Wait before trying next model on rate limits
+      if (msg.includes('401') || msg.includes('invalid_api_key')) throw lastError
       if (msg.includes('429') || msg.includes('rate_limit') || msg.includes('quota')) {
         await new Promise(r => setTimeout(r, 1000))
       }
-      // Continue to next model for rate limits or other errors
       continue
     }
   }
 
   throw lastError ?? new Error('All AI models failed')
+}
+
+/**
+ * Call Gemini API directly (not through OpenRouter)
+ */
+async function callGemini(
+  apiKey: string,
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  options: { temperature: number; maxTokens: number }
+): Promise<string | null> {
+  // Convert OpenAI messages to Gemini format
+  const systemMsg = messages.find(m => m.role === 'system')
+  const userMsgs = messages.filter(m => m.role !== 'system')
+
+  const contents = userMsgs.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: String(m.content) }],
+  }))
+
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      temperature: options.temperature,
+      maxOutputTokens: options.maxTokens,
+      responseMimeType: 'application/json',
+    },
+  }
+
+  if (systemMsg) {
+    body.systemInstruction = { parts: [{ text: String(systemMsg.content) }] }
+  }
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  )
+
+  if (!res.ok) {
+    const errText = await res.text()
+    throw new Error(`Gemini API ${res.status}: ${errText.substring(0, 200)}`)
+  }
+
+  const data = await res.json()
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+  return text || null
 }
