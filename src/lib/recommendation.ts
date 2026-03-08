@@ -19,53 +19,128 @@ export { clearEligibilityCache }
  * Synchronous keyword-based personalization (instant, no API call).
  * Used as initial render while AI scores load.
  */
+/**
+ * Compute keyword score for a single benefit against a profile.
+ */
+function computeKeywordScore(benefit: Benefit, profile: UserProfile): number {
+  const age = new Date().getFullYear() - profile.birthYear
+  let score = 0
+  const text = (benefit.title + ' ' + (benefit.description || '')).toLowerCase()
+
+  // Age
+  if (age < 35 && (benefit.category === 'youth' || text.includes('청년'))) score += 10
+  if (age >= 60 && (benefit.category === 'senior' || text.includes('노인') || text.includes('고령'))) score += 10
+  if (age >= 40 && age < 60 && (benefit.category === 'middle-aged' || text.includes('중장년'))) score += 10
+
+  // Region
+  if (profile.region) {
+    const parts = profile.region.split(' ')
+    if (parts[0] && text.includes(parts[0].replace('광역시', '').replace('특별시', ''))) score += 15
+    if (parts[1] && text.includes(parts[1])) score += 20
+  }
+
+  // Employment
+  if (profile.employmentStatus === 'jobSeeking' && (benefit.category === 'employment' || text.includes('구직') || text.includes('취업'))) score += 15
+  if (profile.employmentStatus === 'selfEmployed' && (benefit.category === 'small-biz' || benefit.category === 'startup' || text.includes('소상공인') || text.includes('자영업'))) score += 15
+  if (profile.employmentStatus === 'student' && (benefit.category === 'education' || text.includes('학생') || text.includes('장학'))) score += 15
+
+  // Housing
+  if (profile.housingType === 'monthly' && text.includes('월세')) score += 10
+  if (profile.housingType === 'deposit' && text.includes('전세')) score += 10
+
+  // Special status
+  for (const status of profile.specialStatus) {
+    if (status === 'disability' && text.includes('장애')) score += 20
+    if (status === 'singleParent' && text.includes('한부모')) score += 20
+    if (status === 'multicultural' && text.includes('다문화')) score += 20
+    if (status === 'veteran' && text.includes('국가유공자')) score += 20
+  }
+
+  // Income
+  if (profile.incomePercent <= 50 && (benefit.category === 'basic-living' || benefit.category === 'near-poverty')) score += 15
+
+  return score
+}
+
+/**
+ * Synchronous keyword-based personalization (instant, no API call).
+ * Returns only benefits with score > 0, sorted by score desc.
+ */
 export function getPersonalizedBenefits(benefits: Benefit[], profile: UserProfile | null): Benefit[] {
   if (!profile) return benefits
+  const scored = benefits.map(benefit => ({ benefit, score: computeKeywordScore(benefit, profile) }))
+  return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).map(s => s.benefit)
+}
 
-  const age = new Date().getFullYear() - profile.birthYear
+/**
+ * Keyword-scored ALL benefits (including 0-score) for full filtering UI.
+ * Returns { benefit, keywordScore } pairs sorted by score desc.
+ */
+export function getAllScoredBenefits(
+  benefits: Benefit[],
+  profile: UserProfile,
+): { benefit: Benefit; keywordScore: number }[] {
+  return benefits
+    .map(benefit => ({ benefit, keywordScore: computeKeywordScore(benefit, profile) }))
+    .sort((a, b) => b.keywordScore - a.keywordScore)
+}
 
-  const scoredBenefits = benefits.map(benefit => {
-    let score = 0
-    const textToSearch = (benefit.title + ' ' + (benefit.description || '')).toLowerCase()
-    
-    // 1. Age matching
-    if (age < 35 && (benefit.category === 'youth' || textToSearch.includes('청년'))) score += 10
-    if (age >= 60 && (benefit.category === 'senior' || textToSearch.includes('노인') || textToSearch.includes('고령'))) score += 10
-    if (age >= 40 && age < 60 && (benefit.category === 'middle-aged' || textToSearch.includes('중장년'))) score += 10
+export type FilteredBenefit = Benefit & {
+  keywordScore: number
+  aiScore?: number
+  aiVerdict?: 'likely' | 'partial' | 'unlikely'
+  aiSummary?: string
+}
 
-    // 2. Region matching
-    if (profile.region) {
-      const regionParts = profile.region.split(' ')
-      if (regionParts[0] && textToSearch.includes(regionParts[0].replace('광역시', '').replace('특별시', ''))) score += 15
-      if (regionParts[1] && textToSearch.includes(regionParts[1])) score += 20
+/**
+ * Merge keyword scores + AI scores into a unified filtered list.
+ * Groups: likely → partial → unscored → unlikely
+ */
+export function getFilteredBenefits(
+  benefits: Benefit[],
+  profile: UserProfile,
+  aiScores: Map<string, { score: number; verdict: string; summary: string }>,
+): { likely: FilteredBenefit[]; partial: FilteredBenefit[]; unlikely: FilteredBenefit[] } {
+  const all = getAllScoredBenefits(benefits, profile)
+
+  const likely: FilteredBenefit[] = []
+  const partial: FilteredBenefit[] = []
+  const unlikely: FilteredBenefit[] = []
+
+  for (const { benefit, keywordScore } of all) {
+    const ai = aiScores.get(benefit.id)
+    const enriched: FilteredBenefit = {
+      ...benefit,
+      keywordScore,
+      aiScore: ai?.score,
+      aiVerdict: ai?.verdict as FilteredBenefit['aiVerdict'],
+      aiSummary: ai?.summary,
     }
 
-    // 3. Employment matching
-    if (profile.employmentStatus === 'jobSeeking' && (benefit.category === 'employment' || textToSearch.includes('구직') || textToSearch.includes('취업'))) score += 15
-    if (profile.employmentStatus === 'selfEmployed' && (benefit.category === 'small-biz' || benefit.category === 'startup' || textToSearch.includes('소상공인') || textToSearch.includes('자영업'))) score += 15
-    if (profile.employmentStatus === 'student' && (benefit.category === 'education' || textToSearch.includes('학생') || textToSearch.includes('장학'))) score += 15
+    if (ai) {
+      if (ai.verdict === 'likely') likely.push(enriched)
+      else if (ai.verdict === 'partial') partial.push(enriched)
+      else unlikely.push(enriched)
+    } else {
+      // No AI score yet — use keyword score to bucket
+      if (keywordScore >= 25) likely.push(enriched)
+      else if (keywordScore >= 10) partial.push(enriched)
+      else unlikely.push(enriched)
+    }
+  }
 
-    // 4. Housing matching
-    if (profile.housingType === 'monthly' && textToSearch.includes('월세')) score += 10
-    if (profile.housingType === 'deposit' && textToSearch.includes('전세')) score += 10
+  // Sort each group by AI score (if available) then keyword score
+  const sortFn = (a: FilteredBenefit, b: FilteredBenefit) => {
+    if (a.aiScore !== undefined && b.aiScore !== undefined) return b.aiScore - a.aiScore
+    if (a.aiScore !== undefined) return -1
+    if (b.aiScore !== undefined) return 1
+    return b.keywordScore - a.keywordScore
+  }
+  likely.sort(sortFn)
+  partial.sort(sortFn)
+  unlikely.sort(sortFn)
 
-    // 5. Special status matching
-    profile.specialStatus.forEach(status => {
-      if (status === 'disability' && textToSearch.includes('장애')) score += 20
-      if (status === 'singleParent' && textToSearch.includes('한부모')) score += 20
-      if (status === 'multicultural' && textToSearch.includes('다문화')) score += 20
-      if (status === 'veteran' && textToSearch.includes('국가유공자')) score += 20
-    })
-
-    // 6. Income matching
-    if (profile.incomePercent <= 50 && (benefit.category === 'basic-living' || benefit.category === 'near-poverty')) score += 15
-
-    return { benefit, score }
-  })
-
-  // Sort by score descending, filter out 0-score
-  const matched = scoredBenefits.filter(s => s.score > 0).sort((a, b) => b.score - a.score)
-  return matched.map(s => s.benefit)
+  return { likely, partial, unlikely }
 }
 
 /**
