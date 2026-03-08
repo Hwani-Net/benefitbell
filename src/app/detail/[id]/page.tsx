@@ -61,7 +61,7 @@ interface ApiDetail {
   applicationMethods: string[]
   applicationLinks: string[]
   contacts: { name: string; address: string }[]
-  requiredDocs: string[]
+  requiredDocs: Array<string | { name: string; link: string }>
   relatedLaws: string[]
   homepages: { name: string; url: string }[]
 }
@@ -205,8 +205,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const steps = benefit.steps.map(s => lang === 'ko' ? { title: s.title, desc: s.desc } : { title: s.titleEn, desc: s.descEn })
 
   // 필요 서류: API 데이터 우선, 없으면 benefit 데이터, 둘 다 없으면 []
-  const benefitDocs = lang === 'ko' ? (benefit.documents ?? []) : (benefit.documentsEn ?? [])
-  const docs: string[] = apiDetail?.requiredDocs?.length ? apiDetail.requiredDocs : benefitDocs
+  const benefitDocs: Array<string | { name: string; link: string }> = lang === 'ko' ? (benefit.documents ?? []) : (benefit.documentsEn ?? [])
+  const docs: Array<string | { name: string; link: string }> = apiDetail?.requiredDocs?.length ? apiDetail.requiredDocs : benefitDocs
 
   // 신청 방법: API applicationMethods 있으면 사용, 없으면 benefit.steps fallback
   const hasApiMethods = (apiDetail?.applicationMethods?.length ?? 0) > 0
@@ -624,8 +624,15 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 // ── Phase 6: 서류 원스톱 체크리스트 컴포넌트 ──────────────
 const GOV24_HOME = 'https://www.gov.kr'
 
-function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: string }) {
-  const enriched = matchDocuments(docs)
+function DocumentChecklist({ docs, benefitId }: { docs: Array<string | { name: string; link: string }>; benefitId: string }) {
+  // Normalize docs to { name, link } format (backward compat with string[])
+  const normalizedDocs = docs.map(d => typeof d === 'string' ? { name: d, link: '' } : d)
+  const enriched = matchDocuments(normalizedDocs.map(d => d.name))
+  // Merge download links from API
+  const docsWithLinks = enriched.map((doc, i) => ({
+    ...doc,
+    downloadLink: normalizedDocs[i]?.link || '',
+  }))
   const storageKey = `doc_check_${benefitId}`
 
   const [checked, setChecked] = useState<Record<number, boolean>>(() => {
@@ -645,13 +652,14 @@ function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: str
   }, [storageKey])
 
   const checkedCount = Object.values(checked).filter(Boolean).length
-  const total = enriched.length
+  const total = docsWithLinks.length
   const progressPct = total > 0 ? Math.round((checkedCount / total) * 100) : 0
 
-  const borderColor = (doc: { freeOnline: boolean; issueUrl: string }) => {
-    if (doc.freeOnline) return '#10b981' // green — free
-    if (doc.issueUrl) return '#3b82f6'   // blue — paid online
-    return '#9ca3af'                      // gray — manual
+  const borderColor = (doc: { freeOnline: boolean; issueUrl: string; downloadLink: string }) => {
+    if (doc.downloadLink) return '#f59e0b'    // amber — downloadable file
+    if (doc.freeOnline) return '#10b981'       // green — free
+    if (doc.issueUrl) return '#3b82f6'         // blue — paid online
+    return '#9ca3af'                            // gray — manual
   }
 
   return (
@@ -684,7 +692,7 @@ function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: str
 
       {/* Document List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {enriched.map((doc, i) => (
+        {docsWithLinks.map((doc, i) => (
           <div
             key={i}
             style={{
@@ -730,8 +738,24 @@ function DocumentChecklist({ docs, benefitId }: { docs: string[]; benefitId: str
               )}
             </div>
 
-            {/* Issue Button */}
-            {doc.issueUrl ? (
+            {/* Action Button: Download / Issue / Manual */}
+            {doc.downloadLink ? (
+              <a
+                href={doc.downloadLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  flexShrink: 0, padding: '4px 10px', borderRadius: 6,
+                  fontSize: 12, fontWeight: 600,
+                  background: '#FEF3C7',
+                  color: '#92400E',
+                  textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+              >
+                📥 다운로드
+              </a>
+            ) : doc.issueUrl ? (
               <a
                 href={doc.issueUrl}
                 target="_blank"

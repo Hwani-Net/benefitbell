@@ -214,8 +214,12 @@ export async function GET(
             name,
             address: getXmlValues(xml, 'inqplCtadrList', 'servSeDetailLink')[i] || '',
           })),
-        // Required documents
-        requiredDocs: getXmlValues(xml, 'basfrmList', 'servSeDetailNm'),
+        // Required documents (name + download link)
+        requiredDocs: getXmlValues(xml, 'basfrmList', 'servSeDetailNm')
+          .map((name, i) => ({
+            name,
+            link: getXmlValues(xml, 'basfrmList', 'servSeDetailLink')[i] || '',
+          })),
         // Related laws
         relatedLaws: getXmlValues(xml, 'baslawList', 'servSeDetailNm'),
         // Inquiry homepage
