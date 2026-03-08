@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
-import { getPersonalizedBenefits, getAiPersonalizedBenefits } from '@/lib/recommendation'
+import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -56,8 +56,6 @@ export default function HomePage() {
   const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile, benefits, benefitsLoading: loading } = useApp()
   const [apiError, setApiError] = useState(false)
   const [sharedId, setSharedId] = useState<string | null>(null)
-  const [aiScores, setAiScores] = useState<Map<string, { score: number; verdict: string; summary: string }>>(new Map())
-  const [aiLoading, setAiLoading] = useState(false)
   const dragScrollRef = useDragScroll()
 
   // Web Share API (web-share 스킬 준수)
@@ -89,26 +87,7 @@ export default function HomePage() {
     if (!loading && benefits.length === 0) setApiError(true)
   }, [loading, benefits])
 
-  // AI eligibility scoring (runs after benefits load, only for logged-in users)
-  useEffect(() => {
-    if (!kakaoUser || benefits.length === 0) return
-    let cancelled = false
-    setAiLoading(true)
-    getAiPersonalizedBenefits(benefits, userProfile)
-      .then(enriched => {
-        if (cancelled) return
-        const map = new Map<string, { score: number; verdict: string; summary: string }>()
-        for (const b of enriched) {
-          if (b.aiScore !== undefined) {
-            map.set(b.id, { score: b.aiScore, verdict: b.aiVerdict || 'partial', summary: b.aiSummary || '' })
-          }
-        }
-        setAiScores(map)
-      })
-      .catch(() => { /* fallback: no AI scores */ })
-      .finally(() => { if (!cancelled) setAiLoading(false) })
-    return () => { cancelled = true }
-  }, [])
+
 
   // 마감 임박 = dDay 있는 것 우선, 없으면 전체에서 상위 5건
   const urgentBenefits = benefits
@@ -265,30 +244,12 @@ export default function HomePage() {
             </div>
             <div className={styles.benefitList}>
               {personalizedBenefits.map((benefit, i) => {
-              const ai = aiScores.get(benefit.id)
               return (
                 <Link key={benefit.id} href={`/detail/${benefit.id}`} className={`${styles.benefitItem} animate-fade-in stagger-${Math.min(i+1,5)}`} style={{ background: 'var(--bg-primary)' }}>
                   <div className={styles.benefitInfo}>
                     <p className={styles.benefitTitle}>{bText(benefit, 'title', lang)}</p>
                     <p className={styles.benefitAmount}>{bText(benefit, 'amount', lang)}</p>
                     <div className={styles.benefitMeta}>
-                      {/* AI Score Badge */}
-                      {ai ? (
-                        <span
-                          className="badge text-xs"
-                          style={{
-                            background: ai.verdict === 'likely' ? '#dcfce7' : ai.verdict === 'partial' ? '#fef3c7' : '#fee2e2',
-                            color: ai.verdict === 'likely' ? '#15803d' : ai.verdict === 'partial' ? '#92400e' : '#dc2626',
-                            fontWeight: 700,
-                            minWidth: 44,
-                            textAlign: 'center',
-                          }}
-                        >
-                          🤖 {ai.score}%
-                        </span>
-                      ) : aiLoading ? (
-                        <span className="badge badge-gray text-xs" style={{ opacity: 0.6 }}>🤖 ···</span>
-                      ) : null}
                       <span className={`badge badge-coral text-xs`}>{bText(benefit, 'categoryLabel', lang)}</span>
                       {benefit.dDay <= 14 && benefit.dDay >= 0 && (
                         <span className={`badge ${getDDayColor(benefit.dDay)} text-xs`}>
@@ -296,12 +257,6 @@ export default function HomePage() {
                         </span>
                       )}
                     </div>
-                    {/* AI Summary (1 line) */}
-                    {ai?.summary && (
-                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ai.summary}
-                      </p>
-                    )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                     <button
@@ -323,12 +278,6 @@ export default function HomePage() {
               )
             })}
             </div>
-            {/* AI disclaimer */}
-            {aiScores.size > 0 && (
-              <p style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8, padding: '0 16px' }}>
-                {lang === 'ko' ? '⚠️ AI 분석 결과는 참고용이며 실제 자격은 담당 기관에 확인하세요' : '⚠️ AI results are for reference only. Verify eligibility with the relevant agency.'}
-              </p>
-            )}
           </section>
         )}
 
