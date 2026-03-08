@@ -180,3 +180,15 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 ```
 모든 시크릿(9개)에 대해 개별적으로 `grantaccess` 실행 → 빌드 성공.  
 **금지**: `secrets:set`만 하고 `grantaccess` 없이 배포하지 말 것. 시크릿 등록 후 반드시 IAM 바인딩 확인.
+
+---
+
+### data.go.kr API 응답에 HTML 태그 포함 — 상세 페이지 코드 노출 🔥
+**날짜**: 2026-03-08  
+**증상**: 혜택 상세 페이지에서 `<p>`, `<br>`, `<p style="line-height: 1.8;">` 등 HTML 태그가 텍스트로 그대로 표시됨.  
+**원인**: data.go.kr 복지서비스 API(XML 응답)의 `wlfareInfoOutlCn`, `tgtrDtlCn`, `alwServCn` 등 필드에 **HTML 마크업이 포함**되어 있었음. `cleanText()` 함수는 공백만 정리하고 HTML은 제거하지 않았음.  
+**해결**:
+- ✅ **서버 측** (`route.ts` `cleanText()`): `<p>`, `<div>` 등 블록 태그 → 줄바꿈 변환 후 모든 HTML 태그 제거 + HTML 엔티티 디코딩
+- ✅ **클라이언트 측** (`page.tsx` `renderText()`): Firestore 캐시에 HTML이 남아있을 경우를 대비해 동일한 strip 로직 적용 (방어적 코딩)
+- ✅ **OG 메타데이터** (`layout.tsx`): 소셜 미리보기에 HTML 태그 노출 방지  
+**금지**: 외부 API 텍스트 필드를 `dangerouslySetInnerHTML`이나 plain text로 무조건 신뢰하지 말 것. 반드시 sanitize 후 렌더링.
