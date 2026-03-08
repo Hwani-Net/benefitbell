@@ -192,3 +192,14 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 - ✅ **클라이언트 측** (`page.tsx` `renderText()`): Firestore 캐시에 HTML이 남아있을 경우를 대비해 동일한 strip 로직 적용 (방어적 코딩)
 - ✅ **OG 메타데이터** (`layout.tsx`): 소셜 미리보기에 HTML 태그 노출 방지  
 **금지**: 외부 API 텍스트 필드를 `dangerouslySetInnerHTML`이나 plain text로 무조건 신뢰하지 말 것. 반드시 sanitize 후 렌더링.
+
+---
+
+### Firebase App Hosting + 카카오 OAuth KOE006 — request.url이 0.0.0.0:8080 반환 🔥
+**날짜**: 2026-03-08  
+**증상**: 카카오 로그인 클릭 → KOE006 에러 ("등록하지 않은 리다이렉트 URI"). 실제 사용된 URI: `https://0.0.0.0:8080/api/auth/kakao/callback`  
+**원인**: Firebase App Hosting은 **리버스 프록시** 뒤에서 Next.js를 `0.0.0.0:8080`으로 실행. `new URL(request.url).host`가 내부 컨테이너 주소를 반환.  
+**해결**: `x-forwarded-host` / `x-forwarded-proto` 헤더를 우선 사용하도록 OAuth route 수정.  
+**금지**: Firebase App Hosting, Cloud Run 등 컨테이너 기반 호스팅에서 `request.url.host`를 공개 도메인으로 사용하지 말 것. 반드시 forwarded 헤더 확인.  
+**추가**: 카카오 개발자 콘솔에서도 Firebase 도메인 Redirect URI 등록 필요 (앱 → 플랫폼 키 → REST API 키 수정 → 카카오 로그인 리다이렉트 URI).
+
