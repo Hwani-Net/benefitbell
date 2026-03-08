@@ -260,7 +260,7 @@ export default function HomePage() {
                 )}
               </h2>
               {allPersonalizedBenefits.length > 5 && (
-                <Link href="/search?custom=true" className="section-link">{lang === 'ko' ? '전체보기' : 'View All'}</Link>
+                <Link href="/ai" className="section-link">{lang === 'ko' ? '전체 AI 분석 →' : 'Full AI Analysis →'}</Link>
               )}
             </div>
             <div className={styles.benefitList}>
@@ -335,7 +335,7 @@ export default function HomePage() {
         {/* 🤖 비로그인 사용자용 AI 맞춤 CTA 배너 */}
         {!kakaoUser && !loading && benefits.length > 0 && (
           <section className="section" style={{ padding: '0 16px', marginBottom: 8 }}>
-            <Link href="/profile" style={{ textDecoration: 'none', display: 'block' }}>
+            <Link href="/ai" style={{ textDecoration: 'none', display: 'block' }}>
               <div style={{
                 background: 'linear-gradient(135deg, #0EA5E9 0%, #6366F1 50%, #A855F7 100%)',
                 borderRadius: 16,
