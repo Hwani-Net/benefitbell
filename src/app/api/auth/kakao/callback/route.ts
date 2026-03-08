@@ -1,40 +1,52 @@
 import { NextResponse } from 'next/server'
 import { createKakaoCustomToken } from '@/lib/firebase-admin'
 
-export async function GET(request: Request) {
+/**
+ * Get the public-facing origin from request headers.
+ * Firebase App Hosting runs behind a reverse proxy, so request.url
+ * returns internal container address (0.0.0.0:8080).
+ */
+function getPublicOrigin(request: Request): string {
   const requestUrl = new URL(request.url)
-  // Firebase App Hosting: use forwarded headers for real domain
   const forwardedHost = request.headers.get('x-forwarded-host')
   const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
   const host = forwardedHost || request.headers.get('host') || requestUrl.host
-  const searchParams = requestUrl.searchParams
-  const code = searchParams.get('code')
   const isDev = host.includes('localhost')
+  return isDev
+    ? `${requestUrl.protocol}//${host}`
+    : `${forwardedProto}://${host}`
+}
+
+export async function GET(request: Request) {
+  const origin = getPublicOrigin(request)
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect(new URL('/profile', request.url))
+    return NextResponse.redirect(`${origin}/profile`)
   }
 
   const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID!
   const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET!
-
-  const origin = isDev
-    ? `${requestUrl.protocol}//${host}`
-    : `${forwardedProto}://${host}`
   const REDIRECT_URI = `${origin}/api/auth/kakao/callback`
 
   try {
     // 1. Get Access Token
+    const tokenBody: Record<string, string> = {
+      grant_type: 'authorization_code',
+      client_id: KAKAO_CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      code,
+    }
+    // Only include client_secret if it's actually set (non-empty)
+    if (KAKAO_CLIENT_SECRET && KAKAO_CLIENT_SECRET !== 'placeholder') {
+      tokenBody.client_secret = KAKAO_CLIENT_SECRET
+    }
+
     const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: KAKAO_CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
-        code,
-        client_secret: KAKAO_CLIENT_SECRET,
-      }),
+      body: new URLSearchParams(tokenBody),
     })
 
     const tokenData = await tokenResponse.json()
@@ -43,7 +55,7 @@ export async function GET(request: Request) {
       const errDesc = tokenData.error_description || JSON.stringify(tokenData)
       console.error('Kakao Token Error:', JSON.stringify(tokenData))
       return NextResponse.redirect(
-        new URL(`/profile?error=token_failed&code=${errCode}&msg=${encodeURIComponent(errDesc)}`, request.url)
+        `${origin}/profile?error=token_failed&code=${errCode}&msg=${encodeURIComponent(errDesc)}`
       )
     }
 
@@ -59,7 +71,7 @@ export async function GET(request: Request) {
     const userData = await userResponse.json()
     if (!userResponse.ok) {
       console.error('Kakao User Info Error:', userData)
-      return NextResponse.redirect(new URL('/profile?error=user_info_failed', request.url))
+      return NextResponse.redirect(`${origin}/profile?error=user_info_failed`)
     }
 
     const kakaoId = String(userData.id)
@@ -75,7 +87,7 @@ export async function GET(request: Request) {
       console.warn('[firebase] createCustomToken failed (fallback to cookie-only):', fbErr)
     }
 
-    const response = NextResponse.redirect(new URL('/profile', request.url))
+    const response = NextResponse.redirect(`${origin}/profile`)
 
     // 기존 kakao_profile 쿠키 (하위 호환 유지)
     const profileData = {
@@ -103,6 +115,6 @@ export async function GET(request: Request) {
     return response
   } catch (error) {
     console.error('Kakao Auth Exception:', error)
-    return NextResponse.redirect(new URL('/profile?error=auth_exception', request.url))
+    return NextResponse.redirect(`${origin}/profile?error=auth_exception`)
   }
 }
