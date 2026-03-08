@@ -3,7 +3,10 @@ import { createKakaoCustomToken } from '@/lib/firebase-admin'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  const { host } = requestUrl
+  // Firebase App Hosting: use forwarded headers for real domain
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
+  const host = forwardedHost || request.headers.get('host') || requestUrl.host
   const searchParams = requestUrl.searchParams
   const code = searchParams.get('code')
   const isDev = host.includes('localhost')
@@ -15,9 +18,10 @@ export async function GET(request: Request) {
   const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID!
   const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET!
 
-  const REDIRECT_URI = isDev
-    ? `${requestUrl.origin}/api/auth/kakao/callback`
-    : `${requestUrl.protocol}//${requestUrl.host}/api/auth/kakao/callback`
+  const origin = isDev
+    ? `${requestUrl.protocol}//${host}`
+    : `${forwardedProto}://${host}`
+  const REDIRECT_URI = `${origin}/api/auth/kakao/callback`
 
   try {
     // 1. Get Access Token
