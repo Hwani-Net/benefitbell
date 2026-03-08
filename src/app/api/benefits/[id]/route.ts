@@ -5,6 +5,10 @@ import { FieldValue } from 'firebase-admin/firestore'
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24시간
 
+// ─── In-memory cache for detail API responses ───
+const detailCache = new Map<string, { data: unknown; timestamp: number }>()
+const MEM_CACHE_TTL = 60 * 60 * 1000 // 1시간 인메모리
+
 function getXmlValue(xml: string, tag: string): string {
   const regex = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`)
   const m = regex.exec(xml)
@@ -92,6 +96,12 @@ export async function GET(
     return NextResponse.json({ success: false, error: 'Invalid benefit ID' }, { status: 400 })
   }
 
+  // ─── 0. In-memory cache (fastest) ───
+  const memCached = detailCache.get(servId)
+  if (memCached && Date.now() - memCached.timestamp < MEM_CACHE_TTL) {
+    return NextResponse.json({ success: true, data: memCached.data, source: 'mem_cache' })
+  }
+
   // ──────────────────────────────────────────
   // 1. Firestore 캐시 먼저 확인 (24시간 TTL)
   // ──────────────────────────────────────────
@@ -103,9 +113,11 @@ export async function GET(
       const cachedAt = cached.fetched_at?.toDate?.() ?? new Date(0)
       const age = Date.now() - cachedAt.getTime()
       if (age < CACHE_TTL_MS) {
+        const detail = rowToDetail(cached.data, id, servId)
+        detailCache.set(servId, { data: detail, timestamp: Date.now() })
         return NextResponse.json({
           success: true,
-          data: rowToDetail(cached.data, id, servId),
+          data: detail,
           source: 'cache',
         })
       }
@@ -213,6 +225,9 @@ export async function GET(
             url: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailLink')[i] || '',
           })),
       }
+
+      // Save to in-memory cache
+      detailCache.set(servId, { data: detail, timestamp: Date.now() })
 
       return NextResponse.json({ success: true, data: detail, source: 'api' })
       // NOTE: Firestore 저장은 응답 반환 후 백그라운드로 (fire-and-forget)

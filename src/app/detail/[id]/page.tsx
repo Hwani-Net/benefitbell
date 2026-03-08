@@ -129,49 +129,44 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   }, [benefit])
 
   useEffect(() => {
-    async function fetchDetail(benefitId: string, retry = false): Promise<ApiDetail | null> {
-      try {
-        const detailRes = await fetch(`/api/benefits/${benefitId}`)
-        if (detailRes.ok) {
-          const detailJson = await detailRes.json()
-          if (detailJson.success && detailJson.source === 'api') {
-            return detailJson.data as ApiDetail
-          }
-        }
-        if (!retry) {
-          await new Promise(r => setTimeout(r, 1500))
-          return fetchDetail(benefitId, true)
-        }
-      } catch { /* ignore */ }
-      return null
+    // 1) 즉시: 글로벌 혜택 목록에서 기본 정보 표시 (0ms)
+    const found = allBenefits.find(b => b.id === id)
+    if (found) {
+      setBenefit(found)
+      setLoading(false) // ← 즉시 화면 표시!
     }
 
-    async function loadData() {
-      try {
-        // Find from context benefits (already loaded globally)
-        const found = allBenefits.find(b => b.id === id)
-        const detail = await fetchDetail(id)
+    // 2) 비동기: API 상세 정보 보강 (백그라운드)
+    async function fetchDetail(benefitId: string) {
+      // 비중앙부처 혜택은 상세 API가 없으므로 스킵
+      if (benefitId.startsWith('LG-') || benefitId.startsWith('SUB-') ||
+          benefitId.startsWith('BIZ-') || benefitId.startsWith('KSU-') ||
+          benefitId.startsWith('PW-')) {
+        return
+      }
 
-        if (found) {
-          if (detail?.applyBgnDt || detail?.applyEndDt) {
+      try {
+        const res = await fetch(`/api/benefits/${benefitId}`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (json.success && json.data) {
+          setApiDetail(json.data as ApiDetail)
+          // Update benefit with precise dates if available
+          if (found && (json.data.applyBgnDt || json.data.applyEndDt)) {
             setBenefit({
               ...found,
-              applicationStart: detail.applyBgnDt ?? found.applicationStart,
-              applicationEnd: detail.applyEndDt ?? found.applicationEnd,
+              applicationStart: json.data.applyBgnDt ?? found.applicationStart,
+              applicationEnd: json.data.applyEndDt ?? found.applicationEnd,
             })
-          } else {
-            setBenefit(found)
           }
         }
-
-        if (detail) setApiDetail(detail)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+      } catch { /* API 실패 — 기본 정보로 표시 */ }
     }
-    if (allBenefits.length > 0) loadData()
+
+    if (allBenefits.length > 0) {
+      fetchDetail(id)
+      if (!found) setLoading(false) // 혜택 목록에도 없으면 404
+    }
   }, [id, allBenefits])
 
   if (loading) {
