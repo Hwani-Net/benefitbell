@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
-import { getFilteredBenefits, getAiPersonalizedBenefits, FilteredBenefit } from '@/lib/recommendation'
+import { getFilteredBenefits, FilteredBenefit } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -90,27 +90,79 @@ export default function AiPage() {
   const isKo = lang === 'ko'
   const hasProfile = !!(userProfile?.birthYear && userProfile?.region)
 
-  // ─── Load AI scores for filter tab ───
+  // ─── D안: 배치별 점진적 AI 스코어 로딩 ───
+  // 10개씩 순차 처리, 각 배치 완료 즉시 UI 업데이트 → 첫 결과 ~1초
   useEffect(() => {
     if (!hasProfile || allBenefits.length === 0) return
     let cancelled = false
-    setAiLoading(true)
-    setAiProgress({ done: 0, total: Math.min(allBenefits.length, 50) })
 
-    getAiPersonalizedBenefits(allBenefits, userProfile)
-      .then(enriched => {
-        if (cancelled) return
-        const map = new Map<string, { score: number; verdict: string; summary: string }>()
-        for (const b of enriched) {
-          if (b.aiScore !== undefined) {
-            map.set(b.id, { score: b.aiScore, verdict: b.aiVerdict || 'partial', summary: b.aiSummary || '' })
+    const BATCH_SIZE = 10
+    const toAssess = allBenefits.slice(0, 50) // 최대 50개
+    const totalBatches = Math.ceil(toAssess.length / BATCH_SIZE)
+
+    setAiLoading(true)
+    setAiProgress({ done: 0, total: toAssess.length })
+
+    const profilePayload = {
+      age: new Date().getFullYear() - userProfile.birthYear,
+      gender: userProfile.gender,
+      region: userProfile.region,
+      employmentStatus: userProfile.employmentStatus,
+      housingType: userProfile.housingType,
+      incomePercent: userProfile.incomePercent,
+      householdSize: userProfile.householdSize,
+      specialStatus: userProfile.specialStatus,
+    }
+
+    ;(async () => {
+      for (let i = 0; i < totalBatches; i++) {
+        if (cancelled) break
+
+        const batch = toAssess.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
+        try {
+          const res = await fetch('/api/ai-eligibility', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              profile: profilePayload,
+              benefits: batch.map(b => ({
+                id: b.id,
+                title: b.title,
+                description: b.description?.substring(0, 200) || '',
+                category: b.category,
+                targetAge: b.targetAge || '',
+                incomeLevel: b.incomeLevel || '',
+              })),
+            }),
+          })
+
+          if (!res.ok || cancelled) break
+
+          const data = await res.json()
+          const batchResults: Array<{ benefitId: string; score: number; verdict: string; summary: string }> = data.results || []
+
+          if (!cancelled) {
+            // 배치 완료 즉시 map 업데이트 → 화면 즉시 반영 (D안 핵심)
+            setAiScores(prev => {
+              const next = new Map(prev)
+              for (const r of batchResults) {
+                next.set(r.benefitId, { score: r.score, verdict: r.verdict, summary: r.summary })
+              }
+              return next
+            })
+            setAiProgress(prev => ({ ...prev, done: Math.min(prev.done + batch.length, prev.total) }))
+          }
+        } catch {
+          // 배치 실패 시 다음 배치로 계속 (부분 실패 허용)
+          if (!cancelled) {
+            setAiProgress(prev => ({ ...prev, done: Math.min(prev.done + batch.length, prev.total) }))
           }
         }
-        setAiScores(map)
-        setAiProgress(prev => ({ ...prev, done: prev.total }))
-      })
-      .catch(() => { /* fallback to keyword only */ })
-      .finally(() => { if (!cancelled) setAiLoading(false) })
+      }
+
+      if (!cancelled) setAiLoading(false)
+    })()
+
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasProfile, allBenefits.length])

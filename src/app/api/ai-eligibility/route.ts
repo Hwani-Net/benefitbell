@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
+import { getAdminFirestore } from '@/lib/firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
 /**
  * POST /api/ai-eligibility
- * 
- * Batch AI eligibility assessment.
- * Input: { profile, benefits[] }
- * Output: { results: EligibilityResult[] }
- * 
- * Uses OpenRouter free models to compare user profile against benefit criteria.
- * Single API call handles up to 10 benefits for cost efficiency.
+ *
+ * Batch AI eligibility assessment with Firestore caching (C안).
+ * Cache TTL: 24h. Key: sha256(profileHash + benefitIds).
+ *
+ * 2026-03-10: C+D 장기운영 최적화:
+ *   C안: Firestore 서버사이드 캐싱 — 재방문 시 즉시 응답 (0.1s)
+ *   D안: 클라이언트가 배치 단위로 호출 → 각 배치 완료 즉시 UI 반영
  */
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+
+/** 간단한 해시 (프로필 + 혜택 IDs 결합) */
+function makeCacheKey(profileDesc: string, benefitIds: string[]): string {
+  // 길이 제한 있는 Firestore 문서 ID용 간단 키
+  const raw = profileDesc + '|' + benefitIds.sort().join(',')
+  // 앞 200자만 사용 (Firestore 문서 ID 최대 1500 bytes)
+  return raw.slice(0, 200).replace(/[\/\s]/g, '_')
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { profile, benefits } = await req.json()
@@ -19,8 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'profile and benefits required' }, { status: 400 })
     }
 
-    const client = createAIClient()
-
+    // ── 프로필 설명 생성 ─────────────────────────────────
     const profileDesc = [
       `나이: ${profile.age}세`,
       `성별: ${profile.gender === 'male' ? '남성' : '여성'}`,
@@ -33,6 +45,33 @@ export async function POST(req: NextRequest) {
         ? `특이사항: ${profile.specialStatus.map(formatSpecial).join(', ')}`
         : null,
     ].filter(Boolean).join('\n')
+
+    const benefitIds = benefits.map((b: { id: string }) => b.id)
+
+    // ══ C안: Firestore 캐시 조회 ════════════════════════
+    const cacheKey = makeCacheKey(profileDesc, benefitIds)
+    try {
+      const db = getAdminFirestore()
+      const cacheDoc = await db.collection('ai_eligibility_cache').doc(cacheKey).get()
+
+      if (cacheDoc.exists) {
+        const cached = cacheDoc.data()!
+        const cachedAt: number = cached.cachedAt?.toMillis?.() ?? 0
+        const isExpired = Date.now() - cachedAt > CACHE_TTL_MS
+
+        if (!isExpired) {
+          console.log(`[ai-eligibility] Cache HIT — key: ${cacheKey.slice(0, 30)}...`)
+          return NextResponse.json({ results: cached.results, cached: true })
+        }
+        console.log(`[ai-eligibility] Cache EXPIRED — refreshing`)
+      }
+    } catch (cacheErr) {
+      // 캐시 실패는 무시하고 계속 진행
+      console.warn('[ai-eligibility] Cache read failed:', cacheErr)
+    }
+
+    // ══ OpenAI API 호출 ══════════════════════════════════
+    const client = createAIClient()
 
     const benefitsDesc = benefits.map((b: { id: string; title: string; description: string; category: string; targetAge: string; incomeLevel: string }, i: number) =>
       `[${i + 1}] ID: ${b.id}\n제목: ${b.title}\n설명: ${b.description}\n카테고리: ${b.category}\n대상연령: ${b.targetAge || '전체'}\n소득기준: ${b.incomeLevel || '없음'}`
@@ -84,7 +123,6 @@ verdict 기준: score >= 70 → "likely", 40~69 → "partial", < 40 → "unlikel
 
     const parsed = JSON.parse(jsonMatch[0])
 
-    // Validate and normalize results
     const results = (parsed.results || []).map((r: { benefitId: string; score: number; summary: string; verdict: string }) => ({
       benefitId: r.benefitId,
       score: Math.min(Math.max(Math.round(r.score || 0), 0), 95),
@@ -92,7 +130,23 @@ verdict 기준: score >= 70 → "likely", 40~69 → "partial", < 40 → "unlikel
       verdict: (['likely', 'partial', 'unlikely'].includes(r.verdict) ? r.verdict : 'partial'),
     }))
 
-    return NextResponse.json({ results })
+    // ══ C안: Firestore 캐시 저장 ════════════════════════
+    try {
+      const db = getAdminFirestore()
+      await db.collection('ai_eligibility_cache').doc(cacheKey).set({
+        results,
+        profileDesc: profileDesc.slice(0, 300), // 디버깅용
+        benefitCount: benefits.length,
+        cachedAt: FieldValue.serverTimestamp(),
+      })
+      console.log(`[ai-eligibility] Cache STORED — key: ${cacheKey.slice(0, 30)}...`)
+    } catch (cacheErr) {
+      // 저장 실패는 무시 (결과는 이미 클라이언트에 반환)
+      console.warn('[ai-eligibility] Cache write failed:', cacheErr)
+    }
+
+    return NextResponse.json({ results, cached: false })
+
   } catch (err) {
     console.error('[ai-eligibility] Error:', err)
     const msg = err instanceof Error ? err.message : String(err)
