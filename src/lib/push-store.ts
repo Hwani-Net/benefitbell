@@ -1,7 +1,11 @@
 /**
  * Shared push subscription store
- * Primary: Vercel KV (Redis) for persistence across cold starts
- * Fallback: globalThis memory (if KV not configured)
+ * Firebase App Hosting 이전 후 Vercel KV → in-memory 유지
+ * (실제 FCM 토큰은 Firestore push_subscriptions 컬렉션에서 관리)
+ *
+ * 2026-03-10: @vercel/kv 패키지 제거 (Firebase App Hosting 이전 완료)
+ * - Vercel KV 환경에서는 더 이상 동작하지 않음
+ * - Firebase App Hosting에서는 Firestore 기반 push_subscriptions 사용
  */
 
 export interface PushSub {
@@ -13,50 +17,9 @@ export interface PushSub {
   }
 }
 
-// ─── Vercel KV helpers (dynamic import to avoid build errors when KV not installed) ───
-
-async function kvAvailable(): Promise<boolean> {
-  try {
-    // KV env vars presence check
-    return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
-  } catch {
-    return false
-  }
-}
-
-const KV_KEY = 'benefitbell:push_subs'
-
-async function kvGet(): Promise<PushSub[]> {
-  try {
-    const { kv } = await import('@vercel/kv')
-    const subs = await kv.smembers(KV_KEY) as string[]
-    return subs.map((s: string) => JSON.parse(s) as PushSub)
-  } catch {
-    return []
-  }
-}
-
-async function kvAdd(sub: PushSub): Promise<void> {
-  try {
-    const { kv } = await import('@vercel/kv')
-    await kv.sadd(KV_KEY, JSON.stringify(sub))
-  } catch {
-    // silent — fallback will handle
-  }
-}
-
-async function kvRemove(endpoint: string): Promise<void> {
-  try {
-    const { kv } = await import('@vercel/kv')
-    const all = await kvGet()
-    const target = all.find(s => s.endpoint === endpoint)
-    if (target) await kv.srem(KV_KEY, JSON.stringify(target))
-  } catch {
-    // silent
-  }
-}
-
-// ─── In-memory fallback ───
+// ─── In-memory store (Firebase App Hosting 환경) ───
+// Note: FCM 등록은 Firestore push_subscriptions 컬렉션에서 별도 관리됨
+// 이 store는 레거시 VAPID 방식 호환성 유지용
 
 const STORE_KEY = '__benefitbell_push_subs'
 
@@ -70,30 +33,17 @@ function memStore(): PushSub[] {
 // ─── Public API ───
 
 export async function addSubscription(sub: PushSub): Promise<void> {
-  if (await kvAvailable()) {
-    const existing = await kvGet()
-    if (!existing.some(s => s.endpoint === sub.endpoint)) {
-      await kvAdd(sub)
-    }
-    return
-  }
-  // fallback
   const store = memStore()
   if (!store.some(s => s.endpoint === sub.endpoint)) store.push(sub)
 }
 
 export async function removeSubscription(endpoint: string): Promise<void> {
-  if (await kvAvailable()) {
-    await kvRemove(endpoint)
-    return
-  }
   const store = memStore()
   const idx = store.findIndex(s => s.endpoint === endpoint)
   if (idx !== -1) store.splice(idx, 1)
 }
 
 export async function getSubscriptions(): Promise<PushSub[]> {
-  if (await kvAvailable()) return kvGet()
   return memStore()
 }
 
