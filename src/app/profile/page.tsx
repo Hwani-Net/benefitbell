@@ -401,7 +401,7 @@ export default function ProfilePage() {
             <div className={styles.profileInfo}>
               <h1 className={styles.profileName}>{kakaoUser.nickname}</h1>
               <p className={styles.profileSub}>
-                {profile.birthYear}년생 · {lang === 'ko' ? (profile.gender === 'male' ? '남성' : '여성') : (profile.gender === 'male' ? 'Male' : 'Female')} · {profile.region}
+                {profile.birthYear ? `${profile.birthYear}년생` : ''}{profile.birthYear && profile.region ? ' · ' : ''}{lang === 'ko' ? (profile.gender === 'male' ? '남성' : '여성') : (profile.gender === 'male' ? 'Male' : 'Female')}{profile.region ? ` · ${profile.region}` : ''}
               </p>
               {!isPremium && (
                 <span className={`badge badge-coral-soft`}>{t.currentPlan}</span>
@@ -561,6 +561,7 @@ export default function ProfilePage() {
                   <div className={styles.formRowFull}>
                     <label className={styles.label}>{t.birthDate}</label>
                     <select className={styles.selectField} value={profile.birthYear} onChange={e => update('birthYear', Number(e.target.value))}>
+                      {profile.birthYear === 0 && <option value={0}>선택하세요</option>}
                       {Array.from({ length: new Date().getFullYear() - 1924 }, (_, i) => {
                         const year = new Date().getFullYear() - i
                         return <option key={year} value={year}>{year}년</option>

@@ -329,9 +329,9 @@ export interface UserProfile {
 
 const defaultProfile: UserProfile = {
   name: '',
-  birthYear: 1995,
+  birthYear: 0,       // 0 = 미입력 상태 (hasProfile 체크에서 falsy)
   gender: 'male',
-  region: '서울특별시 강남구',
+  region: '',          // 빈 문자열 = 미입력 (hasProfile 체크에서 falsy)
   householdSize: 1,
   incomePercent: 50,
   housingType: 'monthly',

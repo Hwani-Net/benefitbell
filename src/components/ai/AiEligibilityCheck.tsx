@@ -55,6 +55,8 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   // ── Auto-load for inline variant (with sessionStorage cache) ──
   useEffect(() => {
     if (variant !== 'inline') return
+    // C안: 프로필 없으면 API 호출 안 함 (과금 방지 + 정직한 UX)
+    if (!hasProfile) return
 
     const cacheKey = `ai_check_${benefitId}_${lang}`
     try {
@@ -95,7 +97,7 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
       .finally(() => setInlineLoading(false))
 
     return () => controller.abort()
-  }, [variant, benefitId, lang, isPremium])
+  }, [variant, benefitId, lang, isPremium, hasProfile])
 
   // ── Load detailed analysis (no questions!) ─────────
   async function loadDetailedAnalysis() {
@@ -153,6 +155,32 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
   // INLINE VARIANT RENDER
   // ══════════════════════════════════════════════════
   if (variant === 'inline') {
+    // 프로필 없으면 프로필 입력 CTA 표시
+    if (!hasProfile) {
+      return (
+        <div className={styles.inlineCard}>
+          <div className={styles.inlineHeader}>
+            <div className={styles.inlineHeaderLeft}>
+              <span>🤖</span>
+              <span className={styles.inlineLabel}>AI 자격 체크</span>
+            </div>
+          </div>
+          <div className={styles.inlineBody}>
+            <p className={styles.inlineSummaryItem}>
+              {isKo
+                ? '프로필을 입력하면 이 혜택에 해당되는지 AI가 맞춤 분석해드립니다.'
+                : 'Enter your profile to get personalized AI eligibility analysis.'}
+            </p>
+          </div>
+          <div className={styles.inlineFooter}>
+            <a href="/profile" className={styles.inlineDetailBtn} style={{ textDecoration: 'none', textAlign: 'center' }}>
+              {isKo ? '📝 30초 프로필 입력하고 맞춤 분석 받기' : '📝 Enter Profile for AI Analysis'}
+            </a>
+          </div>
+        </div>
+      )
+    }
+
     const v = inlineVerdict ?? 'partial'
     const vInfo = verdictInfo[v]
 
