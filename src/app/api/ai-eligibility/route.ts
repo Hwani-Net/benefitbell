@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
     // ══ OpenAI API 호출 ══════════════════════════════════
     const client = createAIClient()
 
-    const benefitsDesc = benefits.map((b: { id: string; title: string; description: string; category: string; targetAge: string; incomeLevel: string }, i: number) =>
-      `[${i + 1}] ID: ${b.id}\n제목: ${b.title}\n설명: ${b.description}\n카테고리: ${b.category}\n대상연령: ${b.targetAge || '전체'}\n소득기준: ${b.incomeLevel || '없음'}`
+    const benefitsDesc = benefits.map((b: { id: string; title: string; description: string; category: string; targetAge: string; incomeLevel: string; eligibility?: string }, i: number) =>
+      `[${i + 1}] ID: ${b.id}\n제목: ${b.title}\n설명: ${b.description}\n카테고리: ${b.category}\n대상연령: ${b.targetAge || '전체'}\n소득기준: ${b.incomeLevel || '없음'}${b.eligibility ? `\n자격요건: ${b.eligibility}` : ''}`
     ).join('\n\n')
 
     const prompt = `당신은 대한민국 정부 복지 혜택 자격 판정 전문가입니다.

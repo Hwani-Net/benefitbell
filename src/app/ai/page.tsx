@@ -128,10 +128,12 @@ export default function AiPage() {
               benefits: batch.map(b => ({
                 id: b.id,
                 title: b.title,
-                description: b.description?.substring(0, 200) || '',
+                description: b.description?.substring(0, 500) || '',
                 category: b.category,
                 targetAge: b.targetAge || '',
                 incomeLevel: b.incomeLevel || '',
+                // AI 정확도 향상: 자격요건 체크리스트 + 신청절차 전달
+                eligibility: b.eligibilityChecks?.map(c => c.label).join(', ') || '',
               })),
             }),
           })
