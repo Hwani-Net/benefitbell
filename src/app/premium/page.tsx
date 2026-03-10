@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useApp } from '@/lib/context'
+import { getFirebaseAuth } from '@/lib/firebase'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import styles from './page.module.css'
@@ -31,13 +32,23 @@ export default function PremiumPage() {
     setError('')
 
     try {
+      // Firebase idToken 획득 → Authorization 헤더로 전달 (secret 키 노출 방지)
+      const auth = getFirebaseAuth()
+      if (!auth?.currentUser) {
+        setError('Firebase 인증 상태를 확인할 수 없습니다. 다시 로그인해주세요.')
+        setStep('idle')
+        return
+      }
+      const idToken = await auth.currentUser.getIdToken()
+
       const res = await fetch('/api/premium/activate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
         body: JSON.stringify({
-          kakaoId: String(kakaoUser.id),
           nickname: kakaoUser.nickname,
-          secret: process.env.NEXT_PUBLIC_PREMIUM_ACTIVATE_SECRET || '',
         }),
       })
 
@@ -55,6 +66,7 @@ export default function PremiumPage() {
       }
       setStep('done')
     } catch (err) {
+      console.error('[premium] activate error:', err)
       setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
       setStep('paying')
     }

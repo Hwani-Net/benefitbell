@@ -41,10 +41,6 @@ env:
   - variable: NEXT_PUBLIC_KAKAOPAY_PREMIUM_LINK
     value: https://qr.kakaopay.com/FVPcVDUAM
 
-  # ─── 프리미엄 시크릿 (프론트에서도 참조) ─────────────────────────────
-  - variable: NEXT_PUBLIC_PREMIUM_ACTIVATE_SECRET
-    secret: PREMIUM_ACTIVATE_SECRET
-
   # ─── 서버 전용 시크릿 (Cloud Secret Manager) ─────────────────────────
   - variable: DATA_GO_KR_SERVICE_KEY
     secret: DATA_GO_KR_SERVICE_KEY
@@ -60,8 +56,6 @@ env:
     value: mailto:stayicon@gmail.com
   - variable: CRON_SECRET
     secret: CRON_SECRET
-  - variable: PREMIUM_ACTIVATE_SECRET
-    secret: PREMIUM_ACTIVATE_SECRET
   - variable: KAKAO_CLIENT_ID
     secret: KAKAO_CLIENT_ID
   - variable: KAKAO_CLIENT_SECRET
