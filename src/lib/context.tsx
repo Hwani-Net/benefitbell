@@ -345,43 +345,45 @@ const defaultProfile: UserProfile = {
 const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>('ko')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [bookmarks, setBookmarks] = useState<string[]>([])
-  const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile)
-  const [kakaoUser, setKakaoUser] = useState<{ id?: number; nickname: string; profile_image?: string } | null>(null)
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === 'undefined') return 'ko'
+    return (localStorage.getItem('lang') as Lang) ?? 'ko'
+  })
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light'
+    return (localStorage.getItem('theme') as 'light' | 'dark') ?? 'light'
+  })
+  const [bookmarks, setBookmarks] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const saved = localStorage.getItem('bookmarks')
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    if (typeof window === 'undefined') return defaultProfile
+    try {
+      const saved = localStorage.getItem('userProfile')
+      return saved ? JSON.parse(saved) : defaultProfile
+    } catch { return defaultProfile }
+  })
+  const [kakaoUser, setKakaoUser] = useState<{ id?: number; nickname: string; profile_image?: string } | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const value = `; ${document.cookie}`
+      const parts = value.split('; kakao_profile=')
+      if (parts.length === 2) {
+        const raw = decodeURIComponent(parts.pop()?.split(';').shift() || '')
+        if (raw) {
+          const data = JSON.parse(raw)
+          if (data.name) return { id: data.id, nickname: data.name, profile_image: data.profile_image }
+        }
+      }
+    } catch { /* cookie parse failed */ }
+    return null
+  })
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [benefitsLoading, setBenefitsLoading] = useState(true)
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-    const savedLang = localStorage.getItem('lang') as Lang | null
-    const savedBookmarks = localStorage.getItem('bookmarks')
-    const savedProfile = localStorage.getItem('userProfile')
-    if (savedTheme) setTheme(savedTheme)
-    if (savedLang) setLang(savedLang)
-    if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks))
-    if (savedProfile) setUserProfile(JSON.parse(savedProfile))
-    // Load kakao user from cookie (set by /api/auth/kakao/callback)
-    const getCookie = (name: string) => {
-      const value = `; ${document.cookie}`
-      const parts = value.split(`; ${name}=`)
-      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '')
-      return null
-    }
-    const kakaoProfileCookie = getCookie('kakao_profile')
-    if (kakaoProfileCookie) {
-      try {
-        const data = JSON.parse(kakaoProfileCookie)
-        if (data.name) {
-          setKakaoUser({ id: data.id, nickname: data.name, profile_image: data.profile_image })
-        }
-      } catch (e) {
-        console.error('Failed to parse kakao_profile cookie', e)
-      }
-    }
-
-  }, [])
 
   // Global benefits fetch (single load, shared across all pages)
   useEffect(() => {

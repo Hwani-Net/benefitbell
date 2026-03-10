@@ -70,8 +70,11 @@ export async function GET(req: Request) {
 
   // Cleanup expired
   results.forEach((r, i) => {
-    if (r.status === 'rejected' && ((r.reason as any)?.code === 'messaging/registration-token-not-registered' || (r.reason as any)?.code === 'messaging/invalid-registration-token')) {
-      removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(() => {})
+    if (r.status === 'rejected') {
+      const code = (r.reason as { code?: string })?.code
+      if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
+        removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(() => {})
+      }
     }
   })
 

@@ -69,8 +69,11 @@ function useUnreadBadge(pathname: string) {
     if (pathname === '/' || pathname === '/profile') {
       try {
         localStorage.setItem('push_unread_count', '0')
-        setUnread(0)
       } catch { /* ignore */ }
+      // Use callback to avoid synchronous setState in effect
+      const clear = () => setUnread(0)
+      const id = requestAnimationFrame(clear)
+      return () => cancelAnimationFrame(id)
     }
   }, [pathname])
 

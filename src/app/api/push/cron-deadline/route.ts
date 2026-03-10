@@ -162,8 +162,9 @@ export async function GET(request: Request) {
           matchedBenefits.map(b => markSent(sub.docId, b.id, today, { dDay: b.dDay, title: b.title }))
         )
         totalSent++
-      } catch (err: any) {
-        if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token') {
+      } catch (err: unknown) {
+        const errCode = (err as { code?: string })?.code
+        if (errCode === 'messaging/registration-token-not-registered' || errCode === 'messaging/invalid-registration-token') {
           // 만료된 구독 — 정리 대상
           toDelete.push(sub.docId)
         } else {

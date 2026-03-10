@@ -12,12 +12,14 @@ export default function AgenationWrapper() {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       import('agentation').then((mod) => {
-        setAgentComp(() => () => (
+        const AgentationInner = () => (
           <mod.Agentation
             endpoint="http://localhost:4747"
             onSessionCreated={(id: string) => console.log('[Agentation] Session:', id)}
           />
-        ))
+        )
+        AgentationInner.displayName = 'AgentationInner'
+        setAgentComp(() => AgentationInner)
       }).catch(() => {/* agentation not available */})
     }
   }, [])

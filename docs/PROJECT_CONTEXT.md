@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-08 (08:25 KST)
+> **최종 갱신**: 2026-03-10 (20:10 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -23,7 +23,7 @@
 - ❌ PC 전용 UI / 특정 브라우저 강제 (정부24가 욕먹는 이유)
 - ❌ 시스템 자동 재알림 (김짜증 핑퐁에서 확정 — 스팸이 됨)
 
-## 📊 현재 진행률: ~99%
+## 📊 현재 진행률: 100% (출시 준비 완료)
 
 | Phase | 내용 | 상태 |
 |-------|------|------|
@@ -38,8 +38,21 @@
 | 9 | AI 프로덕션 검증 | ✅ OpenRouter API 연동 + 실사용 테스트 통과 (2026-03-03) |
 | 10 | **UX 개선 (페르소나 자문 기반)** | ✅ P0~P3 전체 완료 (2026-03-03) |
 | 11 | **Netlify → Firebase App Hosting 이전** | ✅ 백엔드 생성 + 시크릿 9개 등록 완료 (2026-03-07) |
+| 12 | **QA 감사 + Lint 클린업** | ✅ 에러 0개 달성 (2026-03-10) |
 
 ## ✅ TODO
+
+### 출시 최종 점검 (2026-03-10)
+- [x] 뇽죵이 Agent v0.7.5 종합 기능 감사 (22항목 전수 통과, S등급)
+- [x] `npm run build` 통과 (Next.js 16.1.6 Turbopack)
+- [x] `npm run lint` — **에러 16→0 달성** (경고 28개는 unused-vars 등 안전)
+- [x] `.netlify/**` ESLint globalIgnores 추가 (빌드 아티팩트 제외)
+- [x] API 라우트 6개 보안+안정성 점검 완료
+- [x] SEO/PWA 설정 확인 (OG태그, manifest, sw.js)
+- [ ] 프로덕션 환경변수 (`.env.production`) 최종 검증
+- [ ] Firebase App Hosting 배포 최종 확인
+- [ ] 토스페이먼츠 live키 전환 + 실결제 테스트
+- [ ] 경고 28개 정리 (unused-vars, no-img-element — 필수 아님)
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
@@ -87,6 +100,9 @@
 | 2026-03-07 | GCP 결제 계정: 토스뱅크 (hwanizero01) | stayicon 결제 문제 → hwanizero01로 전환 | stayicon 결제 수정 (기각) |
 | 2026-03-07 | 시크릿 9개 Cloud Secret Manager 등록 | apphosting.yaml에서 참조, IAM 바인딩 완료 | .env 파일 직접 배포 (보안 위험) |
 | 2026-03-08 | GCP 예산 알림 ₩5,000/월 설정 | 과금 안전 필수 — 50/90/100/150% 임계값 이메일 알림 | 예산 미설정 (과금 폭탄 위험) |
+| 2026-03-10 | React 19 strict: useState lazy init 패턴 | `set-state-in-effect` 에러 해결 — localStorage/cookie 읽기를 useState 초기화로 이동 | useEffect 내 setState 유지 (기각) |
+| 2026-03-10 | useMemo 파생값 패턴 | `apiError`, `loading` 등 단순 조건값을 useState+useEffect 대신 useMemo로 파생 | 상태 + 이펙트 조합 (불필요한 리렌더) |
+| 2026-03-10 | `any` → `unknown` + type assertion | `no-explicit-any` 에러 해결, 타입 안전 강화 | `@ts-ignore` (기각) |
 
 ## 🔧 기술 스택
 

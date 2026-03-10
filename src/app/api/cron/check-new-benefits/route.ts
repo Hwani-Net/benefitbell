@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
     // 1. Firestore에서 모든 활성 구독자 조회
     const snapshot = await db.collection('push_subscriptions').get()
-    const subscribers: any[] = []
+    const subscribers: { fcmToken?: string; endpoint?: string; docId: string; categories?: string[] }[] = []
     snapshot.docs.forEach(d => {
       const data = d.data()
       if (data.fcmToken || data.endpoint) {
@@ -116,8 +116,9 @@ export async function GET(req: Request) {
         } else {
            throw { code: 'messaging/registration-token-not-registered' }
         }
-      } catch (err: any) {
-        if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token') {
+      } catch (err: unknown) {
+        const errCode = (err as { code?: string })?.code
+        if (errCode === 'messaging/registration-token-not-registered' || errCode === 'messaging/invalid-registration-token') {
           await db.collection('push_subscriptions').doc(sub.docId).delete()
         }
         failed.push(sub.fcmToken || sub.endpoint || sub.docId)

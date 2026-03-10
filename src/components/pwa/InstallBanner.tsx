@@ -26,8 +26,11 @@ export default function InstallBanner() {
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     if (isIOS && isSafari) {
-      setPlatform('ios')
-      setTimeout(() => setShow(true), 3000)
+      // Defer setState to setTimeout callback to avoid synchronous setState in effect
+      setTimeout(() => {
+        setPlatform('ios')
+        setShow(true)
+      }, 3000)
       return
     }
 

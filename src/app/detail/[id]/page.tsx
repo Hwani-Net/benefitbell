@@ -5,7 +5,7 @@ import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import AiEligibilityCheck from '@/components/ai/AiEligibilityCheck'
 import Link from 'next/link'
-import { use, useEffect, useState, useCallback, useRef } from 'react'
+import { use, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 
 // Floating CTA visibility hook — shows after scrolling down, hides when inline CTA is visible
 function useFloatingCta(ctaRef: React.RefObject<HTMLDivElement | null>) {
@@ -70,34 +70,21 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params)
   const router = useRouter()
   const { t, lang, toggleBookmark, isBookmarked, benefits: allBenefits } = useApp()
-  const [benefit, setBenefit] = useState<Benefit | null>(null)
+  const [enrichedBenefit, setEnrichedBenefit] = useState<Benefit | null>(null)
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null)
-  const [loading, setLoading] = useState(true)
   const [shared, setShared] = useState(false)
   const [kakaoShared, setKakaoShared] = useState(false)
   const ctaRef = useRef<HTMLDivElement>(null)
   const showFloatingCta = useFloatingCta(ctaRef)
 
-  // 카카오톡 공유
-  const handleKakaoShare = useCallback(() => {
-    if (!benefit) return
-    // Kakao SDK가 로드된 경우
-    if (typeof window !== 'undefined' && window.Kakao) {
-      shareKakaoBenefit({
-        title: benefit.title,
-        amount: benefit.amount,
-        categoryLabel: benefit.categoryLabel,
-        dDay: benefit.dDay,
-        benefitId: benefit.id,
-      })
-      setKakaoShared(true)
-      setTimeout(() => setKakaoShared(false), 3000)
-    } else {
-      // Kakao SDK 미로드 시 Web Share API fallback
-      handleShare()
-    }
-  }, [benefit])
+  // Derive initial benefit from global list (no effect needed)
+  const foundBenefit = useMemo(() => allBenefits.find(b => b.id === id) ?? null, [allBenefits, id])
+  // Final benefit: API-enriched version takes priority, then foundBenefit from list
+  const benefit = enrichedBenefit ?? foundBenefit
+  // Derive loading: still loading if allBenefits not loaded
+  const loading = allBenefits.length === 0
 
+  // Web Share API 공유
   const handleShare = useCallback(async () => {
     const url = window.location.href
     // Use native Web Share API (Samsung Browser, Chrome, etc.)
@@ -128,15 +115,28 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     }
   }, [benefit])
 
-  useEffect(() => {
-    // 1) 즉시: 글로벌 혜택 목록에서 기본 정보 표시 (0ms)
-    const found = allBenefits.find(b => b.id === id)
-    if (found) {
-      setBenefit(found)
-      setLoading(false) // ← 즉시 화면 표시!
+  // 카카오톡 공유
+  const handleKakaoShare = useCallback(() => {
+    if (!benefit) return
+    // Kakao SDK가 로드된 경우
+    if (typeof window !== 'undefined' && window.Kakao) {
+      shareKakaoBenefit({
+        title: benefit.title,
+        amount: benefit.amount,
+        categoryLabel: benefit.categoryLabel,
+        dDay: benefit.dDay,
+        benefitId: benefit.id,
+      })
+      setKakaoShared(true)
+      setTimeout(() => setKakaoShared(false), 3000)
+    } else {
+      // Kakao SDK 미로드 시 Web Share API fallback
+      handleShare()
     }
+  }, [benefit, handleShare])
 
-    // 2) 비동기: API 상세 정보 보강 (백그라운드)
+  useEffect(() => {
+    // 비동기: API 상세 정보 보강 (백그라운드)
     async function fetchDetail(benefitId: string) {
       // 비중앙부처 혜택은 상세 API가 없으므로 스킵
       if (benefitId.startsWith('LG-') || benefitId.startsWith('SUB-') ||
@@ -152,11 +152,11 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
         if (json.success && json.data) {
           setApiDetail(json.data as ApiDetail)
           // Update benefit with precise dates if available
-          if (found && (json.data.applyBgnDt || json.data.applyEndDt)) {
-            setBenefit({
-              ...found,
-              applicationStart: json.data.applyBgnDt ?? found.applicationStart,
-              applicationEnd: json.data.applyEndDt ?? found.applicationEnd,
+          if (foundBenefit && (json.data.applyBgnDt || json.data.applyEndDt)) {
+            setEnrichedBenefit({
+              ...foundBenefit,
+              applicationStart: json.data.applyBgnDt ?? foundBenefit.applicationStart,
+              applicationEnd: json.data.applyEndDt ?? foundBenefit.applicationEnd,
             })
           }
         }
@@ -165,9 +165,8 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
 
     if (allBenefits.length > 0) {
       fetchDetail(id)
-      if (!found) setLoading(false) // 혜택 목록에도 없으면 404
     }
-  }, [id, allBenefits])
+  }, [id, allBenefits, foundBenefit])
 
   if (loading) {
     return (

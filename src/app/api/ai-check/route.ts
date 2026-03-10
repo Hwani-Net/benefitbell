@@ -123,7 +123,7 @@ Respond in JSON:
     ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
 
     // 마크다운 코드블록 제거 (일부 모델이 ```json ... ``` 로 감싸는 경우)
-    let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
 
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
@@ -250,7 +250,7 @@ Respond in JSON:
     ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
 
     // 마크다운 코드블록 제거
-    let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
 
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {

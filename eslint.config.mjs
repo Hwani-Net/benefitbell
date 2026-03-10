@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build artifacts (Netlify / Firebase)
+    ".netlify/**",
+    "netlify/**",
+    ".apphosting/**",
   ]),
 ]);
 

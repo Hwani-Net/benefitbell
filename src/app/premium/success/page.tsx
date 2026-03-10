@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useApp } from '@/lib/context'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -66,9 +67,9 @@ function SuccessContent() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>결제가 완료되었습니다</h1>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>이제 프리미엄 혜택을 마음껏 누려보세요!</p>
-          <a href="/" className="btn btn-primary btn-lg" style={{ minWidth: 200, display: 'inline-block', textDecoration: 'none' }}>
+          <Link href="/" className="btn btn-primary btn-lg" style={{ minWidth: 200, display: 'inline-block', textDecoration: 'none' }}>
             홈으로 돌아가기
-          </a>
+          </Link>
         </>
       ) : (
         <>

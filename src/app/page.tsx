@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
 import { getPersonalizedBenefits } from '@/lib/recommendation'
@@ -54,7 +54,6 @@ function useDragScroll() {
 
 export default function HomePage() {
   const { t, lang, toggleBookmark, isBookmarked, kakaoUser, userProfile, benefits, benefitsLoading: loading } = useApp()
-  const [apiError, setApiError] = useState(false)
   const [sharedId, setSharedId] = useState<string | null>(null)
   const dragScrollRef = useDragScroll()
 
@@ -83,9 +82,8 @@ export default function HomePage() {
     }
   }, [lang])
 
-  useEffect(() => {
-    if (!loading && benefits.length === 0) setApiError(true)
-  }, [loading, benefits])
+  // Derived value — no setState in effect needed
+  const apiError = useMemo(() => !loading && benefits.length === 0, [loading, benefits])
 
 
 
