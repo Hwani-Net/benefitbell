@@ -161,7 +161,7 @@ Respond in JSON:
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json()
-    const { benefitId, benefitTitle = '', lang = 'ko' } = body
+    const { benefitId, benefitTitle = '', lang = 'ko', profile } = body
 
     if (!benefitId) {
       return NextResponse.json({ error: 'benefitId required' }, { status: 400 })
@@ -179,11 +179,26 @@ export async function PUT(req: NextRequest) {
     const supportInfo = hasDetail ? (detail.alwServCn || '정보 없음') : '정보 없음'
     const overviewInfo = hasDetail ? (detail.servDgst || '정보 없음') : '정보 없음'
 
+    // ── C안: 프로필 기반 맞춤 분석 or 일반 분석 ──
+    const hasProfile = profile && profile.age && profile.region
+    const profileSection = hasProfile ? `
+## 사용자 프로필
+- 나이: ${profile.age}세
+- 거주지: ${profile.region}
+- 고용상태: ${profile.employmentStatus || '미입력'}
+- 소득수준: 중위소득 ${profile.incomePercent || '미입력'}% 이하
+- 특이사항: ${profile.specialStatus?.length > 0 ? profile.specialStatus.join(', ') : '없음'}
+` : ''
+
+    const analysisTarget = hasProfile
+      ? '아래 사용자 프로필 기준으로 이 혜택에 해당되는지 맞춤 분석해주세요.'
+      : '일반 시민이 해당될 가능성을 상세 분석해주세요.'
+
     const isKo = lang === 'ko'
     const prompt = isKo ? `
-다음 정부 지원 혜택에 대해 일반 시민이 해당될 가능성을 상세 분석해주세요.
+다음 정부 지원 혜택에 대해 ${analysisTarget}
 사용자에게 질문하지 말고, 혜택 정보만으로 직접 판단하세요.
-
+${profileSection}
 혜택명: ${benefitName}
 대상: ${targetInfo}
 선발 기준: ${criteriaInfo}
@@ -193,7 +208,7 @@ export async function PUT(req: NextRequest) {
 다음 형식의 JSON으로 답해주세요:
 {
   "verdict": "likely" | "partial" | "unlikely",
-  "reason": "누가 주로 해당되는지 쉬운 말로 2~3문장 설명",
+  "reason": "${hasProfile ? '이 사용자가' : '누가'} 주로 해당되는지 쉬운 말로 2~3문장 설명",
   "details": [
     "✅ 해당되는 경우: ~한 경우",
     "⚠️ 확인 필요: ~의 조건이 있음",
@@ -203,9 +218,9 @@ export async function PUT(req: NextRequest) {
 }
 
 verdict 기준:
-- likely: 대부분의 해당 계층이 받을 수 있는 보편적 혜택
+- likely: ${hasProfile ? '사용자 프로필이 대부분 조건에 부합' : '대부분의 해당 계층이 받을 수 있는 보편적 혜택'}
 - partial: 소득, 나이, 지역 등 특정 조건 확인이 필요
-- unlikely: 매우 제한적인 대상만 해당 (장애인, 특수직업 등)
+- unlikely: ${hasProfile ? '사용자 프로필이 조건에 맞지 않음' : '매우 제한적인 대상만 해당'}
     ` : `
 Analyze this government benefit and determine general eligibility.
 Do NOT ask the user any questions. Judge based on the information provided.
