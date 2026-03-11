@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
-import { getDDayColor, getDDayText, bText } from '@/data/benefits'
+import { getDDayColor, getDDayStyleColor, getDDayText, bText } from '@/data/benefits'
 import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'

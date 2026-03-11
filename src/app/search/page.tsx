@@ -317,7 +317,11 @@ function SearchContent() {
                           </div>
                           <h3 className={styles.resultTitle}>{bText(b, 'title', lang)}</h3>
                           <p className={styles.resultAmount}>{bText(b, 'amount', lang)}</p>
-                          <p className={styles.resultPeriod}>📅 {b.applicationStart} ~ {b.applicationEnd}</p>
+                          <p className={styles.resultPeriod}>
+                            {b.dDay >= 365 || !b.applicationEnd || b.applicationEnd === '상시' || b.applicationEnd === '별도공지'
+                              ? `📅 ${lang === 'ko' ? '상시 모집' : 'Always Open'}`
+                              : `📅 ${b.applicationStart || ''} ~ ${b.applicationEnd}`}
+                          </p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                           <button

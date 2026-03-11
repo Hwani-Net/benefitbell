@@ -53,12 +53,23 @@ export interface Benefit {
 // UI Utilities (not data — pure functions)
 // =====================
 
+/** Returns CSS badge class name for dDay badge (className용) */
 export function getDDayColor(dDay: number): string {
+  if (dDay < 0) return 'badge-gray'
+  if (dDay === 0) return 'badge-red'
+  if (dDay <= 3) return 'badge-orange'
+  if (dDay <= 7) return 'badge-coral'
+  if (dDay >= 365) return 'badge-green' // 상시 프로그램
+  return 'badge-gray'
+}
+
+/** Returns hex/CSS color string for inline style usage */
+export function getDDayStyleColor(dDay: number): string {
   if (dDay < 0) return 'var(--text-tertiary)'
   if (dDay === 0) return '#ef4444'
   if (dDay <= 3) return '#f97316'
   if (dDay <= 7) return '#eab308'
-  if (dDay >= 365) return '#10b981' // 상시 프로그램 — 안정적 초록
+  if (dDay >= 365) return '#10b981' // 상시 프로그램
   return 'var(--text-secondary)'
 }
 
