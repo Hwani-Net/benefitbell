@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-11 (15:51 KST)
+> **최종 갱신**: 2026-03-11 (22:12 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -35,7 +35,7 @@
 | 6 | 킬러 피처 #3: 서류 안내 + 원스톱 | ✅ 완료 |
 | 7 | FCM 마이그레이션 (VAPID → FCM) | ✅ 완료 |
 | 8 | 배포 + 프리미엄 런칭 | ✅ Netlify 배포 완료 (2026-03-03) |
-| 9 | AI 프로덕션 검증 | ✅ OpenAI GPT-4o mini 연동 + 실사용 테스트 통과 (2026-03-03) |
+| 9 | AI 프로덕션 검증 | ✅ OpenAI GPT-4.1 nano 연동 + E2E 전수 테스트 통과 (2026-03-11) |
 | 10 | **UX 개선 (페르소나 자문 기반)** | ✅ P0~P3 전체 완료 (2026-03-03) |
 | 11 | **Netlify → Firebase App Hosting 이전** | ✅ 백엔드 생성 + 시크릿 9개 등록 완료 (2026-03-07) |
 | 12 | **QA 감사 + Lint 클린업** | ✅ 에러 0개 달성 (2026-03-10) |
@@ -63,7 +63,10 @@
 - [x] 경고 27개 정리 완료 (unused-vars, no-img-element 모두 해결, 0 error / 0 warning 달성)
 - [x] 공공데이터 기관/인프라 프로그램 54건 필터링 로직 추가 (리스트+상세+캐시 3중 적용)
 - [x] GCP Secret Manager에 `OPENAI_API_KEY` 시크릿 생성 + IAM 바인딩 3개 부여
-- [ ] ⏳ Firebase App Hosting 재배포 확인 (시크릿 해석 에러 해결 후 배포 대기 중)
+- [x] ✅ Firebase App Hosting 재배포 확인 완료 (2026-03-11 20:44 KST, 6,187건 정상 표시)
+- [x] GPT-4o mini → GPT-4.1 nano 모델 교체 (33% 비용 절약, 2배 속도 향상) (2026-03-11)
+- [x] E2E 프로덕션 전수 테스트 **24/24 PASS** — 속도, 추천 품질, 슬라이드, 검색, AI분석, 다크모드, 영어전환, 프로필위저드 (2026-03-11)
+- [ ] 🟡 D-365 기본값 이슈: 상시 프로그램 마감 임박 슬라이드에 D-365 표시 → "상시" 라벨 개선 고려 (minor)
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
@@ -117,6 +120,7 @@
 | 2026-03-10 | AI 배치 점수 → 규칙 기반 전환 | 구조화 데이터(targetAge/incomeLevel/category)로 충분히 매칭 가능, API 과금 제거, 응답 속도 0ms | AI 배치 유지 (불필요한 과금) |
 | 2026-03-10 | UserProfile에 maritalStatus/hasChildren 추가 + 규칙 점수 v3 | 미혼인데 자녀 혜택 추천 문제 해결. 기본점수 10, 카테고리 불일치 감점(-5~-15), likely≥65. 팀장 리뷰: divorced+자녀=한부모 로직 반영 | 프로필 미확장 (자녀 필터 불가능) |
 | 2026-03-11 | UserProfile v4: 11필드 추가 + 규칙 엔진 v3 | NLM 리서치(16소스)+Council 5인 자문 기반. 개인5필드(자녀수/연령대/임신/수급/보험/장애등급)+사업자6필드. 3단계 프로그레시브 위저드로 UX 최적화 | 필드 축소 → 매칭 부정확 (기각) |
+| 2026-03-11 | GPT-4o mini → GPT-4.1 nano 전환 | 33% 비용 절약($0.15/$0.60→$0.10/$0.40), 2배 속도 향상(200+ tok/s), SDK 변경 없음 | GPT-4.1 mini (2.67배 비쌈, 성능 향상 미미 — 기각) |
 
 ## 🔧 기술 스택
 
@@ -126,7 +130,7 @@
 | 스타일 | Vanilla CSS (CSS Modules) |
 | DB | Firestore (Firebase) |
 | Auth | Firebase Custom Token (카카오 OAuth) |
-| AI | OpenRouter API (무료 tier, 다중 모델 fallback) |
+| AI | **OpenAI GPT-4.1 nano** ($0.10/$0.40 per 1M tokens) |
 | 푸시 | Firebase Cloud Messaging (FCM) |
 | 공공데이터 | data.go.kr 복지서비스 API |
 | 호스팅 | **Firebase App Hosting** (asia-east1, Blaze 요금제) |
@@ -139,7 +143,7 @@
 |------|------|
 | `src/lib/recommendation.ts` | **프로필→혜택 매칭 엔진 v3** (15규칙, 규칙 기반) |
 | `src/lib/ai-eligibility.ts` | **AI 배치 자격 판정 엔진** (OpenRouter 연동 + 캐싱) |
-| `src/lib/ai-client.ts` | **공통 AI 클라이언트** (OpenRouter + 다중 모델 fallback) |
+| `src/lib/ai-client.ts` | **공통 AI 클라이언트** (OpenAI GPT-4.1 nano) |
 | `src/lib/welfare-api.ts` | 공공데이터 API 호출 + XML 파싱 |
 | `src/data/document-urls.ts` | **서류 → 정부24 URL 화이트리스트 매핑** |
 | `src/data/benefits.ts` | Benefit 타입 + 카테고리 정의 |
