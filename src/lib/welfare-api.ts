@@ -943,7 +943,7 @@ const BENEFIT_ALLOWLIST = [
  * Check if a welfare item is an institutional program rather than an individual benefit.
  * Examples: "웹 정보접근성 제고", "청소년복지시설 운영 지원", "인프라 구축사업"
  */
-function isInstitutionalProgram(title: string): boolean {
+export function isInstitutionalProgram(title: string): boolean {
   if (!title) return false
 
   // If title contains individual benefit keywords, it's NOT institutional

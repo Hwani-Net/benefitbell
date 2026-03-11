@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminFirestore } from '@/lib/firebase-admin'
+import { isInstitutionalProgram } from '@/lib/welfare-api'
 // FieldValue available via firebase-admin/firestore if needed for background save
 
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
@@ -99,6 +100,14 @@ export async function GET(
   // ─── 0. In-memory cache (fastest) ───
   const memCached = detailCache.get(servId)
   if (memCached && Date.now() - memCached.timestamp < MEM_CACHE_TTL) {
+    // Filter institutional programs even from cache
+    const cachedData = memCached.data as { title?: string }
+    if (cachedData?.title && isInstitutionalProgram(cachedData.title)) {
+      return NextResponse.json(
+        { success: false, error: '개인 대상 혜택이 아닌 기관/인프라 프로그램입니다.' },
+        { status: 404 }
+      )
+    }
     return NextResponse.json({ success: true, data: memCached.data, source: 'mem_cache' })
   }
 
@@ -114,6 +123,13 @@ export async function GET(
       const age = Date.now() - cachedAt.getTime()
       if (age < CACHE_TTL_MS) {
         const detail = rowToDetail(cached.data, id, servId)
+        // Filter institutional programs from cache too
+        if (typeof detail.title === 'string' && isInstitutionalProgram(detail.title)) {
+          return NextResponse.json(
+            { success: false, error: '개인 대상 혜택이 아닌 기관/인프라 프로그램입니다.' },
+            { status: 404 }
+          )
+        }
         detailCache.set(servId, { data: detail, timestamp: Date.now() })
         return NextResponse.json({
           success: true,
@@ -188,6 +204,17 @@ export async function GET(
         id,
         servId,
         title: getXmlValue(xml, 'servNm'),
+      }
+
+      // Filter out institutional programs (not individual benefits)
+      if (isInstitutionalProgram(detail.title)) {
+        return NextResponse.json(
+          { success: false, error: '개인 대상 혜택이 아닌 기관/인프라 프로그램입니다.' },
+          { status: 404 }
+        )
+      }
+
+      Object.assign(detail, {
         ministry: getXmlValue(xml, 'jurMnofNm'),
         phone: getXmlValue(xml, 'rprsCtadr'),
         year: getXmlValue(xml, 'crtrYr'),
@@ -228,7 +255,7 @@ export async function GET(
             name,
             url: getXmlValues(xml, 'inqplHmpgReldList', 'servSeDetailLink')[i] || '',
           })),
-      }
+      })
 
       // Save to in-memory cache
       detailCache.set(servId, { data: detail, timestamp: Date.now() })
