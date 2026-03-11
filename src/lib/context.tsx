@@ -115,11 +115,61 @@ export const translations = {
     employed: '재직중',
     selfEmployed: '자영업',
     student: '학생',
+    maritalStatus: '결혼 여부',
+    single: '미혼',
+    married: '기혼',
+    divorced: '이혼/사별',
+    hasChildren: '자녀 여부',
+    noChildren: '자녀 없음',
+    yesChildren: '자녀 있음',
+    childrenCount: '자녀 수',
+    childrenAgeGroup: '자녀 연령대',
+    infant: '영유아 (0~6세)',
+    elementary: '초등학생 (7~12세)',
+    teen: '중고등학생 (13~18세)',
+    isPregnant: '임신 여부',
+    pregnant: '임신 중',
+    notPregnant: '해당없음',
+    isBasicLivingRecipient: '기초수급 여부',
+    basicRecipient: '기초수급자',
+    notBasicRecipient: '해당없음',
+    healthInsuranceType: '건강보험 유형',
+    employedInsurance: '직장가입자',
+    regionalInsurance: '지역가입자',
+    medicalAid: '의료급여',
+    unknownInsurance: '잘 모르겠음',
+    disabilityGrade: '장애 등급',
+    noDisability: '해당없음',
+    mildDisability: '경증 (구 4~6급)',
+    severeDisability: '중증 (구 1~3급)',
     specialStatus: '특이사항',
     disability: '장애',
     singleParent: '한부모',
     multicultural: '다문화',
     veteran: '국가유공자',
+    businessInfo: '사업자 정보',
+    isBusinessOwner: '사업자 여부',
+    yesBusinessOwner: '사업자입니다',
+    noBusinessOwner: '아닙니다',
+    businessType: '사업 형태',
+    individualBiz: '개인사업자',
+    corporationBiz: '법인사업자',
+    businessAge: '업력',
+    bizUnder1: '1년 미만',
+    biz1to3: '1~3년',
+    biz3to7: '3~7년',
+    bizOver7: '7년 이상',
+    annualRevenue: '연매출',
+    revUnder1: '1억 미만',
+    rev1to3: '1~3억',
+    rev3to10: '3~10억',
+    revOver10: '10억 이상',
+    employeeCount: '종업원 수',
+    solo: '1인 (나만)',
+    under5: '5인 미만',
+    under10: '5~10인',
+    over10: '10인 이상',
+    industryType: '업종',
     notificationSettings: '알림 설정',
     kakaoNotification: '카카오톡 알림',
     notifyBefore: '알림 시점',
@@ -252,11 +302,61 @@ export const translations = {
     employed: 'Employed',
     selfEmployed: 'Self-Employed',
     student: 'Student',
+    maritalStatus: 'Marital Status',
+    single: 'Single',
+    married: 'Married',
+    divorced: 'Divorced/Widowed',
+    hasChildren: 'Children',
+    noChildren: 'No Children',
+    yesChildren: 'Has Children',
+    childrenCount: 'Number of Children',
+    childrenAgeGroup: 'Children Age Group',
+    infant: 'Infant (0-6)',
+    elementary: 'Elementary (7-12)',
+    teen: 'Teen (13-18)',
+    isPregnant: 'Pregnancy',
+    pregnant: 'Pregnant',
+    notPregnant: 'Not Applicable',
+    isBasicLivingRecipient: 'Basic Living Recipient',
+    basicRecipient: 'Recipient',
+    notBasicRecipient: 'Not Applicable',
+    healthInsuranceType: 'Health Insurance',
+    employedInsurance: 'Employed',
+    regionalInsurance: 'Regional',
+    medicalAid: 'Medical Aid',
+    unknownInsurance: 'Not Sure',
+    disabilityGrade: 'Disability Grade',
+    noDisability: 'None',
+    mildDisability: 'Mild',
+    severeDisability: 'Severe',
     specialStatus: 'Special Status',
     disability: 'Disability',
     singleParent: 'Single Parent',
     multicultural: 'Multicultural',
     veteran: 'Veteran',
+    businessInfo: 'Business Info',
+    isBusinessOwner: 'Business Owner',
+    yesBusinessOwner: 'Yes, I am',
+    noBusinessOwner: 'No',
+    businessType: 'Business Type',
+    individualBiz: 'Sole Proprietor',
+    corporationBiz: 'Corporation',
+    businessAge: 'Business Age',
+    bizUnder1: 'Under 1 year',
+    biz1to3: '1-3 years',
+    biz3to7: '3-7 years',
+    bizOver7: 'Over 7 years',
+    annualRevenue: 'Annual Revenue',
+    revUnder1: 'Under ₩100M',
+    rev1to3: '₩100M-300M',
+    rev3to10: '₩300M-1B',
+    revOver10: 'Over ₩1B',
+    employeeCount: 'Employees',
+    solo: 'Solo',
+    under5: 'Under 5',
+    under10: '5-10',
+    over10: 'Over 10',
+    industryType: 'Industry',
     notificationSettings: 'Notifications',
     kakaoNotification: 'KakaoTalk Alerts',
     notifyBefore: 'Alert Timing',
@@ -313,6 +413,7 @@ interface AppContextType {
 }
 
 export interface UserProfile {
+  // Step 1: 기본 (필수)
   name: string
   birthYear: number
   gender: 'male' | 'female'
@@ -321,13 +422,32 @@ export interface UserProfile {
   incomePercent: number
   housingType: 'monthly' | 'deposit' | 'owned'
   employmentStatus: 'jobSeeking' | 'employed' | 'selfEmployed' | 'student'
+  // Step 2: 가족 (선택)
+  maritalStatus: 'single' | 'married' | 'divorced'
+  hasChildren: boolean              // 하위 호환용 (childrenCount > 0 파생)
+  childrenCount: number             // 0~5+
+  childrenAgeGroup: ('infant' | 'elementary' | 'teen')[]  // 다중선택
+  isPregnant: boolean
+  // Step 3: 상세 (선택)
+  isBasicLivingRecipient: boolean
+  healthInsuranceType: 'employed' | 'regional' | 'medicalAid' | 'unknown'
+  disabilityGrade: 'none' | 'mild' | 'severe'
   specialStatus: string[]
+  // Step 4: 사업자 (선택)
+  isBusinessOwner: boolean
+  businessType: 'individual' | 'corporation' | 'none'
+  businessAge: 'under1' | '1to3' | '3to7' | 'over7' | 'none'
+  annualRevenue: 'under1' | '1to3' | '3to10' | 'over10' | 'none'
+  employeeCount: 'solo' | 'under5' | 'under10' | 'over10' | 'none'
+  industryType: string
+  // 시스템
   kakaoAlerts: boolean
   alertDays: number[]
   isPremium?: boolean
 }
 
 const defaultProfile: UserProfile = {
+  // Step 1
   name: '',
   birthYear: 0,       // 0 = 미입력 상태 (hasProfile 체크에서 falsy)
   gender: 'male',
@@ -336,7 +456,25 @@ const defaultProfile: UserProfile = {
   incomePercent: 50,
   housingType: 'monthly',
   employmentStatus: 'jobSeeking',
+  // Step 2
+  maritalStatus: 'single',
+  hasChildren: false,
+  childrenCount: 0,
+  childrenAgeGroup: [],
+  isPregnant: false,
+  // Step 3
+  isBasicLivingRecipient: false,
+  healthInsuranceType: 'unknown',
+  disabilityGrade: 'none',
   specialStatus: [],
+  // Step 4
+  isBusinessOwner: false,
+  businessType: 'none',
+  businessAge: 'none',
+  annualRevenue: 'none',
+  employeeCount: 'none',
+  industryType: '',
+  // 시스템
   kakaoAlerts: true,
   alertDays: [7, 3],
   isPremium: false,

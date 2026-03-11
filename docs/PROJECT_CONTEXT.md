@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-10 (20:10 KST)
+> **최종 갱신**: 2026-03-11 (10:16 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -39,20 +39,27 @@
 | 10 | **UX 개선 (페르소나 자문 기반)** | ✅ P0~P3 전체 완료 (2026-03-03) |
 | 11 | **Netlify → Firebase App Hosting 이전** | ✅ 백엔드 생성 + 시크릿 9개 등록 완료 (2026-03-07) |
 | 12 | **QA 감사 + Lint 클린업** | ✅ 에러 0개 달성 (2026-03-10) |
+| 13 | **AI 배치 점수 → 규칙 기반 전환** | ✅ API 호출 0건, 즉시 응답 (2026-03-10) |
+| 14 | **프로필 확장 + 점수 밸런스 v3** | ✅ maritalStatus/hasChildren 추가, 팀장 리뷰 통과 (2026-03-10) |
+| 15 | **UserProfile v4 + 규칙 엔진 v3** | ✅ 11필드 추가(가족·상세·사업자), 15매칭규칙, 3단계 위저드 (2026-03-11) |
 
 ## ✅ TODO
 
 ### 출시 최종 점검 (2026-03-10)
 - [x] 뇽죵이 Agent v0.7.5 종합 기능 감사 (22항목 전수 통과, S등급)
 - [x] `npm run build` 통과 (Next.js 16.1.6 Turbopack)
-- [x] `npm run lint` — **에러 16→0 달성** (경고 28개는 unused-vars 등 안전)
+- [x] `npm run lint` — **에러 16→0 달성** (경고 27개는 unused-vars 등 안전)
 - [x] `.netlify/**` ESLint globalIgnores 추가 (빌드 아티팩트 제외)
 - [x] API 라우트 6개 보안+안정성 점검 완료
 - [x] SEO/PWA 설정 확인 (OG태그, manifest, sw.js)
-- [ ] 프로덕션 환경변수 (`.env.production`) 최종 검증
+- [x] ①번 AI 배치 점수(`/api/ai-eligibility`) → 규칙 기반 전환 (API 과금 제거)
+- [x] 프로덕션 환경변수 감사 (22개 매핑 확인, ADC 자동 인증 확인)
+- [x] 프로필에 결혼상태/자녀여부 추가 + 규칙 점수 v3 (팀장 리뷰 통과)
+- [x] UserProfile v4: 11필드 추가 + 규칙 엔진 v3 (15매칭규칙) + 3단계 위저드 (2026-03-11)
+- [ ] 카카오 SDK 도메인 등록 (JavaScript SDK 도메인에 localhost:3008 추가 필요)
 - [ ] Firebase App Hosting 배포 최종 확인
-- [ ] 토스페이먼츠 live키 전환 + 실결제 테스트
-- [ ] 경고 28개 정리 (unused-vars, no-img-element — 필수 아님)
+- [ ] 토스페이먼츠 live키 전환 + 실결제 테스트 (보류)
+- [ ] 경고 27개 정리 (unused-vars, no-img-element — 필수 아님)
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
@@ -60,7 +67,7 @@
 - [x] 수령 가능성 % 배지 UI (홈 리스트 맞춤 추천 섹션)
 - [x] AI 3줄 요약 상세 페이지 (기존 `AiEligibilityCheck` inline 모드 활용)
 - [x] 무관한 혜택 자동 숨김 (`recommendation.ts` 0점 필터)
-- [x] 온보딩 단계별 프로필 입력 UI (기본→추가) — profile/page.tsx 2단계 위저드
+- [x] 온보딩 단계별 프로필 입력 UI (기본→추가) — profile/page.tsx 3단계 위저드 (v4)
 
 ### Phase 5: 맞춤 푸시
 - [x] Firestore `sent_notifications` 중복 방지 유틸 (`push-dedup.ts`)
@@ -103,6 +110,9 @@
 | 2026-03-10 | React 19 strict: useState lazy init 패턴 | `set-state-in-effect` 에러 해결 — localStorage/cookie 읽기를 useState 초기화로 이동 | useEffect 내 setState 유지 (기각) |
 | 2026-03-10 | useMemo 파생값 패턴 | `apiError`, `loading` 등 단순 조건값을 useState+useEffect 대신 useMemo로 파생 | 상태 + 이펙트 조합 (불필요한 리렌더) |
 | 2026-03-10 | `any` → `unknown` + type assertion | `no-explicit-any` 에러 해결, 타입 안전 강화 | `@ts-ignore` (기각) |
+| 2026-03-10 | AI 배치 점수 → 규칙 기반 전환 | 구조화 데이터(targetAge/incomeLevel/category)로 충분히 매칭 가능, API 과금 제거, 응답 속도 0ms | AI 배치 유지 (불필요한 과금) |
+| 2026-03-10 | UserProfile에 maritalStatus/hasChildren 추가 + 규칙 점수 v3 | 미혼인데 자녀 혜택 추천 문제 해결. 기본점수 10, 카테고리 불일치 감점(-5~-15), likely≥65. 팀장 리뷰: divorced+자녀=한부모 로직 반영 | 프로필 미확장 (자녀 필터 불가능) |
+| 2026-03-11 | UserProfile v4: 11필드 추가 + 규칙 엔진 v3 | NLM 리서치(16소스)+Council 5인 자문 기반. 개인5필드(자녀수/연령대/임신/수급/보험/장애등급)+사업자6필드. 3단계 프로그레시브 위저드로 UX 최적화 | 필드 축소 → 매칭 부정확 (기각) |
 
 ## 🔧 기술 스택
 
@@ -123,15 +133,15 @@
 
 | 파일 | 역할 |
 |------|------|
-| `src/lib/recommendation.ts` | **프로필→혜택 매칭 엔진** (키워드 + AI 점수 통합) |
+| `src/lib/recommendation.ts` | **프로필→혜택 매칭 엔진 v3** (15규칙, 규칙 기반) |
 | `src/lib/ai-eligibility.ts` | **AI 배치 자격 판정 엔진** (OpenRouter 연동 + 캐싱) |
 | `src/lib/ai-client.ts` | **공통 AI 클라이언트** (OpenRouter + 다중 모델 fallback) |
 | `src/lib/welfare-api.ts` | 공공데이터 API 호출 + XML 파싱 |
 | `src/data/document-urls.ts` | **서류 → 정부24 URL 화이트리스트 매핑** |
 | `src/data/benefits.ts` | Benefit 타입 + 카테고리 정의 |
 | `src/lib/firebase-admin.ts` | Firebase Admin SDK 초기화 |
-| `src/lib/context.tsx` | 앱 전역 상태 (유저, 프로필, 언어) |
-| `src/app/profile/page.tsx` | 프로필 입력 UI (692줄) |
+| `src/lib/context.tsx` | 앱 전역 상태 (UserProfile v4: 21필드 + i18n) |
+| `src/app/profile/page.tsx` | 프로필 입력 UI (3단계 위저드, ~900줄) |
 | `NORTH_STAR.md` | 북극성 전략 문서 |
 
 ## 📚 참고 문서

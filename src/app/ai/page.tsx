@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
+import { getDDayColor, getDDayText, bText } from '@/data/benefits'
 import { getFilteredBenefits, FilteredBenefit } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -33,11 +33,11 @@ const EXAMPLE_PROMPTS_EN = [
 // ─── Filter result card ───
 function FilterCard({ benefit, lang }: { benefit: FilteredBenefit; lang: string }) {
   const isKo = lang === 'ko'
-  const scoreColor = benefit.aiVerdict === 'likely' ? '#15803d'
-    : benefit.aiVerdict === 'partial' ? '#92400e'
+  const scoreColor = benefit.verdict === 'likely' ? '#15803d'
+    : benefit.verdict === 'partial' ? '#92400e'
     : '#dc2626'
-  const scoreBg = benefit.aiVerdict === 'likely' ? '#dcfce7'
-    : benefit.aiVerdict === 'partial' ? '#fef3c7'
+  const scoreBg = benefit.verdict === 'likely' ? '#dcfce7'
+    : benefit.verdict === 'partial' ? '#fef3c7'
     : '#fee2e2'
 
   return (
@@ -53,16 +53,16 @@ function FilterCard({ benefit, lang }: { benefit: FilteredBenefit; lang: string 
             </span>
           )}
         </div>
-        {benefit.aiSummary && (
-          <p className={styles.filterCardSummary}>✨ {benefit.aiSummary}</p>
+        {benefit.ruleSummary && (
+          <p className={styles.filterCardSummary}>✨ {benefit.ruleSummary}</p>
         )}
       </div>
-      {benefit.aiScore !== undefined && (
+      {benefit.ruleScore !== undefined && (
         <div className={styles.scoreBadge}>
           <div className={styles.scoreCircle} style={{ background: scoreBg, color: scoreColor }}>
-            {benefit.aiScore}%
+            {benefit.ruleScore}%
           </div>
-          <span className={styles.scoreLabel}>{isKo ? 'AI 점수' : 'AI'}</span>
+          <span className={styles.scoreLabel}>{isKo ? '매칭' : 'Match'}</span>
         </div>
       )}
     </Link>
@@ -72,11 +72,6 @@ function FilterCard({ benefit, lang }: { benefit: FilteredBenefit; lang: string 
 export default function AiPage() {
   const { t, lang, userProfile, benefits: allBenefits, kakaoUser } = useApp()
   const [activeTab, setActiveTab] = useState<'filter' | 'chat'>('filter')
-
-  // ─── Tab 1: Filter state ───
-  const [aiScores, setAiScores] = useState<Map<string, { score: number; verdict: string; summary: string }>>(new Map())
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 })
   const [showUnlikely, setShowUnlikely] = useState(false)
 
   // ─── Tab 2: Chat state ───
@@ -90,84 +85,11 @@ export default function AiPage() {
   const isKo = lang === 'ko'
   const hasProfile = !!(userProfile?.birthYear && userProfile?.region)
 
-  // ─── D안: 배치별 점진적 AI 스코어 로딩 ───
-  // 10개씩 순차 처리, 각 배치 완료 즉시 UI 업데이트 → 첫 결과 ~1초
-  useEffect(() => {
-    if (!hasProfile || allBenefits.length === 0) return
-    let cancelled = false
-
-    const BATCH_SIZE = 10
-    const toAssess = allBenefits.slice(0, 50) // 최대 50개
-    const totalBatches = Math.ceil(toAssess.length / BATCH_SIZE)
-
-    setAiLoading(true)
-    setAiProgress({ done: 0, total: toAssess.length })
-
-    const profilePayload = {
-      age: new Date().getFullYear() - userProfile.birthYear,
-      gender: userProfile.gender,
-      region: userProfile.region,
-      employmentStatus: userProfile.employmentStatus,
-      housingType: userProfile.housingType,
-      incomePercent: userProfile.incomePercent,
-      householdSize: userProfile.householdSize,
-      specialStatus: userProfile.specialStatus,
-    }
-
-    ;(async () => {
-      for (let i = 0; i < totalBatches; i++) {
-        if (cancelled) break
-
-        const batch = toAssess.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
-        try {
-          const res = await fetch('/api/ai-eligibility', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              profile: profilePayload,
-              benefits: batch.map(b => ({
-                id: b.id,
-                title: b.title,
-                description: b.description?.substring(0, 500) || '',
-                category: b.category,
-                targetAge: b.targetAge || '',
-                incomeLevel: b.incomeLevel || '',
-                // AI 정확도 향상: 자격요건 체크리스트 + 신청절차 전달
-                eligibility: b.eligibilityChecks?.map(c => c.label).join(', ') || '',
-              })),
-            }),
-          })
-
-          if (!res.ok || cancelled) break
-
-          const data = await res.json()
-          const batchResults: Array<{ benefitId: string; score: number; verdict: string; summary: string }> = data.results || []
-
-          if (!cancelled) {
-            // 배치 완료 즉시 map 업데이트 → 화면 즉시 반영 (D안 핵심)
-            setAiScores(prev => {
-              const next = new Map(prev)
-              for (const r of batchResults) {
-                next.set(r.benefitId, { score: r.score, verdict: r.verdict, summary: r.summary })
-              }
-              return next
-            })
-            setAiProgress(prev => ({ ...prev, done: Math.min(prev.done + batch.length, prev.total) }))
-          }
-        } catch {
-          // 배치 실패 시 다음 배치로 계속 (부분 실패 허용)
-          if (!cancelled) {
-            setAiProgress(prev => ({ ...prev, done: Math.min(prev.done + batch.length, prev.total) }))
-          }
-        }
-      }
-
-      if (!cancelled) setAiLoading(false)
-    })()
-
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasProfile, allBenefits.length])
+  // ─── Tab 1: 규칙 기반 즉시 계산 (API 호출 없음) ───
+  const filtered = useMemo(() => {
+    if (!hasProfile || allBenefits.length === 0) return null
+    return getFilteredBenefits(allBenefits, userProfile!)
+  }, [hasProfile, allBenefits, userProfile])
 
   // ─── Free usage tracking ───
   useEffect(() => {
@@ -244,9 +166,6 @@ export default function AiPage() {
     }
   }, [isKo])
 
-  // ─── Filtered results ───
-  const filtered = hasProfile ? getFilteredBenefits(allBenefits, userProfile!, aiScores) : null
-
   return (
     <div className={styles.page}>
       <TopBar />
@@ -280,7 +199,7 @@ export default function AiPage() {
           </button>
         </div>
 
-        {/* ═══════════ Tab 1: 내 맞춤 혜택 ═══════════ */}
+        {/* ═══════════ Tab 1: 내 맞춤 혜택 (규칙 기반) ═══════════ */}
         {activeTab === 'filter' && (
           <>
             {!hasProfile ? (
@@ -316,22 +235,6 @@ export default function AiPage() {
                       <p className={styles.statNumber} style={{ color: '#9ca3af' }}>{filtered.unlikely.length}</p>
                       <p className={styles.statLabel}>{isKo ? '❌ 해당 안됨' : '❌ Unlikely'}</p>
                     </div>
-                  </div>
-                )}
-
-                {/* AI Progress */}
-                {aiLoading && (
-                  <div className={styles.aiProgress}>
-                    <span style={{ fontSize: 16 }}>🤖</span>
-                    <div className={styles.aiProgressBar}>
-                      <div
-                        className={styles.aiProgressFill}
-                        style={{ width: aiProgress.total > 0 ? `${(aiProgress.done / aiProgress.total) * 100}%` : '30%' }}
-                      />
-                    </div>
-                    <span className={styles.aiProgressText}>
-                      {isKo ? 'AI 분석 중...' : 'AI analyzing...'}
-                    </span>
                   </div>
                 )}
 
@@ -380,7 +283,7 @@ export default function AiPage() {
                 )}
 
                 {/* Empty state */}
-                {filtered && filtered.likely.length === 0 && filtered.partial.length === 0 && !aiLoading && (
+                {filtered && filtered.likely.length === 0 && filtered.partial.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
                     <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
@@ -399,8 +302,8 @@ export default function AiPage() {
                 {filtered && (filtered.likely.length > 0 || filtered.partial.length > 0) && (
                   <div className={styles.disclaimer} style={{ marginTop: 20 }}>
                     {isKo
-                      ? '⚠️ AI 분석 결과는 참고용이며 법적 효력이 없습니다. 정확한 자격 판단은 해당 기관에 문의하세요.'
-                      : '⚠️ AI results are for reference only. Contact the relevant agency for accurate eligibility.'}
+                      ? '⚠️ 자동 매칭 결과는 참고용이며 법적 효력이 없습니다. 정확한 자격 판단은 해당 기관에 문의하세요.'
+                      : '⚠️ Matching results are for reference only. Contact the relevant agency for accurate eligibility.'}
                   </div>
                 )}
               </>
@@ -429,7 +332,7 @@ export default function AiPage() {
                 <span className={styles.charCount}>{input.length}/500</span>
                 {!userProfile?.isPremium && (
                   <span className="badge badge-coral-soft">
-                    {isKo ? `무료 ${3 - usageCount}회 남음` : `${3 - usageCount} free left`}
+                    {isKo ? `무료 ${10 - usageCount}회 남음` : `${10 - usageCount} free left`}
                   </span>
                 )}
                 <button

@@ -169,7 +169,7 @@ export default function ProfilePage() {
   const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked, benefits: allBenefits, benefitsLoading } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
-  const [profileStep, setProfileStep] = useState<1 | 2>(1)
+  const [profileStep, setProfileStep] = useState<1 | 2 | 3>(1)
   
   // AppContext의 userProfile이 로컬스토리지에서 늦게 불러와진 경우(hydration) 로컬 profile 상태 동기화
   useEffect(() => {
@@ -290,6 +290,22 @@ export default function ProfilePage() {
     update('specialStatus', next)
   }
 
+  const toggleChildrenAgeGroup = (group: 'infant' | 'elementary' | 'teen') => {
+    const arr = profile.childrenAgeGroup || []
+    const next = arr.includes(group) ? arr.filter(g => g !== group) : [...arr, group]
+    update('childrenAgeGroup', next)
+  }
+
+  const updateChildrenCount = (count: number) => {
+    setProfile(prev => ({
+      ...prev,
+      childrenCount: count,
+      hasChildren: count > 0,
+      // Reset age group when children count is 0
+      childrenAgeGroup: count === 0 ? [] : prev.childrenAgeGroup,
+    }))
+  }
+
   const toggleAlertDay = (day: number) => {
     const arr = profile.alertDays
     const next = arr.includes(day) ? arr.filter(d => d !== day) : [...arr, day]
@@ -297,7 +313,12 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
-    setUserProfile(profile)
+    // hasChildren을 childrenCount와 동기화
+    const finalProfile = {
+      ...profile,
+      hasChildren: (profile.childrenCount || 0) > 0,
+    }
+    setUserProfile(finalProfile)
     localStorage.setItem('push_categories', JSON.stringify(selectedCategories))
 
     if (kakaoUser?.id) {
@@ -309,25 +330,43 @@ export default function ProfilePage() {
           body: JSON.stringify({
             kakaoId: String(kakaoUser.id),
             nickname: kakaoUser.nickname,
-            // 프로필 전체 필드
-            name: profile.name,
-            birthYear: profile.birthYear,
-            gender: profile.gender,
-            region: profile.region,
-            householdSize: profile.householdSize,
-            incomePercent: profile.incomePercent,
-            housingType: profile.housingType,
-            employmentStatus: profile.employmentStatus,
-            specialStatus: profile.specialStatus,
-            kakaoAlerts: profile.kakaoAlerts,
-            alertDays: profile.alertDays,
+            // Step 1: 기본
+            name: finalProfile.name,
+            birthYear: finalProfile.birthYear,
+            gender: finalProfile.gender,
+            region: finalProfile.region,
+            householdSize: finalProfile.householdSize,
+            incomePercent: finalProfile.incomePercent,
+            housingType: finalProfile.housingType,
+            employmentStatus: finalProfile.employmentStatus,
+            // Step 2: 가족
+            maritalStatus: finalProfile.maritalStatus,
+            hasChildren: finalProfile.hasChildren,
+            childrenCount: finalProfile.childrenCount,
+            childrenAgeGroup: finalProfile.childrenAgeGroup,
+            isPregnant: finalProfile.isPregnant,
+            // Step 3: 상세
+            isBasicLivingRecipient: finalProfile.isBasicLivingRecipient,
+            healthInsuranceType: finalProfile.healthInsuranceType,
+            disabilityGrade: finalProfile.disabilityGrade,
+            specialStatus: finalProfile.specialStatus,
+            // Step 4: 사업자
+            isBusinessOwner: finalProfile.isBusinessOwner,
+            businessType: finalProfile.businessType,
+            businessAge: finalProfile.businessAge,
+            annualRevenue: finalProfile.annualRevenue,
+            employeeCount: finalProfile.employeeCount,
+            industryType: finalProfile.industryType,
+            // 시스템
+            kakaoAlerts: finalProfile.kakaoAlerts,
+            alertDays: finalProfile.alertDays,
             // 개인화 데이터
             categories: selectedCategories,
             bookmarks: bookmarks,
             // 호환성 유지
-            age_group: profile.birthYear
-              ? (new Date().getFullYear() - profile.birthYear < 35 ? 'youth'
-                : new Date().getFullYear() - profile.birthYear < 60 ? 'middle-aged'
+            age_group: finalProfile.birthYear
+              ? (new Date().getFullYear() - finalProfile.birthYear < 35 ? 'youth'
+                : new Date().getFullYear() - finalProfile.birthYear < 60 ? 'middle-aged'
                 : 'senior')
               : undefined,
           }),
@@ -532,19 +571,19 @@ export default function ProfilePage() {
             {/* 개인정보 — 2단계 위저드 */}
             <section className="section">
               <h2 className="section-title mb-12">{t.myInfo}</h2>
-              {/* Progress Bar */}
+              {/* Progress Bar — 3단계 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--bg-secondary)', overflow: 'hidden' }}>
                   <div style={{
-                    width: profileStep === 1 ? '50%' : '100%',
+                    width: profileStep === 1 ? '33%' : profileStep === 2 ? '66%' : '100%',
                     height: '100%',
                     borderRadius: 3,
-                    background: profileStep === 1 ? 'var(--primary)' : '#10b981',
+                    background: profileStep === 3 ? '#10b981' : 'var(--primary)',
                     transition: 'width 0.3s ease',
                   }} />
                 </div>
                 <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {profileStep}/2
+                  {profileStep}/3
                 </span>
               </div>
 
@@ -594,6 +633,7 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   </div>
+
                   {/* Next Step Button */}
                   <button
                     className="btn btn-primary btn-full"
@@ -608,11 +648,77 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Step 2: 선택 정보 */}
+              {/* Step 2: 가족 정보 */}
               {profileStep === 2 && (
                 <div className={styles.formCard}>
+                  <p style={{ fontSize: 13, color: '#6366f1', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    👨‍👩‍👧 {lang === 'ko' ? '가족 정보 (선택 — 가족 혜택 매칭!)' : 'Family Info (Optional — Family Benefits!)'}
+                  </p>
+                  {/* 결혼 여부 */}
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.maritalStatus}</label>
+                    <div className={styles.chipRow}>
+                      {([
+                        { key: 'single', label: t.single },
+                        { key: 'married', label: t.married },
+                        { key: 'divorced', label: t.divorced },
+                      ] as const).map(m => (
+                        <button key={m.key} className={`chip ${profile.maritalStatus === m.key ? 'active' : ''}`} onClick={() => update('maritalStatus', m.key)}>{m.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 자녀 수 */}
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.childrenCount}</label>
+                    <div className={styles.stepper}>
+                      <button className={styles.stepBtn} onClick={() => updateChildrenCount(Math.max(0, (profile.childrenCount || 0) - 1))}>-</button>
+                      <span className={styles.stepValue}>{profile.childrenCount || 0}{lang === 'ko' ? '명' : ''}</span>
+                      <button className={styles.stepBtn} onClick={() => updateChildrenCount(Math.min(10, (profile.childrenCount || 0) + 1))}>+</button>
+                    </div>
+                  </div>
+                  {/* 자녀 연령대 (자녀 있을 때만) */}
+                  {(profile.childrenCount || 0) > 0 && (
+                    <div className={styles.formRow}>
+                      <label className={styles.label}>{t.childrenAgeGroup}</label>
+                      <div className={styles.chipRow}>
+                        {([
+                          { key: 'infant' as const, label: t.infant },
+                          { key: 'elementary' as const, label: t.elementary },
+                          { key: 'teen' as const, label: t.teen },
+                        ]).map(g => (
+                          <button key={g.key} className={`chip ${(profile.childrenAgeGroup || []).includes(g.key) ? 'active-purple' : ''}`} onClick={() => toggleChildrenAgeGroup(g.key)}>{g.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* 임신 여부 */}
+                  {profile.gender === 'female' && (
+                    <div className={styles.formRow}>
+                      <label className={styles.label}>{t.isPregnant}</label>
+                      <div className={styles.chipRow}>
+                        <button className={`chip ${!profile.isPregnant ? 'active' : ''}`} onClick={() => update('isPregnant', false)}>{t.notPregnant}</button>
+                        <button className={`chip ${profile.isPregnant ? 'active' : ''}`} onClick={() => update('isPregnant', true)}>{t.pregnant}</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Navigation */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                    <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setProfileStep(1)}>
+                      {lang === 'ko' ? '← 이전' : '← Back'}
+                    </button>
+                    <button className="btn btn-primary" style={{ flex: 2 }} onClick={() => setProfileStep(3)}>
+                      {lang === 'ko' ? '다음 단계로 →' : 'Next Step →'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+              {/* Step 3: 상세 + 사업자 */}
+              {profileStep === 3 && (
+                <div className={styles.formCard}>
                   <p style={{ fontSize: 13, color: '#10b981', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    ✨ {lang === 'ko' ? '추가 정보 (선택 — 정확도 UP!)' : 'Additional Info (Optional — Better Accuracy!)'}
+                    ✨ {lang === 'ko' ? '상세 정보 (선택 — 정확도 UP!)' : 'Detailed Info (Optional — Better Accuracy!)'}
                   </p>
                   <div className={styles.formRow}>
                     <label className={styles.label}>{t.householdSize}</label>
@@ -638,6 +744,42 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   </div>
+                  {/* 기초수급 여부 */}
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.isBasicLivingRecipient}</label>
+                    <div className={styles.chipRow}>
+                      <button className={`chip ${!profile.isBasicLivingRecipient ? 'active' : ''}`} onClick={() => update('isBasicLivingRecipient', false)}>{t.notBasicRecipient}</button>
+                      <button className={`chip ${profile.isBasicLivingRecipient ? 'active' : ''}`} onClick={() => update('isBasicLivingRecipient', true)}>{t.basicRecipient}</button>
+                    </div>
+                  </div>
+                  {/* 건강보험 유형 */}
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.healthInsuranceType}</label>
+                    <div className={styles.chipRow}>
+                      {([
+                        { key: 'employed' as const, label: t.employedInsurance },
+                        { key: 'regional' as const, label: t.regionalInsurance },
+                        { key: 'medicalAid' as const, label: t.medicalAid },
+                        { key: 'unknown' as const, label: t.unknownInsurance },
+                      ]).map(h => (
+                        <button key={h.key} className={`chip ${profile.healthInsuranceType === h.key ? 'active' : ''}`} onClick={() => update('healthInsuranceType', h.key)}>{h.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 장애등급 */}
+                  <div className={styles.formRow}>
+                    <label className={styles.label}>{t.disabilityGrade}</label>
+                    <div className={styles.chipRow}>
+                      {([
+                        { key: 'none' as const, label: t.noDisability },
+                        { key: 'mild' as const, label: t.mildDisability },
+                        { key: 'severe' as const, label: t.severeDisability },
+                      ]).map(d => (
+                        <button key={d.key} className={`chip ${profile.disabilityGrade === d.key ? 'active' : ''}`} onClick={() => update('disabilityGrade', d.key)}>{d.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 특이사항 */}
                   <div className={styles.formRow}>
                     <label className={styles.label}>{t.specialStatus}</label>
                     <div className={styles.chipRow}>
@@ -646,20 +788,77 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* ─── 사업자 정보 (접이식) ─── */}
+                  <div style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
+                    <p style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      🏢 {t.businessInfo}
+                    </p>
+                    <div className={styles.formRow}>
+                      <label className={styles.label}>{t.isBusinessOwner}</label>
+                      <div className={styles.chipRow}>
+                        <button className={`chip ${!profile.isBusinessOwner ? 'active' : ''}`} onClick={() => update('isBusinessOwner', false)}>{t.noBusinessOwner}</button>
+                        <button className={`chip ${profile.isBusinessOwner ? 'active' : ''}`} onClick={() => update('isBusinessOwner', true)}>{t.yesBusinessOwner}</button>
+                      </div>
+                    </div>
+                    {profile.isBusinessOwner && (
+                      <>
+                        <div className={styles.formRow}>
+                          <label className={styles.label}>{t.businessType}</label>
+                          <div className={styles.chipRow}>
+                            <button className={`chip ${profile.businessType === 'individual' ? 'active' : ''}`} onClick={() => update('businessType', 'individual')}>{t.individualBiz}</button>
+                            <button className={`chip ${profile.businessType === 'corporation' ? 'active' : ''}`} onClick={() => update('businessType', 'corporation')}>{t.corporationBiz}</button>
+                          </div>
+                        </div>
+                        <div className={styles.formRow}>
+                          <label className={styles.label}>{t.businessAge}</label>
+                          <div className={styles.chipRow}>
+                            {([
+                              { key: 'under1' as const, label: t.bizUnder1 },
+                              { key: '1to3' as const, label: t.biz1to3 },
+                              { key: '3to7' as const, label: t.biz3to7 },
+                              { key: 'over7' as const, label: t.bizOver7 },
+                            ]).map(b => (
+                              <button key={b.key} className={`chip ${profile.businessAge === b.key ? 'active' : ''}`} onClick={() => update('businessAge', b.key)}>{b.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className={styles.formRow}>
+                          <label className={styles.label}>{t.annualRevenue}</label>
+                          <div className={styles.chipRow}>
+                            {([
+                              { key: 'under1' as const, label: t.revUnder1 },
+                              { key: '1to3' as const, label: t.rev1to3 },
+                              { key: '3to10' as const, label: t.rev3to10 },
+                              { key: 'over10' as const, label: t.revOver10 },
+                            ]).map(r => (
+                              <button key={r.key} className={`chip ${profile.annualRevenue === r.key ? 'active' : ''}`} onClick={() => update('annualRevenue', r.key)}>{r.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className={styles.formRow}>
+                          <label className={styles.label}>{t.employeeCount}</label>
+                          <div className={styles.chipRow}>
+                            {([
+                              { key: 'solo' as const, label: t.solo },
+                              { key: 'under5' as const, label: t.under5 },
+                              { key: 'under10' as const, label: t.under10 },
+                              { key: 'over10' as const, label: t.over10 },
+                            ]).map(e => (
+                              <button key={e.key} className={`chip ${profile.employeeCount === e.key ? 'active' : ''}`} onClick={() => update('employeeCount', e.key)}>{e.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   {/* Navigation */}
                   <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                    <button
-                      className="btn btn-outline"
-                      style={{ flex: 1 }}
-                      onClick={() => setProfileStep(1)}
-                    >
+                    <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setProfileStep(2)}>
                       {lang === 'ko' ? '← 이전' : '← Back'}
                     </button>
-                    <button
-                      className="btn btn-primary"
-                      style={{ flex: 2 }}
-                      onClick={handleSave}
-                    >
+                    <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSave}>
                       {saved ? `✅ ${t.saved}` : (lang === 'ko' ? '✓ 저장 완료' : '✓ Save All')}
                     </button>
                   </div>
