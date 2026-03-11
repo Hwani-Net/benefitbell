@@ -56,10 +56,12 @@
 - [x] 프로덕션 환경변수 감사 (22개 매핑 확인, ADC 자동 인증 확인)
 - [x] 프로필에 결혼상태/자녀여부 추가 + 규칙 점수 v3 (팀장 리뷰 통과)
 - [x] UserProfile v4: 11필드 추가 + 규칙 엔진 v3 (15매칭규칙) + 3단계 위저드 (2026-03-11)
-- [ ] 카카오 SDK 도메인 등록 (JavaScript SDK 도메인에 localhost:3008 추가 필요)
-- [ ] Firebase App Hosting 배포 최종 확인
-- [ ] 토스페이먼츠 live키 전환 + 실결제 테스트 (보류)
-- [ ] 경고 27개 정리 (unused-vars, no-img-element — 필수 아님)
+- [x] 카카오 SDK 도메인 등록 — localhost:3008(기존) + Firebase 호스팅 도메인 추가 (2026-03-11)
+- [x] Firebase App Hosting 배포 최종 확인 — 7커밋 push + 프로덕션 사이트 정상 로드 (2026-03-11)
+- [x] 토스페이먼츠 live키 전환 + 실결제 테스트 (보류)
+- [x] 경고 27개 정리 완료 (unused-vars, no-img-element 모두 해결, 0 error / 0 warning 달성)
+- [x] 공공데이터 기관/인프라 프로그램 54건 필터링 로직 추가 적용
+- [x] 2026-03-11 최종 배포 완료 (GitHub `main` push → Firebase App Hosting)
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
