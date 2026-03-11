@@ -61,22 +61,22 @@ export async function GET(req: Request) {
       const categoryMessages: Record<string, { title: (d: number, name: string) => string; body: (name: string, amount: string) => string }> = {
         'small-biz': {
           title: (d, name) => d <= 7 ? `🏪 사장님, 마감 D-${d}: ${name}` : `🏪 소상공인 지원금 소식`,
-          body: (name, amount) => `${name} — ${amount ? amount + ' 지원' : '신청 자격 확인해보세요!'}`,
+          body: (_name, amount) => `${name} — ${amount ? amount + ' 지원' : '신청 자격 확인해보세요!'}`,
         },
         'youth': {
-          title: (d, name) => d <= 7 ? `⏰ 청년 혜택 D-${d}일 남음` : `🎓 청년 혜택 안내`,
+          title: (d, _name) => d <= 7 ? `⏰ 청년 혜택 D-${d}일 남음` : `🎓 청년 혜택 안내`,
           body: (name, amount) => `${name}${amount ? ` (${amount})` : ''} 신청 기간 확인하세요`,
         },
         'senior': {
-          title: (d, name) => d <= 7 ? `👴 복지 알림 D-${d}` : `👴 어르신 복지 소식`,
+          title: (d, _name) => d <= 7 ? `👴 복지 알림 D-${d}` : `👴 어르신 복지 소식`,
           body: (name, _amount) => `${name} — 상세 내용을 확인해보세요`,
         },
         'housing': {
-          title: (d, name) => d <= 7 ? `🏠 주거지원 D-${d}` : `🏠 주거 지원 안내`,
+          title: (d, _name) => d <= 7 ? `🏠 주거지원 D-${d}` : `🏠 주거 지원 안내`,
           body: (name, amount) => `${name}${amount ? ` — ${amount}` : ''} 신청 기간 확인하세요`,
         },
         'employment': {
-          title: (d, name) => d <= 7 ? `💼 취업지원 D-${d}` : `💼 취업·일자리 혜택 안내`,
+          title: (d, _name) => d <= 7 ? `💼 취업지원 D-${d}` : `💼 취업·일자리 혜택 안내`,
           body: (name, amount) => `${name}${amount ? ` (${amount})` : ''} 놓치지 마세요!`,
         },
       }

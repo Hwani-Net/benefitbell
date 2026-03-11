@@ -8,7 +8,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 // 단순화를 위해 Vercel 배포/로컬에 맞춰 여기서만 쓰는 전역 키 객체를 선언하거나 Fetch로 가져오게 합니다.
 // (가장 흔한 패턴은 firebase-messaging-sw.js 파일 상단에 config를 삽입하는 것입니다.)
 
-self.addEventListener('push', (event) => {
+self.addEventListener('push', (_event) => {
   // sw.js와 중복 동작을 막거나 통합해야 함
   // FCM을 쓰더라도 push 이벤트는 native 웹푸시 이벤트로도 들어올 수 있음 (지원 환경에 따라 다름)
   // firebase-messaging-compat.js 가 백그라운드 메시지를 알아서 처리하게 두려면

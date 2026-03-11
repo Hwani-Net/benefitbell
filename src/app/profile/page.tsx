@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
+import { getDDayColor, getDDayText, bText } from '@/data/benefits'
 import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -181,11 +181,11 @@ export default function ProfilePage() {
   const [isKakaoLinked, setIsKakaoLinked] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
-      try { return JSON.parse(localStorage.getItem('push_categories') || '[]') } catch(e){}
+      try { return JSON.parse(localStorage.getItem('push_categories') || '[]') } catch(_e){}
     }
     return []
   })
-  const [categorySaving, setCategorySaving] = useState(false)
+  const [, setCategorySaving] = useState(false)
 
   const [sharedId, setSharedId] = useState<string | null>(null)
 
@@ -434,6 +434,7 @@ export default function ProfilePage() {
         {kakaoUser ? (
           <div className={styles.profileHero}>
             {kakaoUser.profile_image
+              // eslint-disable-next-line @next/next/no-img-element
               ? <img src={kakaoUser.profile_image} alt="프로필" className={styles.avatarImg} />
               : <div className={styles.avatar}>{kakaoUser.nickname.charAt(0)}</div>
             }

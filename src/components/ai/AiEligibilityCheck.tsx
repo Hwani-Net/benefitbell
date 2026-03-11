@@ -97,7 +97,7 @@ export default function AiEligibilityCheck({ benefitId, benefitTitle, variant = 
       .finally(() => setInlineLoading(false))
 
     return () => controller.abort()
-  }, [variant, benefitId, lang, isPremium, hasProfile])
+  }, [variant, benefitId, benefitTitle, lang, isPremium, hasProfile])
 
   // ── Load detailed analysis (no questions!) ─────────
   async function loadDetailedAnalysis() {

@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, bText } from '@/data/benefits'
+import { getDDayColor, getDDayText, bText } from '@/data/benefits'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -91,7 +91,7 @@ export default function CalendarPage() {
     const today = new Date()
     return year === today.getFullYear() && month === today.getMonth() && d === today.getDate()
   }
-  const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+  const _monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
   const dayNames = t.calDayNames
 
   return (

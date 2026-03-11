@@ -262,14 +262,6 @@ function xmlGet(text: string, tag: string): string {
   return m ? m[1].trim() : ''
 }
 
-/** Get all values of a repeated XML tag */
-function xmlGetAll(text: string, tag: string): string[] {
-  const re = new RegExp(`<${tag}>([\\s\\S]*?)<\/${tag}>`, 'g')
-  const results: string[] = []
-  let m
-  while ((m = re.exec(text)) !== null) results.push(m[1].trim())
-  return results
-}
 
 /** Extract all <item> blocks and parse them into objects with specified fields */
 function xmlParseItems(text: string, fields: string[]): Record<string, string>[] {
@@ -893,6 +885,7 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
     kstartup: kstartup.length,
     privateWelfare: privateWelfare.length,
     total: 0,
+    filtered: 0,
   }
 
   // Merge with deduplication (national has priority)
@@ -907,11 +900,55 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
     merged.push(item)
   }
 
-  stats.total = merged.length
-  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup}, 민간복지=${stats.privateWelfare} → 통합 ${stats.total}건`)
+  // Filter out institutional programs (not individual benefits)
+  const beforeFilter = merged.length
+  const benefits = merged.filter(item => !isInstitutionalProgram(item.servNm))
+  stats.filtered = beforeFilter - benefits.length
+  stats.total = benefits.length
+  console.log(`[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup}, 민간복지=${stats.privateWelfare} → 통합 ${beforeFilter}건 → 기관/인프라 ${stats.filtered}건 제외 → 최종 ${stats.total}건`)
 
-  return merged
+  return benefits
 }
 
+// =====================
+// Institutional Program Filter
+// =====================
+// Government API includes institutional programs (센터 운영, 시설 개선, 체계 구축 등)
+// that are NOT individual benefits. Filter them out while protecting real benefits.
 
+/** Patterns indicating institutional/infrastructure programs (not individual benefits) */
+const INSTITUTIONAL_PATTERNS: RegExp[] = [
+  /센터\s*(운영|설치|관리)\s*(지원)?$/,
+  /시설\s*(운영|설치|개선)\s*(지원)?$/,
+  /(상담소|쉼터|보호소|위원회|기관)\s*(운영|지원)\s*(지원)?$/,
+  /체계\s*(구축|운영|강화)/,
+  /체제\s*구축/,
+  /인프라\s*(구축|확충|강화)/,
+  /기반\s*(조성|마련)/,
+  /환경\s*조성$/,
+  /시스템\s*(구축|운영)/,
+  /네트워크\s*(구축|운영)/,
+  /제고$/,
+  /관리체계\s*구축/,
+]
 
+/** Keywords that indicate REAL individual benefits — override institutional patterns */
+const BENEFIT_ALLOWLIST = [
+  '지원금', '수당', '급여', '대출', '감면', '할인', '장학',
+  '바우처', '보조금', '장려금', '무료', '지급', '보험료',
+  '연금', '돌봄서비스', '방문서비스',
+]
+
+/**
+ * Check if a welfare item is an institutional program rather than an individual benefit.
+ * Examples: "웹 정보접근성 제고", "청소년복지시설 운영 지원", "인프라 구축사업"
+ */
+function isInstitutionalProgram(title: string): boolean {
+  if (!title) return false
+
+  // If title contains individual benefit keywords, it's NOT institutional
+  if (BENEFIT_ALLOWLIST.some(kw => title.includes(kw))) return false
+
+  // Check against institutional patterns
+  return INSTITUTIONAL_PATTERNS.some(pattern => pattern.test(title))
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminFirestore } from '@/lib/firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
+// FieldValue available via firebase-admin/firestore if needed for background save
 
 const API_BASE = 'https://apis.data.go.kr/B554287/NationalWelfareInformationsV001'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24시간

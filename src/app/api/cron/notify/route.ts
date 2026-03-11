@@ -42,14 +42,8 @@ export async function GET(req: Request) {
   // Build notification message
   const topBenefit = urgentBenefits[0]
   const dDayText = topBenefit.dDay === 0 ? '오늘 마감!' : `D-${topBenefit.dDay}`
-  const payload = JSON.stringify({
-    title: `🔔 마감 임박! ${urgentBenefits.length}건의 혜택`,
-    body: `${topBenefit.title} - ${dDayText}\n${topBenefit.amount}`,
-    url: `/detail/${topBenefit.id}`,
-    tag: `cron-alert-${new Date().toISOString().split('T')[0]}`,
-  })
 
-  // Send to all subscribers
+  // Send to all subscribers via FCM
   const messaging = getAdminMessaging()
   const results = await Promise.allSettled(
     subs.map(async sub => {

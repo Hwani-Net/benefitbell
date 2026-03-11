@@ -9,7 +9,7 @@ import styles from './page.module.css'
 const KAKAOPAY_LINK = process.env.NEXT_PUBLIC_KAKAOPAY_PREMIUM_LINK || ''
 
 export default function PremiumPage() {
-  const { t, userProfile, kakaoUser, setUserProfile } = useApp()
+  const { userProfile, kakaoUser, setUserProfile } = useApp()
   const isPremium = userProfile?.isPremium
   const [step, setStep] = useState<'idle' | 'paying' | 'activating' | 'done'>('idle')
   const [error, setError] = useState('')

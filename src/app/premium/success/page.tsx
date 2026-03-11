@@ -50,7 +50,7 @@ function SuccessContent() {
           setUserProfile({ ...userProfile, isPremium: true })
         }
         setStatus('success')
-      } catch (err) {
+      } catch (_err) {
         window.location.href = '/premium/fail?message=' + encodeURIComponent('서버 승인 중 오류가 발생했습니다.')
       }
     }

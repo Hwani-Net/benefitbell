@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
+import { getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
 import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'

@@ -55,7 +55,6 @@ export async function getSentBenefitIds(
 ): Promise<Set<string>> {
   try {
     const db = getAdminFirestore()
-    const prefix = `${subDocId}_`
     const snapshot = await db
       .collection('sent_notifications')
       .where('subDocId', '==', subDocId)

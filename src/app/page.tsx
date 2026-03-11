@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
-import { Benefit, getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
+import { getDDayColor, getDDayText, CATEGORY_INFO, bText } from '@/data/benefits'
 import { getPersonalizedBenefits } from '@/lib/recommendation'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -140,6 +140,7 @@ export default function HomePage() {
           </div>
           <div className={styles.greetingEmoji}>
             {kakaoUser?.profile_image
+              // eslint-disable-next-line @next/next/no-img-element
               ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.4)' }} />
               : '🔔'
             }

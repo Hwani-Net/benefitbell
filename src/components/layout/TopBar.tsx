@@ -56,6 +56,7 @@ export default function TopBar() {
         {/* 프로필 아바타 */}
         <div className={styles.avatar}>
           {kakaoUser?.profile_image
+            // eslint-disable-next-line @next/next/no-img-element
             ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             : <span>{kakaoUser ? kakaoUser.nickname.charAt(0) : '👤'}</span>
           }

@@ -70,7 +70,7 @@ function FilterCard({ benefit, lang }: { benefit: FilteredBenefit; lang: string 
 }
 
 export default function AiPage() {
-  const { t, lang, userProfile, benefits: allBenefits, kakaoUser } = useApp()
+  const { lang, userProfile, benefits: allBenefits } = useApp()
   const [activeTab, setActiveTab] = useState<'filter' | 'chat'>('filter')
   const [showUnlikely, setShowUnlikely] = useState(false)
 
