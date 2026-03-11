@@ -58,12 +58,14 @@ export function getDDayColor(dDay: number): string {
   if (dDay === 0) return '#ef4444'
   if (dDay <= 3) return '#f97316'
   if (dDay <= 7) return '#eab308'
+  if (dDay >= 365) return '#10b981' // 상시 프로그램 — 안정적 초록
   return 'var(--text-secondary)'
 }
 
 export function getDDayText(dDay: number, lang: 'ko' | 'en' = 'ko'): string {
   if (dDay < 0) return lang === 'ko' ? '마감' : 'Closed'
   if (dDay === 0) return lang === 'ko' ? 'D-Day' : 'Today!'
+  if (dDay >= 365) return lang === 'ko' ? '상시' : 'Year-round'
   return `D-${dDay}`
 }
 

@@ -89,7 +89,7 @@ export default function HomePage() {
 
   // 마감 임박 = dDay 있는 것 우선, 없으면 전체에서 상위 5건
   const urgentBenefits = benefits
-    .filter(b => b.dDay >= 0 && b.dDay <= 30 && b.status === 'open')
+    .filter(b => b.dDay >= 0 && b.dDay <= 30 && b.dDay < 365 && b.status === 'open')
     .sort((a, b) => a.dDay - b.dDay)
   const urgentDisplay = urgentBenefits.length > 0
     ? urgentBenefits

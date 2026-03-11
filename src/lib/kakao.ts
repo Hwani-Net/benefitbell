@@ -70,7 +70,7 @@ export function shareKakaoBenefit({
   initKakao()
 
   const url = `${APP_BASE_URL}/detail/${benefitId}`
-  const dDayText = dDay === 0 ? '오늘 마감!' : `D-${dDay} 마감 임박!`
+  const dDayText = dDay >= 365 ? '상시 모집!' : dDay === 0 ? '오늘 마감!' : `D-${dDay} 마감 임박!`
   const description = `${categoryLabel} | ${amount}\n⏰ ${dDayText}`
 
   window.Kakao.Share.sendDefault({
