@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-11 (10:16 KST)
+> **최종 갱신**: 2026-03-11 (15:51 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -35,20 +35,21 @@
 | 6 | 킬러 피처 #3: 서류 안내 + 원스톱 | ✅ 완료 |
 | 7 | FCM 마이그레이션 (VAPID → FCM) | ✅ 완료 |
 | 8 | 배포 + 프리미엄 런칭 | ✅ Netlify 배포 완료 (2026-03-03) |
-| 9 | AI 프로덕션 검증 | ✅ OpenRouter API 연동 + 실사용 테스트 통과 (2026-03-03) |
+| 9 | AI 프로덕션 검증 | ✅ OpenAI GPT-4o mini 연동 + 실사용 테스트 통과 (2026-03-03) |
 | 10 | **UX 개선 (페르소나 자문 기반)** | ✅ P0~P3 전체 완료 (2026-03-03) |
 | 11 | **Netlify → Firebase App Hosting 이전** | ✅ 백엔드 생성 + 시크릿 9개 등록 완료 (2026-03-07) |
 | 12 | **QA 감사 + Lint 클린업** | ✅ 에러 0개 달성 (2026-03-10) |
 | 13 | **AI 배치 점수 → 규칙 기반 전환** | ✅ API 호출 0건, 즉시 응답 (2026-03-10) |
 | 14 | **프로필 확장 + 점수 밸런스 v3** | ✅ maritalStatus/hasChildren 추가, 팀장 리뷰 통과 (2026-03-10) |
 | 15 | **UserProfile v4 + 규칙 엔진 v3** | ✅ 11필드 추가(가족·상세·사업자), 15매칭규칙, 3단계 위저드 (2026-03-11) |
+| 16 | **Lint 0경고 + 기관 프로그램 필터** | ✅ 코드 완료, ⏳ 프로덕션 배포 대기 (2026-03-11) |
 
 ## ✅ TODO
 
 ### 출시 최종 점검 (2026-03-10)
 - [x] 뇽죵이 Agent v0.7.5 종합 기능 감사 (22항목 전수 통과, S등급)
 - [x] `npm run build` 통과 (Next.js 16.1.6 Turbopack)
-- [x] `npm run lint` — **에러 16→0 달성** (경고 27개는 unused-vars 등 안전)
+- [x] `npm run lint` — **경고 27개 → 0 달성** (0 error, 0 warning)
 - [x] `.netlify/**` ESLint globalIgnores 추가 (빌드 아티팩트 제외)
 - [x] API 라우트 6개 보안+안정성 점검 완료
 - [x] SEO/PWA 설정 확인 (OG태그, manifest, sw.js)
@@ -60,8 +61,9 @@
 - [x] Firebase App Hosting 배포 최종 확인 — 7커밋 push + 프로덕션 사이트 정상 로드 (2026-03-11)
 - [x] 토스페이먼츠 live키 전환 + 실결제 테스트 (보류)
 - [x] 경고 27개 정리 완료 (unused-vars, no-img-element 모두 해결, 0 error / 0 warning 달성)
-- [x] 공공데이터 기관/인프라 프로그램 54건 필터링 로직 추가 적용
-- [x] 2026-03-11 최종 배포 완료 (GitHub `main` push → Firebase App Hosting)
+- [x] 공공데이터 기관/인프라 프로그램 54건 필터링 로직 추가 (리스트+상세+캐시 3중 적용)
+- [x] GCP Secret Manager에 `OPENAI_API_KEY` 시크릿 생성 + IAM 바인딩 3개 부여
+- [ ] ⏳ Firebase App Hosting 재배포 확인 (시크릿 해석 에러 해결 후 배포 대기 중)
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)

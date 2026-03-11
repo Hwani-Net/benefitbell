@@ -220,3 +220,27 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 - fetchWelfareDetail 실패 시 무조건 404 반환하지 말 것 — 제한된 정보로도 AI 분석은 가능
 - OpenRouter 개별 무료 모델만 사용하지 말 것 — 반드시 `openrouter/free` 라우터를 포함
 
+---
+
+## 13. GCP Secret Manager 시크릿 누락 → Firebase 배포 무한 실패 🔥
+
+**날짜**: 2026-03-11
+**증상**: `git push` 하면 Firebase App Hosting 빌드가 계속 실패. 프로덕션은 이전 버전 유지.
+**원인**: `apphosting.yaml`에 `OPENAI_API_KEY` secret 참조가 있었지만, GCP Secret Manager에 해당 시크릿이 존재하지 않았음. 이전 세션에서 시크릿 마이그레이션 시 `OPENAI_API_KEY`가 누락된 것으로 추정.
+**해결**:
+1. `gcloud secrets create OPENAI_API_KEY --data-file=- --project=ai-project-ce41f`
+2. IAM 바인딩 3개 부여 (secretAccessor, secretVersionManager, viewer)
+**금지**:
+- `apphosting.yaml`에서 시크릿을 제거하기 전에 `grep -r "해당변수명" src/` 로 실제 사용 여부를 **반드시** 확인할 것
+- 이전 세션의 "컨텍스트 요약"을 맹신하여 "OpenRouter로 전환됨"이라고 판단하지 말 것 — **코드가 진실**
+
+---
+
+## 14. AI 모델 혼동 — 이 프로젝트는 OpenAI GPT-4o mini ⚠️
+
+**날짜**: 2026-03-11
+**증상**: 에이전트가 "OpenRouter API로 전환됨"이라고 잘못 판단하여 `OPENAI_API_KEY`를 `apphosting.yaml`에서 삭제 → 배포 차단
+**원인**: 이전 세션 요약에 "OpenRouter 전환"이라는 기록이 있었으나, 실제 코드(`ai-client.ts`)는 `import OpenAI from 'openai'`로 직접 OpenAI API를 사용
+**교훈**: 컨텍스트 요약보다 **코드 grep 결과가 항상 우선**
+**금지**:
+- 세션 요약에 "OOO로 전환됨"이라고 적혀있어도, 실제 코드 확인 없이 시크릿/설정 삭제 절대 금지
