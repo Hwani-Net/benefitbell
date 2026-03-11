@@ -46,6 +46,8 @@ env:
     secret: DATA_GO_KR_SERVICE_KEY
   - variable: PUBLIC_DATA_API_KEY
     secret: DATA_GO_KR_SERVICE_KEY
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
   - variable: TOSS_SECRET_KEY
     secret: TOSS_SECRET_KEY
   - variable: VAPID_PRIVATE_KEY
