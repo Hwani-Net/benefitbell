@@ -310,6 +310,21 @@ export default function ProfilePage() {
     }))
   }
 
+  const handleMaritalStatusChange = (status: string) => {
+    if (status === 'single') {
+      // 미혼 선택 시 자녀 관련 필드 자동 리셋
+      setProfile(prev => ({
+        ...prev,
+        maritalStatus: status as UserProfile['maritalStatus'],
+        childrenCount: 0,
+        hasChildren: false,
+        childrenAgeGroup: [],
+      }))
+    } else {
+      update('maritalStatus', status)
+    }
+  }
+
   const toggleAlertDay = (day: number) => {
     const arr = profile.alertDays
     const next = arr.includes(day) ? arr.filter(d => d !== day) : [...arr, day]
@@ -711,7 +726,7 @@ export default function ProfilePage() {
                         { key: 'married', label: t.married },
                         { key: 'divorced', label: t.divorced },
                       ] as const).map(m => (
-                        <button key={m.key} className={`chip ${profile.maritalStatus === m.key ? 'active' : ''}`} onClick={() => update('maritalStatus', m.key)}>{m.label}</button>
+                        <button key={m.key} className={`chip ${profile.maritalStatus === m.key ? 'active' : ''}`} onClick={() => handleMaritalStatusChange(m.key)}>{m.label}</button>
                       ))}
                     </div>
                   </div>

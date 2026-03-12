@@ -76,8 +76,15 @@
   - 해결: `FIREBASE_SERVICE_ACCOUNT_KEY` Secret 추가 + IAM 바인딩 (PITFALLS #16)
 - [x] ✅ **프로덕션 Firestore API 정상 동작 확인 완료** (2026-03-12 12:10 KST)
   - 원인: `FIREBASE_SERVICE_ACCOUNT_KEY` Secret에 IAM `grantaccess` 미부여 → 빌드 실패 반복
-  - 해결: `firebase apphosting:secrets:grantaccess` 실행 → 빌드 성공 → Firestore `benefitbell-565b2` 정상 연결
+  - 해결: `firebase apphosting:secrets:grantaccess` 실행
+- [x] ✅ 프로덕션 Firestore API 정상 동작 확인 완료 (2026-03-12 14:56 KST)
+  - 홈페이지 정상 로드, 카카오 로그인 세션 유지, 프로필 21필드 Firestore 읽기 정상
+  - ⚠️ 프로필 헤더 시군구 표시 인코딩 깨짐 발견 (Firestore 데이터 문제, 코드 이슈 아님)
 - [ ] 🔜 Firestore 프로젝트 통합 또는 마이그레이션 검토
+- [x] ✅ 프로필 시군구 인코딩 깨짐 수정 완료 (2026-03-12 15:20 KST)
+  - 원인: 이전 배포 환경(Netlify)에서 한글 데이터가 깨진 인코딩으로 Firestore에 저장됨
+  - 해결: 프로덕션 API POST로 name="환이", region="충북 청주" 재저장
+  - 코드 자체엔 인코딩 이슈 없음
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
