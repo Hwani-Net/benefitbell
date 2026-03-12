@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-12 (16:58 KST)
+> **최종 갱신**: 2026-03-12 (23:03 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -92,14 +92,24 @@
   - UI: handleMaritalStatusChange() — 미혼 클릭 시 childrenCount=0, hasChildren=false 자동 리셋
   - 추천 엔진: recommendation.ts — effectiveHasChildren 가드, 미혼이면 자녀 데이터 점수 계산 무시
   - 2중 방어: UI리셋 + 엔진가드로 edge case 방지
-- [/] 🔜 **Google Play Store 출시 준비** (진행 중, 2026-03-12 16:58 KST)
+- [x] ✅ **Google Play Store 출시 준비 완료** (2026-03-12 23:00 KST)
   - ✅ manifest.json 풀 업데이트 (id, scope, display_override, icons purpose 분리, screenshots 4장)
   - ✅ 아이콘 PNG 변환 (JPEG 640x640 → PNG 192x192/512x512)
   - ✅ 스토어 스크린샷 4장 + 기능 그래픽 생성
-  - ✅ assetlinks.json 플레이스홀더 배포
-  - ⏳ PWABuilder 최종 검증 (아이콘 수정 후 배포 대기)
-  - ⏳ Google Play 개발자 계정 등록 ($25)
-  - ⏳ AAB 생성 → Play Console 업로드 → 심사 제출
+  - ✅ PWABuilder 재검증 통과 — "Your PWA is store ready!" (Manifest 30/45, 에러 0)
+  - ✅ AAB 패키지 생성 완료 (혜택알리미.aab, 1.65MB, Package ID: com.nuvolabs.benefitbell)
+  - ✅ signing.keystore + signing-key-info.txt 확보 → `play-store-package/` 폴더 보관
+  - ✅ assetlinks.json (SHA256 fingerprint 포함) 프로덕션 배포 완료
+  - ✅ Google Play 개발자 계정: gptKR (hwanizero01@gmail.com, $25 결제 완료)
+  - ✅ Play Console 앱 생성 + AAB v1.0.0 업로드 + 내부 테스트 출시
+  - ✅ 앱 콘텐츠 설정 10/10 완료 (개인정보·등급·데이터보안·광고·타겟·정부앱·금융·건강·광고ID)
+  - ✅ 스토어 등록정보: 설명 + 아이콘(512x512) + 그래픽(1024x500) + 스크린샷(phone/tablet7/tablet10)
+  - ✅ 내부 테스터 13명 등록 완료 (내부 테스터 이메일 목록)
+  - ✅ AI 맞춤 채널 지역 필터링 수정 (matchRegion: 비매칭 지역 -20 감점, 매칭 +10)
+- [ ] 🔜 **비공개 테스트 시작** (프로덕션 출시 전 필수)
+  - ⏳ 비공개 테스트 트랙 생성 + 12명 이상 참여
+  - ⏳ 14일 이상 비공개 테스트 실행
+  - ⏳ 프로덕션 출시 신청
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
