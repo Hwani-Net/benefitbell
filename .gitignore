@@ -48,3 +48,10 @@ test-*.mjs
 .netlify
 private_welfare.csv
 *.csv
+
+# Play Store packaging
+/play-store-package/
+/benefitbell-play.zip
+*.keystore
+*.aab
+*.apk
