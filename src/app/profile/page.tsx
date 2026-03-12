@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useApp, UserProfile } from '@/lib/context'
 import { getDDayColor, getDDayStyleColor, getDDayText, bText } from '@/data/benefits'
 import { KAKAO_CHANNEL_ID } from '@/lib/kakao'
+import { getFirebaseAuth } from '@/lib/firebase'
+import { signOut } from 'firebase/auth'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import PushToggle from '@/components/pwa/PushToggle'
@@ -166,7 +168,7 @@ function PremiumStatusCard({ isPremium, kakaoUserId, lang }: { isPremium: boolea
 }
 
 export default function ProfilePage() {
-  const { t, lang, userProfile, setUserProfile, kakaoUser, bookmarks, toggleBookmark, isBookmarked, benefits: allBenefits, benefitsLoading } = useApp()
+  const { t, lang, userProfile, setUserProfile, kakaoUser, setKakaoUser, bookmarks, toggleBookmark, isBookmarked, benefits: allBenefits, benefitsLoading } = useApp()
   const [activeTab, setActiveTab] = useState<'bookmarks' | 'settings'>('bookmarks')
   const [profile, setProfile] = useState<UserProfile>(userProfile)
   const [profileStep, setProfileStep] = useState<1 | 2 | 3>(1)
@@ -312,6 +314,35 @@ export default function ProfilePage() {
     const arr = profile.alertDays
     const next = arr.includes(day) ? arr.filter(d => d !== day) : [...arr, day]
     update('alertDays', next)
+  }
+
+  const handleLogout = async () => {
+    // 1. Firebase Auth 로그아웃
+    const auth = getFirebaseAuth()
+    if (auth) {
+      try { await signOut(auth) } catch { /* silent */ }
+    }
+    // 2. 쿠키 삭제 (kakao_profile, firebase_custom_token)
+    document.cookie = 'kakao_profile=; path=/; max-age=0'
+    document.cookie = 'firebase_custom_token=; path=/; max-age=0'
+    // 3. Context 상태 초기화
+    setKakaoUser(null)
+    setIsKakaoLinked(false)
+    // 4. localStorage 프로필 삭제 (기본값으로 복원)
+    localStorage.removeItem('userProfile')
+    const defaultP: UserProfile = {
+      name: '', birthYear: 0, gender: 'male', region: '', householdSize: 1,
+      incomePercent: 50, housingType: 'monthly', employmentStatus: 'jobSeeking',
+      maritalStatus: 'single', hasChildren: false, childrenCount: 0, childrenAgeGroup: [],
+      isPregnant: false, isBasicLivingRecipient: false, healthInsuranceType: 'unknown',
+      disabilityGrade: 'none', specialStatus: [], isBusinessOwner: false, businessType: 'none',
+      businessAge: 'none', annualRevenue: 'none', employeeCount: 'none', industryType: '',
+      kakaoAlerts: true, alertDays: [7, 3], isPremium: false,
+    }
+    setUserProfile(defaultP)
+    setProfile(defaultP)
+    // 5. 페이지 새로고침
+    window.location.reload()
   }
 
   const handleSave = async () => {
@@ -559,6 +590,20 @@ export default function ProfilePage() {
                 <div className={styles.coffeeCard} style={{ background: '#FEE500', color: '#000000', border: 'none' }}>
                   <p className={styles.coffeeTitle}>{lang === 'ko' ? '✅ 카카오 계정 연동 완료' : '✅ Kakao Account Linked'}</p>
                   <p className={styles.coffeeDesc} style={{ color: '#333333' }}>{lang === 'ko' ? '카카오 계정으로 안전하게 연결되었습니다.' : 'Securely linked with your Kakao account.'}</p>
+                  <button
+                    onClick={handleLogout}
+                    className="btn btn-outline w-full mt-12"
+                    style={{
+                      borderColor: '#dc2626',
+                      color: '#dc2626',
+                      fontWeight: 700,
+                      borderRadius: 12,
+                      padding: '12px 0',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {lang === 'ko' ? '🚪 로그아웃' : '🚪 Log Out'}
+                  </button>
                 </div>
               ) : (
                 <div className={styles.coffeeCard}>
