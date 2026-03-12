@@ -244,3 +244,19 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 **교훈**: 컨텍스트 요약보다 **코드 grep 결과가 항상 우선**
 **금지**:
 - 세션 요약에 "OOO로 전환됨"이라고 적혀있어도, 실제 코드 확인 없이 시크릿/설정 삭제 절대 금지
+
+---
+
+## 15. GCP Secret Manager — trailing newline (`\n`) 🔥
+
+**날짜**: 2026-03-12
+**증상**: 프로덕션 카카오 로그인 시 `invalid_client` / `Bad client credentials` 에러. 로컬에서는 정상.
+**원인**: `echo "값" | gcloud secrets versions add`로 Secret 생성 시 `echo`가 trailing `\n`을 추가함. 카카오 API에 `LvPP...JWb\n`이 전송되어 인증 실패.
+**영향**: `KAKAO_CLIENT_SECRET`, `DATA_GO_KR_SERVICE_KEY`, `OPENAI_API_KEY` — 3개 Secret에 `\n` 존재
+**해결**:
+1. `printf '%s' '값' | gcloud secrets versions add 시크릿명 --data-file=-` (newline 없이 저장)
+2. 코드에서 `.trim()` 방어 추가 (callback/route.ts, auth/kakao/route.ts)
+**확인법**: `gcloud secrets versions access latest --secret=이름 --format=json` → base64 디코드 후 `xxd`로 마지막 바이트 확인. `0a`가 있으면 오염.
+**금지**:
+- `echo "값" | gcloud secrets versions add` — **절대 금지** (`echo`는 trailing `\n` 추가)
+- ✅ 항상 `printf '%s'` 사용

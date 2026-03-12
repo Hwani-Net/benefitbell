@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const host = forwardedHost || request.headers.get('host') || requestUrl.host
   const isDev = host.includes('localhost')
 
-  const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID!
+  // .trim() — GCP Secret Manager trailing newline 방어 (PITFALLS #15)
+  const KAKAO_CLIENT_ID = (process.env.KAKAO_CLIENT_ID || '').trim()
   const origin = isDev
     ? `${requestUrl.protocol}//${host}`
     : `${forwardedProto}://${host}`

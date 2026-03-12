@@ -26,8 +26,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/profile`)
   }
 
-  const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID!
-  const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET!
+  // .trim() — GCP Secret Manager trailing newline 방어 (PITFALLS #15)
+  const KAKAO_CLIENT_ID = (process.env.KAKAO_CLIENT_ID || '').trim()
+  const KAKAO_CLIENT_SECRET = (process.env.KAKAO_CLIENT_SECRET || '').trim()
   const REDIRECT_URI = `${origin}/api/auth/kakao/callback`
 
   try {
