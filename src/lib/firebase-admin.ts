@@ -1,5 +1,5 @@
 // Firebase Admin SDK (서버 전용 — API routes, cron jobs)
-// 인증 우선순위: 개별 필드 → JSON 문자열 → 파일 경로 → ADC (Firebase App Hosting)
+// 통합 후 인증: SA Key 파일 (로컬) → ADC (프로덕션, 같은 프로젝트)
 import { App, getApps, initializeApp, cert, applicationDefault, ServiceAccount } from 'firebase-admin/app'
 import { getFirestore, Firestore } from 'firebase-admin/firestore'
 import { getAuth, Auth } from 'firebase-admin/auth'
@@ -15,35 +15,21 @@ function getAdminApp(): App {
     return adminApp
   }
 
-  // 우선순위: 개별 필드 → JSON 문자열 → 파일 경로 → ADC (Firebase App Hosting / Cloud Run)
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-  const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+  // 통합 후: SA Key 파일 (로컬 개발) → ADC (프로덕션, 같은 프로젝트)
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH
 
-
-  if (projectId && clientEmail && privateKey) {
-    // 개별 필드 방식 — 환경변수 크기 최소화
-    adminApp = initializeApp({
-      credential: cert({ projectId, clientEmail, privateKey } as ServiceAccount),
-    })
-  } else if (keyJson) {
-    const serviceAccount = JSON.parse(keyJson.trim()) as ServiceAccount
-    adminApp = initializeApp({ credential: cert(serviceAccount) })
-  } else if (keyPath) {
-    // Use fs.readFileSync instead of require() for Turbopack compatibility
+  if (keyPath) {
+    // 로컬 개발: SA Key 파일 경로
     const fileContent = readFileSync(keyPath, 'utf-8')
     const serviceAccount = JSON.parse(fileContent) as ServiceAccount
     adminApp = initializeApp({ credential: cert(serviceAccount) })
+    console.log('[firebase-admin] Using SA Key file (local dev)')
   } else {
-    // ADC (Application Default Credentials)
-    // Firebase App Hosting / Cloud Run / GCE에서는 자동 인증
-    // 로컬에서는 GOOGLE_APPLICATION_CREDENTIALS 또는 gcloud auth
-    console.log('[firebase-admin] Using Application Default Credentials (ADC)')
+    // 프로덕션 (Firebase App Hosting): ADC 자동 인증
+    // Firestore가 같은 프로젝트(ai-project-ce41f)이므로 크로스-프로젝트 SA Key 불필요
+    console.log('[firebase-admin] Using ADC (same project)')
     adminApp = initializeApp({
       credential: applicationDefault(),
-      projectId: projectId || undefined,
     })
   }
 
