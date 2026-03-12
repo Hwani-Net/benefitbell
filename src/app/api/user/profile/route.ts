@@ -40,8 +40,9 @@ export async function GET(req: Request) {
       },
     })
   } catch (err) {
-    console.error('[user/profile GET] Error:', err)
-    return NextResponse.json({ error: '로드 실패' }, { status: 500 })
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('[user/profile GET] Error:', errMsg, err)
+    return NextResponse.json({ error: '로드 실패', detail: errMsg }, { status: 500 })
   }
 }
 
