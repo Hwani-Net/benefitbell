@@ -79,11 +79,15 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
     matchReasons.push('전세 거주자 대상')
   }
 
-  // ── 7. 가족/자녀 상태 매칭 (핵심 필터!) ───────────
+  // 미혼(single)이면 자녀 데이터를 무시 (UX에서 리셋 안 됐을 때의 방어적 코딩)
+  const effectiveHasChildren = profile.maritalStatus !== 'single' && profile.hasChildren
+  const effectiveChildrenCount = profile.maritalStatus !== 'single' ? (profile.childrenCount || 0) : 0
+  const effectiveChildrenAgeGroup = profile.maritalStatus !== 'single' ? (profile.childrenAgeGroup || []) : []
+
   const familyKeywords = ['자녀', '육아', '양육', '아동', '유아', '초등학생', '중학생', '고등학생', '돌봄', '어린이집', '출산']
   const hasFamilyContext = familyKeywords.some(k => text.includes(k))
   if (hasFamilyContext) {
-    if (profile.hasChildren) {
+    if (effectiveHasChildren) {
       score += 15
       matchReasons.push('자녀 양육 가구 대상')
     } else {
@@ -91,14 +95,13 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
       score -= 10
     }
   }
-  // 한부모 혜택 체크 (팀장 리뷰 반영: divorced+자녀=진짜 한부모)
   if (text.includes('한부모')) {
     const isSingleParent =
-      (profile.maritalStatus === 'divorced') && profile.hasChildren
+      (profile.maritalStatus === 'divorced') && effectiveHasChildren
     if (isSingleParent || profile.specialStatus.includes('singleParent')) {
       score += 20
       matchReasons.push('한부모 가구 대상')
-    } else if (!profile.hasChildren) {
+    } else if (!effectiveHasChildren) {
       score -= 10 // 자녀 없으면 한부모 혜택 해당 안 됨
     }
   }
@@ -175,17 +178,17 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
   }
 
   // ── 15. 자녀 연령대 상세 매칭 (기존 가족 매칭 보완) ───
-  if ((profile.childrenCount || 0) > 0 && profile.childrenAgeGroup?.length > 0) {
-    if (profile.childrenAgeGroup.includes('infant') && 
+  if (effectiveChildrenCount > 0 && effectiveChildrenAgeGroup.length > 0) {
+    if (effectiveChildrenAgeGroup.includes('infant') && 
         ('영유아,어린이집,보육,유치원,아동수당'.split(',').some(k => text.includes(k)))) {
       score += 10
       matchReasons.push('영유아 양육 가구')
     }
-    if (profile.childrenAgeGroup.includes('elementary') &&
+    if (effectiveChildrenAgeGroup.includes('elementary') &&
         ('초등,방과후,돌봄'.split(',').some(k => text.includes(k)))) {
       score += 10
     }
-    if (profile.childrenAgeGroup.includes('teen') &&
+    if (effectiveChildrenAgeGroup.includes('teen') &&
         ('청소년,중학,고등학,장학'.split(',').some(k => text.includes(k)))) {
       score += 10
     }
