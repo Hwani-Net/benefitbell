@@ -260,3 +260,22 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 **금지**:
 - `echo "값" | gcloud secrets versions add` — **절대 금지** (`echo`는 trailing `\n` 추가)
 - ✅ 항상 `printf '%s'` 사용
+
+---
+
+## 16. Firestore — 크로스-프로젝트 접근 (App Hosting ≠ Firestore 프로젝트) 🔥🔥
+
+**날짜**: 2026-03-12
+**증상**: 프로덕션에서 `/api/user/profile` → 500 에러. `PERMISSION_DENIED: Cloud Firestore API has not been used`. 로컬에서는 정상.
+**원인**: Firestore DB는 `benefitbell-565b2` 프로젝트에 있고, App Hosting은 `ai-project-ce41f` 프로젝트에서 실행. ADC(Application Default Credentials)는 호스팅 프로젝트에만 접근 가능 → Firestore DB가 없는 프로젝트에 쿼리 → 실패.
+**아키텍처**:
+- `benefitbell-565b2`: Firestore DB (users 컬렉션), 서비스 어카운트 키
+- `ai-project-ce41f`: App Hosting, Authentication, Secret Manager
+**해결**:
+1. `benefitbell-565b2` 서비스 어카운트 키를 `ai-project-ce41f`의 Secret Manager에 `FIREBASE_SERVICE_ACCOUNT_KEY`로 저장
+2. `apphosting.yaml`에 해당 Secret 바인딩 추가
+3. `firebase-admin.ts`가 JSON 문자열 credentials를 우선 사용 (이미 구현됨)
+4. IAM: App Hosting 서비스 어카운트에 `secretAccessor` 역할 부여
+**미래 계획**: 두 프로젝트를 하나로 통합하거나, `ai-project-ce41f`에 Firestore DB를 생성하고 데이터 마이그레이션
+**금지**:
+- ADC만 의존하고 "Firestore 작동 확인"이라고 보고 금지 — **반드시 프로덕션에서 실제 API 호출로 검증**
