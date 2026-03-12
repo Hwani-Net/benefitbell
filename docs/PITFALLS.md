@@ -283,3 +283,20 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 **금지**:
 - ADC만 의존하고 "Firestore 작동 확인"이라고 보고 금지 — **반드시 프로덕션에서 실제 API 호출로 검증**
 - **`secrets:set` 또는 `gcloud secrets create` 후 반드시 `grantaccess` 실행** — 누락 시 빌드 실패
+
+---
+
+### PITFALL #17: 로그아웃 후 재로그인 시 프로필 데이터 미로드
+
+**증상**: 로그아웃 → 재로그인 시 Firestore에 저장된 프로필(1980년생, 충청남도 청주시, 자영업)이 아닌 기본값(선택하세요, 서울특별시, 구직중)만 표시
+
+**원인**: 프로필 복원 경로가 `onAuthStateChanged` → `signInWithCustomToken` **하나뿐**이었음. Firebase Auth의 `signInWithCustomToken`이 실패하면(custom token 만료, Firebase Admin 미설정 등) 프로필이 전혀 로드되지 않음
+
+**해결** (2026-03-12):
+1. `restoreProfileFromApi(kakaoId)` 공통 함수 추출
+2. **경로 1**: `onAuthStateChanged` → Firebase Auth 경유 복원 (기존)
+3. **경로 2 (fallback)**: `kakaoUser.id` 변경 감지 → `kakao_profile` 쿠키에서 kakaoId 추출 → 직접 API 호출로 복원 (Firebase Auth 무관)
+
+**금지**:
+- 인증 상태에만 의존하는 단일 경로 프로필 로드 금지 — **반드시 fallback 경로 유지**
+- `onAuthStateChanged`가 "항상 발화한다"고 가정 금지 — custom token 실패, Firebase 초기화 순서 등 실패 가능
