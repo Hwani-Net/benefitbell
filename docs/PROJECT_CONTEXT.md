@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-12 (12:15 KST)
+> **최종 갱신**: 2026-03-12 (15:52 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -85,6 +85,10 @@
   - 원인: 이전 배포 환경(Netlify)에서 한글 데이터가 깨진 인코딩으로 Firestore에 저장됨
   - 해결: 프로덕션 API POST로 name="환이", region="충북 청주" 재저장
   - 코드 자체엔 인코딩 이슈 없음
+- [x] ✅ **미혼 선택 시 자녀 데이터 연동 수정** (2026-03-12 15:40 KST):
+  - UI: handleMaritalStatusChange() — 미혼 클릭 시 childrenCount=0, hasChildren=false 자동 리셋
+  - 추천 엔진: recommendation.ts — effectiveHasChildren 가드, 미혼이면 자녀 데이터 점수 계산 무시
+  - 2중 방어: UI리셋 + 엔진가드로 edge case 방지
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
