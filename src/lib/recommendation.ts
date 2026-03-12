@@ -49,17 +49,11 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
     if (incomeResult.reason) matchReasons.push(incomeResult.reason)
   }
 
-  // ── 4. 지역 매칭 (보조 가점, 핵심이 아님) ──────────
+  // ── 4. 지역 매칭 (강한 필터 — 다른 지역 혜택 감점) ──────────
   if (profile.region) {
-    const regionParts = profile.region.split(' ')
-    const regionBase = regionParts[0]?.replace('광역시', '').replace('특별시', '').replace('특별자치시', '').replace('특별자치도', '') || ''
-    if (regionBase && text.includes(regionBase)) {
-      score += 5 // 시/도 일치 (보조)
-      matchReasons.push(`거주지(${regionParts[0]}) 일치`)
-    }
-    if (regionParts[1] && text.includes(regionParts[1])) {
-      score += 5 // 시/군/구 일치 (보조)
-    }
+    const regionResult = matchRegion(benefit, profile.region)
+    score += regionResult.score
+    if (regionResult.reason) matchReasons.push(regionResult.reason)
   }
 
   // ── 5. 고용상태 키워드 매칭 ──────────────────────
@@ -355,6 +349,87 @@ function matchEmployment(
       return { score: 10, reason: '근로자 대상' }
   }
   return { score: 0, reason: '' }
+}
+
+// ── Helper: 지역 매칭 (강한 필터) ──────────────────
+
+/** 17개 시/도 식별용 키워드 */
+const REGION_KEYWORDS = [
+  '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+  '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+] as const
+
+/** 중앙부처 키워드 — 이 단어가 ministry에 포함되면 전국 대상 */
+const NATIONAL_MINISTRY_KEYWORDS = [
+  '보건복지부', '고용노동부', '국토교통부', '교육부', '중소벤처기업부',
+  '여성가족부', '과학기술정보통신부', '행정안전부', '산업통상자원부',
+  '농림축산식품부', '해양수산부', '환경부', '문화체육관광부', '법무부',
+  '국방부', '기획재정부', '금융위원회', '산림청', '소방청', '경찰청',
+  '질병관리청', '국민건강보험공단', '근로복지공단', '한국장학재단',
+  '창업진흥원', '중소벤처기업진흥공단', '소상공인시장진흥공단',
+  '신용보증기금', '기술보증기금', '한국산업인력공단',
+  '국민연금공단', '한국자산관리공사',
+]
+
+/**
+ * 혜택의 지역을 감지하고, 사용자 지역과 비교하여 점수 반환.
+ * - 전국 대상 (중앙부처): +3 (소폭 가점)
+ * - 사용자 지역 일치: +10 (보너스)
+ * - 다른 지역 혜택: -20 (강한 감점 → unlikely로 밀림)
+ */
+function matchRegion(
+  benefit: Benefit,
+  userRegion: string
+): { score: number; reason: string } {
+  const userRegionParts = userRegion.split(' ')
+  const userSido = userRegionParts[0] || ''
+  // 시/도 접미사 제거 → 순수 지역명 (예: "충청북도" → "충북"은 그대로, "서울특별시" → "서울")
+  const userRegionBase = userSido
+    .replace('광역시', '').replace('특별시', '')
+    .replace('특별자치시', '').replace('특별자치도', '')
+    .replace('도', '')
+
+  const title = benefit.title
+  const ministry = benefit.ministry || ''
+
+  // 1) 중앙부처/전국 대상 체크 — ministry가 중앙부처면 지역 무관
+  const isNational = NATIONAL_MINISTRY_KEYWORDS.some(kw =>
+    ministry.includes(kw)
+  )
+  if (isNational) {
+    return { score: 3, reason: '' } // 전국 대상: 소폭 가점
+  }
+
+  // 2) 혜택에서 지역 키워드 감지 (title의 [경기], ministry의 "경기도" 등)
+  let benefitRegion: string | null = null
+  for (const region of REGION_KEYWORDS) {
+    if (
+      title.includes(`[${region}]`) ||
+      title.startsWith(`(${region})`) ||
+      ministry.includes(region)
+    ) {
+      benefitRegion = region
+      break
+    }
+  }
+
+  // 3) 지역 특정 안 됨 → 전국 대상으로 간주
+  if (!benefitRegion) {
+    return { score: 0, reason: '' }
+  }
+
+  // 4) 사용자 지역과 비교
+  const isMatch =
+    userSido.includes(benefitRegion) ||
+    benefitRegion.includes(userRegionBase) ||
+    userRegionBase === benefitRegion
+
+  if (isMatch) {
+    return { score: 10, reason: `거주지(${userSido}) 일치` }
+  }
+
+  // 다른 지역 → 강한 감점
+  return { score: -20, reason: '' }
 }
 
 // ── Helper: 특수상태 매칭 ──────────────────────────
