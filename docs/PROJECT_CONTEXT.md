@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-12 (15:52 KST)
+> **최종 갱신**: 2026-03-12 (16:58 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -92,6 +92,14 @@
   - UI: handleMaritalStatusChange() — 미혼 클릭 시 childrenCount=0, hasChildren=false 자동 리셋
   - 추천 엔진: recommendation.ts — effectiveHasChildren 가드, 미혼이면 자녀 데이터 점수 계산 무시
   - 2중 방어: UI리셋 + 엔진가드로 edge case 방지
+- [/] 🔜 **Google Play Store 출시 준비** (진행 중, 2026-03-12 16:58 KST)
+  - ✅ manifest.json 풀 업데이트 (id, scope, display_override, icons purpose 분리, screenshots 4장)
+  - ✅ 아이콘 PNG 변환 (JPEG 640x640 → PNG 192x192/512x512)
+  - ✅ 스토어 스크린샷 4장 + 기능 그래픽 생성
+  - ✅ assetlinks.json 플레이스홀더 배포
+  - ⏳ PWABuilder 최종 검증 (아이콘 수정 후 배포 대기)
+  - ⏳ Google Play 개발자 계정 등록 ($25)
+  - ⏳ AAB 생성 → Play Console 업로드 → 심사 제출
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
