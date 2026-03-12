@@ -4,7 +4,7 @@
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
-> **Firebase 프로젝트**: `ai-project-ce41f` (호스팅) + `benefitbell-565b2` (Firestore DB)
+> **Firebase 프로젝트**: `ai-project-ce41f` (호스팅 + Auth + Firestore + FCM 통합)
 > **GitHub**: Hwani-Net/benefitbell → main 브랜치 자동 배포
 
 ---
@@ -80,7 +80,10 @@
 - [x] ✅ 프로덕션 Firestore API 정상 동작 확인 완료 (2026-03-12 14:56 KST)
   - 홈페이지 정상 로드, 카카오 로그인 세션 유지, 프로필 21필드 Firestore 읽기 정상
   - ⚠️ 프로필 헤더 시군구 표시 인코딩 깨짐 발견 (Firestore 데이터 문제, 코드 이슈 아님)
-- [ ] 🔜 Firestore 프로젝트 통합 또는 마이그레이션 검토
+- [x] ✅ **Firestore 프로젝트 통합 완료** (2026-03-12 16:10 KST)
+  - `benefitbell-565b2` → `ai-project-ce41f`로 데이터 마이그레이션 (13문서)
+  - `firebase-admin.ts`: SA Key 크로스-프로젝트 → ADC 단일 프로젝트 전환
+  - `apphosting.yaml`: `FIREBASE_SERVICE_ACCOUNT_KEY` 시크릿 제거
 - [x] ✅ 프로필 시군구 인코딩 깨짐 수정 완료 (2026-03-12 15:20 KST)
   - 원인: 이전 배포 환경(Netlify)에서 한글 데이터가 깨진 인코딩으로 Firestore에 저장됨
   - 해결: 프로덕션 API POST로 name="환이", region="충북 청주" 재저장
@@ -144,6 +147,7 @@
 | 2026-03-11 | UserProfile v4: 11필드 추가 + 규칙 엔진 v3 | NLM 리서치(16소스)+Council 5인 자문 기반. 개인5필드(자녀수/연령대/임신/수급/보험/장애등급)+사업자6필드. 3단계 프로그레시브 위저드로 UX 최적화 | 필드 축소 → 매칭 부정확 (기각) |
 | 2026-03-11 | GPT-4o mini → GPT-4.1 nano 전환 | 33% 비용 절약($0.15/$0.60→$0.10/$0.40), 2배 속도 향상(200+ tok/s), SDK 변경 없음 | GPT-4.1 mini (2.67배 비쌈, 성능 향상 미미 — 기각) |
 | 2026-03-12 | 프로덕션 Firestore: SA Key via Secret Manager | App Hosting(ai-project-ce41f)과 Firestore(benefitbell-565b2)가 다른 프로젝트 → ADC 불가. 서비스 어카운트 키를 Secret으로 저장 | ADC 의존 (기각: 크로스-프로젝트 불가) |
+| 2026-03-12 | **Firestore 프로젝트 통합** (ai-project-ce41f 단일) | 2프로젝트 분리 구조의 복잡성 제거. SA Key 크로스-프로젝트 의존성 제거 → ADC 단순 인증. 13문서 마이그레이션 완료 | 분리 유지 (기각: 불필요한 복잡성) |
 
 ## 🔧 기술 스택
 
@@ -151,7 +155,7 @@
 |------|------|
 | 프레임워크 | Next.js 16.1.6 (Turbopack) |
 | 스타일 | Vanilla CSS (CSS Modules) |
-| DB | Firestore (`benefitbell-565b2`, SA Key via Secret Manager) |
+| DB | Firestore (`ai-project-ce41f`, ADC 인증, asia-northeast3 서울) |
 | Auth | Firebase Custom Token (카카오 OAuth) |
 | AI | **OpenAI GPT-4.1 nano** ($0.10/$0.40 per 1M tokens) |
 | 푸시 | Firebase Cloud Messaging (FCM) |
