@@ -1,5 +1,5 @@
 'use client'
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, type SetStateAction } from 'react'
 import { getFirebaseAuth } from '@/lib/firebase'
 import { signInWithCustomToken, onAuthStateChanged } from 'firebase/auth'
 import type { Benefit } from '@/data/benefits'
@@ -405,7 +405,7 @@ interface AppContextType {
   toggleBookmark: (id: string) => void
   isBookmarked: (id: string) => boolean
   userProfile: UserProfile
-  setUserProfile: (p: UserProfile) => void
+  setUserProfile: (p: SetStateAction<UserProfile>) => void
   kakaoUser: { id?: number; nickname: string; profile_image?: string } | null
   setKakaoUser: (u: { nickname: string; profile_image?: string } | null) => void
   benefits: Benefit[]

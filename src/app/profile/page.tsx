@@ -272,13 +272,15 @@ export default function ProfilePage() {
         if (data.name && !isKakaoLinked) {
           setProfile(prev => ({ ...prev, name: data.name }))
           setIsKakaoLinked(true)
-          setUserProfile({ ...userProfile, name: data.name })
+          // ⚠️ 함수형 업데이트 필수 — 클로저의 stale userProfile 사용 금지!
+          // 이전 코드: setUserProfile({ ...userProfile, name }) → 전체 프로필 초기화 버그
+          setUserProfile(prev => ({ ...prev, name: data.name }))
         }
       } catch (e) {
         console.error('Failed to parse kakao profile cookie', e)
       }
     }
-  }, [isKakaoLinked, userProfile, setUserProfile])
+  }, [isKakaoLinked, setUserProfile])
 
   const update = (key: keyof UserProfile, value: unknown) => {
     setProfile(prev => ({ ...prev, [key]: value }))
