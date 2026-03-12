@@ -12,6 +12,7 @@ export async function GET(req: Request) {
     }
 
     const db = getAdminFirestore()
+    console.log('[user/profile GET] Firestore project:', (db as unknown as { projectId?: string }).projectId || 'unknown')
     const userDoc = await db.collection('users').doc(String(kakaoId)).get()
 
     if (!userDoc.exists) {
