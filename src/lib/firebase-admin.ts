@@ -22,25 +22,14 @@ function getAdminApp(): App {
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH
 
-  console.log('[firebase-admin] Init diagnostics:', {
-    hasProjectId: !!projectId,
-    projectId,
-    hasClientEmail: !!clientEmail,
-    hasPrivateKey: !!privateKey,
-    hasKeyJson: !!keyJson,
-    keyJsonLength: keyJson?.length,
-    hasKeyPath: !!keyPath,
-  })
 
   if (projectId && clientEmail && privateKey) {
     // 개별 필드 방식 — 환경변수 크기 최소화
-    console.log('[firebase-admin] Using individual fields (projectId:', projectId, ')')
     adminApp = initializeApp({
       credential: cert({ projectId, clientEmail, privateKey } as ServiceAccount),
     })
   } else if (keyJson) {
     const serviceAccount = JSON.parse(keyJson.trim()) as ServiceAccount
-    console.log('[firebase-admin] Using JSON key (project_id:', (serviceAccount as unknown as Record<string, string>).project_id, ')')
     adminApp = initializeApp({ credential: cert(serviceAccount) })
   } else if (keyPath) {
     // Use fs.readFileSync instead of require() for Turbopack compatibility
