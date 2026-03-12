@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-12 (11:48 KST)
+> **최종 갱신**: 2026-03-12 (12:15 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -74,7 +74,9 @@
 - [x] ✅ **프로덕션 Firestore 500 에러 해결** (2026-03-12):
   - 원인: App Hosting(ai-project-ce41f) ≠ Firestore(benefitbell-565b2) 프로젝트 분리
   - 해결: `FIREBASE_SERVICE_ACCOUNT_KEY` Secret 추가 + IAM 바인딩 (PITFALLS #16)
-- [ ] ⏳ 프로덕션 Firestore API 정상 동작 확인 (배포 대기 중)
+- [x] ✅ **프로덕션 Firestore API 정상 동작 확인 완료** (2026-03-12 12:10 KST)
+  - 원인: `FIREBASE_SERVICE_ACCOUNT_KEY` Secret에 IAM `grantaccess` 미부여 → 빌드 실패 반복
+  - 해결: `firebase apphosting:secrets:grantaccess` 실행 → 빌드 성공 → Firestore `benefitbell-565b2` 정상 연결
 - [ ] 🔜 Firestore 프로젝트 통합 또는 마이그레이션 검토
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)

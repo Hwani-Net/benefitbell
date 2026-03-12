@@ -274,8 +274,12 @@ firebase apphosting:secrets:grantaccess [SECRET_NAME] --backend benefitbell-web 
 **해결**:
 1. `benefitbell-565b2` 서비스 어카운트 키를 `ai-project-ce41f`의 Secret Manager에 `FIREBASE_SERVICE_ACCOUNT_KEY`로 저장
 2. `apphosting.yaml`에 해당 Secret 바인딩 추가
-3. `firebase-admin.ts`가 JSON 문자열 credentials를 우선 사용 (이미 구현됨)
+3. `firebase-admin.ts`가 JSON 문자열 credentials를 우선 사용 (이미 구현됨) + `.trim()` 방어 추가
 4. IAM: App Hosting 서비스 어카운트에 `secretAccessor` 역할 부여
+5. **⚠️ `firebase apphosting:secrets:grantaccess FIREBASE_SERVICE_ACCOUNT_KEY --backend benefitbell-web` 실행 필수**
+   - `gcloud secrets create`만으로는 App Hosting이 접근 불가 → 빌드 4회 연속 실패 (`fah/misconfigured-secret`)
+   - gRPC 5 `NOT_FOUND` 에러는 "데이터베이스가 없다"가 아니라 "Secret에 접근할 수 없어서 빌드 자체가 배포 안 됨"이었음
 **미래 계획**: 두 프로젝트를 하나로 통합하거나, `ai-project-ce41f`에 Firestore DB를 생성하고 데이터 마이그레이션
 **금지**:
 - ADC만 의존하고 "Firestore 작동 확인"이라고 보고 금지 — **반드시 프로덕션에서 실제 API 호출로 검증**
+- **`secrets:set` 또는 `gcloud secrets create` 후 반드시 `grantaccess` 실행** — 누락 시 빌드 실패
