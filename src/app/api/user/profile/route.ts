@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     const data = userDoc.data()!
     return NextResponse.json({
       data: {
-        // 프로필 전체 필드
+        // Step 1: 기본 프로필
         name: data.name ?? data.nickname ?? '',
         birthYear: data.birthYear ?? null,
         gender: data.gender ?? null,
@@ -30,7 +30,25 @@ export async function GET(req: Request) {
         incomePercent: data.incomePercent ?? null,
         housingType: data.housingType ?? null,
         employmentStatus: data.employmentStatus ?? null,
+        // Step 2: 가족
+        maritalStatus: data.maritalStatus ?? null,
+        hasChildren: data.hasChildren ?? null,
+        childrenCount: data.childrenCount ?? null,
+        childrenAgeGroup: data.childrenAgeGroup ?? [],
+        isPregnant: data.isPregnant ?? null,
+        // Step 3: 상세
+        isBasicLivingRecipient: data.isBasicLivingRecipient ?? null,
+        healthInsuranceType: data.healthInsuranceType ?? null,
+        disabilityGrade: data.disabilityGrade ?? null,
         specialStatus: data.specialStatus ?? [],
+        // Step 4: 사업자
+        isBusinessOwner: data.isBusinessOwner ?? null,
+        businessType: data.businessType ?? null,
+        businessAge: data.businessAge ?? null,
+        annualRevenue: data.annualRevenue ?? null,
+        employeeCount: data.employeeCount ?? null,
+        industryType: data.industryType ?? null,
+        // 시스템
         kakaoAlerts: data.kakaoAlerts ?? true,
         alertDays: data.alertDays ?? [7, 3],
         isPremium: data.is_premium ?? false,
@@ -63,7 +81,7 @@ export async function POST(req: Request) {
       updated_at: FieldValue.serverTimestamp(),
     }
 
-    // 프로필 필드
+    // Step 1: 기본 프로필
     if (body.nickname !== undefined) updateData.nickname = body.nickname
     if (body.name !== undefined) updateData.name = body.name
     if (body.birthYear !== undefined) updateData.birthYear = body.birthYear
@@ -74,6 +92,24 @@ export async function POST(req: Request) {
     if (body.housingType !== undefined) updateData.housingType = body.housingType
     if (body.employmentStatus !== undefined) updateData.employmentStatus = body.employmentStatus
     if (body.specialStatus !== undefined) updateData.specialStatus = body.specialStatus
+    // Step 2: 가족
+    if (body.maritalStatus !== undefined) updateData.maritalStatus = body.maritalStatus
+    if (body.hasChildren !== undefined) updateData.hasChildren = body.hasChildren
+    if (body.childrenCount !== undefined) updateData.childrenCount = body.childrenCount
+    if (body.childrenAgeGroup !== undefined) updateData.childrenAgeGroup = body.childrenAgeGroup
+    if (body.isPregnant !== undefined) updateData.isPregnant = body.isPregnant
+    // Step 3: 상세
+    if (body.isBasicLivingRecipient !== undefined) updateData.isBasicLivingRecipient = body.isBasicLivingRecipient
+    if (body.healthInsuranceType !== undefined) updateData.healthInsuranceType = body.healthInsuranceType
+    if (body.disabilityGrade !== undefined) updateData.disabilityGrade = body.disabilityGrade
+    // Step 4: 사업자
+    if (body.isBusinessOwner !== undefined) updateData.isBusinessOwner = body.isBusinessOwner
+    if (body.businessType !== undefined) updateData.businessType = body.businessType
+    if (body.businessAge !== undefined) updateData.businessAge = body.businessAge
+    if (body.annualRevenue !== undefined) updateData.annualRevenue = body.annualRevenue
+    if (body.employeeCount !== undefined) updateData.employeeCount = body.employeeCount
+    if (body.industryType !== undefined) updateData.industryType = body.industryType
+    // 시스템
     if (body.kakaoAlerts !== undefined) updateData.kakaoAlerts = body.kakaoAlerts
     if (body.alertDays !== undefined) updateData.alertDays = body.alertDays
 

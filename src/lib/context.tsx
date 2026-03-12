@@ -569,9 +569,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!json.data) return
         const d = json.data
 
-        // 프로필 복원 (Firestore에 저장된 값이 있는 필드만 덮어쓰기)
+        // 프로필 복원 (Firestore에 저장된 값이 있는 필드만 — null/undefined는 무시)
         setUserProfile(prev => ({
           ...prev,
+          // Step 1: 기본
           ...(d.name ? { name: d.name } : {}),
           ...(d.birthYear != null ? { birthYear: d.birthYear } : {}),
           ...(d.gender ? { gender: d.gender } : {}),
@@ -580,7 +581,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...(d.incomePercent != null ? { incomePercent: d.incomePercent } : {}),
           ...(d.housingType ? { housingType: d.housingType } : {}),
           ...(d.employmentStatus ? { employmentStatus: d.employmentStatus } : {}),
+          // Step 2: 가족
+          ...(d.maritalStatus ? { maritalStatus: d.maritalStatus } : {}),
+          ...(d.hasChildren != null ? { hasChildren: d.hasChildren } : {}),
+          ...(d.childrenCount != null ? { childrenCount: d.childrenCount } : {}),
+          ...(d.childrenAgeGroup?.length ? { childrenAgeGroup: d.childrenAgeGroup } : {}),
+          ...(d.isPregnant != null ? { isPregnant: d.isPregnant } : {}),
+          // Step 3: 상세
+          ...(d.isBasicLivingRecipient != null ? { isBasicLivingRecipient: d.isBasicLivingRecipient } : {}),
+          ...(d.healthInsuranceType ? { healthInsuranceType: d.healthInsuranceType } : {}),
+          ...(d.disabilityGrade ? { disabilityGrade: d.disabilityGrade } : {}),
           ...(d.specialStatus?.length ? { specialStatus: d.specialStatus } : {}),
+          // Step 4: 사업자
+          ...(d.isBusinessOwner != null ? { isBusinessOwner: d.isBusinessOwner } : {}),
+          ...(d.businessType && d.businessType !== 'none' ? { businessType: d.businessType } : {}),
+          ...(d.businessAge && d.businessAge !== 'none' ? { businessAge: d.businessAge } : {}),
+          ...(d.annualRevenue && d.annualRevenue !== 'none' ? { annualRevenue: d.annualRevenue } : {}),
+          ...(d.employeeCount && d.employeeCount !== 'none' ? { employeeCount: d.employeeCount } : {}),
+          ...(d.industryType ? { industryType: d.industryType } : {}),
+          // 시스템
           ...(d.kakaoAlerts != null ? { kakaoAlerts: d.kakaoAlerts } : {}),
           ...(d.alertDays?.length ? { alertDays: d.alertDays } : {}),
           isPremium: !!d.isPremium,
