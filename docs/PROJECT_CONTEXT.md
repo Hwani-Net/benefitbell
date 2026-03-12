@@ -1,10 +1,10 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-11 (22:12 KST)
+> **최종 갱신**: 2026-03-12 (11:48 KST)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
-> **Firebase 프로젝트**: `ai-project-ce41f` (결제: 토스뱅크 / Blaze 요금제)
+> **Firebase 프로젝트**: `ai-project-ce41f` (호스팅) + `benefitbell-565b2` (Firestore DB)
 > **GitHub**: Hwani-Net/benefitbell → main 브랜치 자동 배포
 
 ---
@@ -67,6 +67,15 @@
 - [x] GPT-4o mini → GPT-4.1 nano 모델 교체 (33% 비용 절약, 2배 속도 향상) (2026-03-11)
 - [x] E2E 프로덕션 전수 테스트 **24/24 PASS** — 속도, 추천 품질, 슬라이드, 검색, AI분석, 다크모드, 영어전환, 프로필위저드 (2026-03-11)
 - [x] ✅ D-365 기본값 이슈 해결: 상시 프로그램 "상시"/"Year-round" 라벨 + 초록색 배지 (2026-03-11)
+- [x] ✅ **카카오 로그인 수정 3건** (2026-03-12):
+  - Secret trailing newline → `Bad client credentials` 해결 (PITFALLS #15)
+  - stale closure 버그 → 프로필 초기화 해결 (`setUserProfile(prev => ...)` 패턴)
+  - `SetStateAction<UserProfile>` 타입 수정
+- [x] ✅ **프로덕션 Firestore 500 에러 해결** (2026-03-12):
+  - 원인: App Hosting(ai-project-ce41f) ≠ Firestore(benefitbell-565b2) 프로젝트 분리
+  - 해결: `FIREBASE_SERVICE_ACCOUNT_KEY` Secret 추가 + IAM 바인딩 (PITFALLS #16)
+- [ ] ⏳ 프로덕션 Firestore API 정상 동작 확인 (배포 대기 중)
+- [ ] 🔜 Firestore 프로젝트 통합 또는 마이그레이션 검토
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
@@ -121,6 +130,7 @@
 | 2026-03-10 | UserProfile에 maritalStatus/hasChildren 추가 + 규칙 점수 v3 | 미혼인데 자녀 혜택 추천 문제 해결. 기본점수 10, 카테고리 불일치 감점(-5~-15), likely≥65. 팀장 리뷰: divorced+자녀=한부모 로직 반영 | 프로필 미확장 (자녀 필터 불가능) |
 | 2026-03-11 | UserProfile v4: 11필드 추가 + 규칙 엔진 v3 | NLM 리서치(16소스)+Council 5인 자문 기반. 개인5필드(자녀수/연령대/임신/수급/보험/장애등급)+사업자6필드. 3단계 프로그레시브 위저드로 UX 최적화 | 필드 축소 → 매칭 부정확 (기각) |
 | 2026-03-11 | GPT-4o mini → GPT-4.1 nano 전환 | 33% 비용 절약($0.15/$0.60→$0.10/$0.40), 2배 속도 향상(200+ tok/s), SDK 변경 없음 | GPT-4.1 mini (2.67배 비쌈, 성능 향상 미미 — 기각) |
+| 2026-03-12 | 프로덕션 Firestore: SA Key via Secret Manager | App Hosting(ai-project-ce41f)과 Firestore(benefitbell-565b2)가 다른 프로젝트 → ADC 불가. 서비스 어카운트 키를 Secret으로 저장 | ADC 의존 (기각: 크로스-프로젝트 불가) |
 
 ## 🔧 기술 스택
 
@@ -128,7 +138,7 @@
 |------|------|
 | 프레임워크 | Next.js 16.1.6 (Turbopack) |
 | 스타일 | Vanilla CSS (CSS Modules) |
-| DB | Firestore (Firebase) |
+| DB | Firestore (`benefitbell-565b2`, SA Key via Secret Manager) |
 | Auth | Firebase Custom Token (카카오 OAuth) |
 | AI | **OpenAI GPT-4.1 nano** ($0.10/$0.40 per 1M tokens) |
 | 푸시 | Firebase Cloud Messaging (FCM) |
