@@ -107,9 +107,9 @@
   - ✅ 내부 테스터 13명 등록 완료 (내부 테스터 이메일 목록)
   - ✅ AI 맞춤 채널 지역 필터링 수정 (matchRegion: 비매칭 지역 -20 감점, 매칭 +10)
 - [ ] 🔜 **비공개 테스트 시작** (프로덕션 출시 전 필수)
-  - ⏳ 비공개 테스트 트랙 생성 + 12명 이상 참여
-  - ⏳ 14일 이상 비공개 테스트 실행
-  - ⏳ 프로덕션 출시 신청
+  - [x] 비공개 테스트 트랙 생성 및 12명 이상 참여 준비 ✅ 2026-03-14
+- [ ] 14일 이상 비공개 테스트 실행 (Day 0)
+- [ ] 프로덕션 출시 신청
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)
 - [x] Gemini AI 배치 자격 판정 엔진 (`ai-eligibility.ts` + `/api/ai-eligibility`)
@@ -207,6 +207,8 @@
 | 카카오 API 키 위치 | Obsidian `kakao-api-key-location.md` |
 | App Hosting 설정 | `apphosting.yaml` (시크릿 매핑 + 런타임 설정) |
 | Firebase 프로젝트 설정 | `.firebaserc` + `firebase.json` |
+| 프로젝트 NLM | `d9df123e-ab1e-4b31-ae64-ae7d00d0a682` (혜택알리미 리서치) |
+| Claude Code 매뉴얼 | `6c899a82-3880-4e7f-a17e-155358af46f2` (글로벌 CLI 가이드) |
 
 ---
 
