@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///E:/AI_Programing/naedon-finder/src/app/api/auth/kakao/route.ts"],"sourcesContent":["import { NextResponse } from 'next/server'\r\n\r\nexport async function GET(request: Request) {\r\n  const { searchParams, host } = new URL(request.url)\r\n  const isDev = host.includes('localhost')\r\n\r\n  const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID || '2ea24765291ab5909d7c489615615b92'\r\n  const REDIRECT_URI = isDev\r\n    ? 'http://localhost:3001/api/auth/kakao/callback'\r\n    : 'https://naedon-finder.vercel.app/api/auth/kakao/callback'\r\n\r\n  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`\r\n\r\n  return NextResponse.redirect(kakaoAuthUrl)\r\n}\r\n"],"names":[],"mappings":";;;;AAAA;;AAEO,eAAe,IAAI,OAAgB;IACxC,MAAM,EAAE,YAAY,EAAE,IAAI,EAAE,GAAG,IAAI,IAAI,QAAQ,GAAG;IAClD,MAAM,QAAQ,KAAK,QAAQ,CAAC;IAE5B,MAAM,kBAAkB,QAAQ,GAAG,CAAC,eAAe,IAAI;IACvD,MAAM,eAAe,QACjB,kDACA;IAEJ,MAAM,eAAe,CAAC,kDAAkD,EAAE,gBAAgB,cAAc,EAAE,aAAa,mBAAmB,CAAC;IAE3I,OAAO,gJAAY,CAAC,QAAQ,CAAC;AAC/B"}}]
+}

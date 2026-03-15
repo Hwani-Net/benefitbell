@@ -1,0 +1,3 @@
+{
+  "/api/push/cron-deadline/route": "app/api/push/cron-deadline/route.js"
+}

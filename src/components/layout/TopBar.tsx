@@ -53,14 +53,21 @@ export default function TopBar() {
         >
           {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
-        {/* 프로필 아바타 */}
-        <div className={styles.avatar}>
-          {kakaoUser?.profile_image
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            : <span>{kakaoUser ? kakaoUser.nickname.charAt(0) : '👤'}</span>
-          }
-        </div>
+        {/* 프로필 아바타 / 로그인 버튼 */}
+        {kakaoUser ? (
+          <div className={styles.avatar}>
+            {kakaoUser.profile_image
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={kakaoUser.profile_image} alt="프로필" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              : <span>{kakaoUser?.nickname?.charAt(0) || '👤'}</span>
+            }
+          </div>
+        ) : (
+          <a href="/api/auth/kakao" className={styles.loginBtn}>
+             <span>{lang === 'ko' ? '로그인' : 'Login'}</span>
+             <div className={styles.avatarGuest}>👤</div>
+          </a>
+        )}
       </div>
     </header>
   )

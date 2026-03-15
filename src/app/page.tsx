@@ -127,9 +127,14 @@ export default function HomePage() {
                 : t.urgentSubtitle(urgentBenefits.filter(b => b.dDay <= 14).length)
               }
             </p>
+            {!kakaoUser && (
+              <a href="/api/auth/kakao" className={styles.heroLoginBtn}>
+                {lang === 'ko' ? '초간편 로그인하고 내 혜택 찾기 →' : 'Find my benefits with login →'}
+              </a>
+            )}
             {!loading && benefits.length > 0 && (
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                {lang === 'ko' ? `📊 실시간 복지서비스 ${benefits.length}건 연동` : `📊 ${benefits.length} welfare services synced`}
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
+                {lang === 'ko' ? `📊 실시간 복지서비스 ${benefits.length}건 연동` : `📊 ${benefits.length} welfare services`}
               </p>
             )}
             {!loading && apiError && (

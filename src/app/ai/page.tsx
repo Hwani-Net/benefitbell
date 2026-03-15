@@ -70,7 +70,7 @@ function FilterCard({ benefit, lang }: { benefit: FilteredBenefit; lang: string 
 }
 
 export default function AiPage() {
-  const { lang, userProfile, benefits: allBenefits } = useApp()
+  const { lang, userProfile, kakaoUser, benefits: allBenefits } = useApp()
   const [activeTab, setActiveTab] = useState<'filter' | 'chat'>('filter')
   const [showUnlikely, setShowUnlikely] = useState(false)
 
@@ -214,9 +214,15 @@ export default function AiPage() {
                     ? '나이, 지역, 소득 등을 입력하면 수백 개 혜택 중\n내가 받을 수 있는 것만 자동으로 골라드립니다'
                     : 'Enter your age, region, income, and we\'ll\nautomatically filter matching benefits for you'}
                 </p>
-                <Link href="/profile" className={styles.profileCtaBtn}>
-                  {isKo ? '📝 프로필 입력하기' : '📝 Enter Profile'}
-                </Link>
+                {kakaoUser ? (
+                  <Link href="/profile" className={styles.profileCtaBtn}>
+                    {isKo ? '📝 프로필 입력하기' : '📝 Enter Profile'}
+                  </Link>
+                ) : (
+                  <a href="/api/auth/kakao" className={styles.profileCtaBtn} style={{ background: '#FEE500', color: '#000', border: 'none', fontWeight: 800 }}>
+                    {isKo ? '🔐 3초 카카오 로그인' : '🔐 3-second Login'}
+                  </a>
+                )}
               </div>
             ) : (
               <>
@@ -292,9 +298,15 @@ export default function AiPage() {
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
                       {isKo ? '프로필 정보를 추가하면 더 정확한 결과를 받을 수 있어요' : 'Add more profile info for better results'}
                     </p>
-                    <Link href="/profile" className="btn btn-outline" style={{ textDecoration: 'none' }}>
-                      {isKo ? '프로필 수정하기' : 'Edit Profile'}
-                    </Link>
+                    {kakaoUser ? (
+                      <Link href="/profile" className="btn btn-outline" style={{ textDecoration: 'none' }}>
+                        {isKo ? '프로필 수정하기' : 'Edit Profile'}
+                      </Link>
+                    ) : (
+                      <a href="/api/auth/kakao" className="btn btn-kakao" style={{ textDecoration: 'none', background: '#FEE500', color: '#000' }}>
+                        {isKo ? '🔐 로그인하고 시작하기' : '🔐 Login and Start'}
+                      </a>
+                    )}
                   </div>
                 )}
 

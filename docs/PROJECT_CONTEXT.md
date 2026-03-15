@@ -1,6 +1,6 @@
 # Project Context — 혜택알리미 (naedon-finder / BenefitBell)
 
-> **최종 갱신**: 2026-03-12 (23:03 KST)
+> **최종 갱신**: 2026-03-15 (00:54 KST - 세션 복구 완료)
 > **경로**: `e:\AI_Programing\naedon-finder`
 > **서버**: `npm run dev -- -p 3008` (포트 3008)
 > **Firebase App Hosting**: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
@@ -108,7 +108,7 @@
   - ✅ AI 맞춤 채널 지역 필터링 수정 (matchRegion: 비매칭 지역 -20 감점, 매칭 +10)
 - [ ] 🔜 **비공개 테스트 시작** (프로덕션 출시 전 필수)
   - [x] 비공개 테스트 트랙 생성 및 12명 이상 참여 준비 ✅ 2026-03-14
-- [ ] 14일 이상 비공개 테스트 실행 (Day 0)
+  - [ ] 비공개 테스트 14일 트래킹 시작 (Day 0: 2026-03-15 예정)
 - [ ] 프로덕션 출시 신청
 
 ### Phase 4: AI 자격 판정 (🥇 최우선)

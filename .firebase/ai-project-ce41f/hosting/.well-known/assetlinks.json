@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.nuvolabs.benefitbell",
+        "sha256_cert_fingerprints": ["AF:3D:61:AC:F5:CD:A0:CC:5B:B6:59:78:00:A7:C7:DB:77:68:A9:17:0B:BC:03:9C:10:27:9E:B3:A0:00:91:1F"]
+      }
+    }]

@@ -1,0 +1,120 @@
+[00:00:02.045] Server  LOG     ✓ Ready in 1484ms
+[00:00:05.926] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:05.926] Browser ERROR   unhandledRejection: Error: Map container is already initialized.
+[00:00:05.926] Browser WARN    [Agentation] Failed to initialize session, using local storage: {}
+[00:01:12.262] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:12.559] Browser ERROR   uncaughtError: ChunkLoadError: Failed to load chunk /_next/static/chunks/src_bb768880._.js from module [project]/node_modules/next/dist/compiled/react-server-dom-turbopack/cjs/react-server-dom-turbopack-client.browser.development.js [app-client] (ecmascript)
+[00:11:52.376] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:11:52.531] Browser ERROR   uncaughtError: ChunkLoadError: Failed to load chunk /_next/static/chunks/src_224d2f78._.js from module [project]/node_modules/next/dist/compiled/react-server-dom-turbopack/cjs/react-server-dom-turbopack-client.browser.development.js [app-client] (ecmascript)
+[00:16:10.190] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:16:10.391] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+      <RedirectBoundary>
+        <RedirectErrorBoundary router={{...}}>
+          <InnerLayoutRouter url="/" tree={[...]} params={{}} cacheNode={{rsc:<Fragment>, ...}} segmentPath={[...]} ...>
+            <SegmentViewNode type="page" pagePath="page.tsx">
+              <SegmentTrieNode>
+              <ClientPageRoot Component={function HomePage} serverProvidedParams={{...}}>
+                <HomePage params={Promise} searchParams={Promise}>
+                  <TopBar>
+                    <header className="TopBar-mod...">
+                      <div>
+                      <div className="TopBar-mod...">
+                        <button>
+                        <button className="TopBar-mod..." onClick={function toggleTheme} aria-label="테마 전환">
+                          <SunIcon>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ...>
++                             <circle cx="12" cy="12" r="5">
+-                             <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z">
+                              ...
+                        ...
+                  ...
+            ...
+          ...
+
+[00:16:10.421] Server  LOG     [welfare-api] Total: 366, fetched page 1 (366)
+[00:16:10.422] Server  LOG     [welfare-api] Total fetched: 366 items
+[00:16:10.425] Server  LOG     [welfare-api] K-Startup: 10 recruiting / 27698 total
+[00:16:10.443] Server  LOG     [welfare-api] 지자체: 4559 total, page 1 (500)
+[00:16:10.562] Server  LOG     [welfare-api] 지자체 total fetched: 4559
+[00:16:10.737] Browser LOG     [SW] Registered: http://localhost:3000/
+[00:16:11.133] Server  LOG     [welfare-api] 기업마당: 1000 items (totCnt: 1085)
+[00:16:11.152] Server  LOG     [welfare-api] 📊 Sources: 중앙부처=366, 지자체=4559, 보조금24=0, 기업마당=1000, K-Startup=10, 민간복지=316 → 통합 6251건 → 기관/인프라 52건 제외 → 최종 6199건
+[00:16:11.197] Server  WARN    Failed to set fetch cache "https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?crtfcKey=E6Fk0U&dataType=json&searchCnt=1000" Error: Failed to set Next.js data cache for https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?crtfcKey=E6Fk0U&dataType=json&searchCnt=1000, items over 2MB can not be cached (3232827 bytes)
+[00:16:11.330] Server  LOG     [/api/benefits] Cached 6199 benefits in 957ms
+[00:17:24.674] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:25.288] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="ko" data-theme="light" suppressHydrationWarning={true}>
+                          <head>
+                            <meta>
+                            <script>
+                            <script
+                              dangerouslySetInnerHTML={{
++                               __html: "(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.do..."
+-                               __html: ""
+                              }}
+-                             src="https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202603090101/show_..."
+                            >
+                            <script
++                             type="application/ld+json"
+-                             type={null}
+                              dangerouslySetInnerHTML={{
++                               __html: "[{\"@context\":\"https://schema.org\",\"@type\":\"SoftwareApplication\",\"nam..."
+-                               __html: "(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.do..."
+                              }}
+                            >
+                            ...
+                          ...
+                            <button className="TopBar-mod..." onClick={function toggleTheme} aria-label="테마 전환">
+                              <SunIcon>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ...>
++                                 <circle cx="12" cy="12" r="5">
+-                                 <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z">
+                                  ...
+                  ...
+
+[00:17:25.288] Browser ERROR   {}
+[00:17:25.288] Browser LOG     [SW] Registered: http://localhost:3000/

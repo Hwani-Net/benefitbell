@@ -1,0 +1,153 @@
+[debug] [2026-03-15T00:54:13.517Z] ----------------------------------------------------------------------
+[debug] [2026-03-15T00:54:13.519Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\AIcreator\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting --debug
+[debug] [2026-03-15T00:54:13.520Z] CLI Version:   15.8.0
+[debug] [2026-03-15T00:54:13.520Z] Platform:      win32
+[debug] [2026-03-15T00:54:13.520Z] Node Version:  v22.17.0
+[debug] [2026-03-15T00:54:13.520Z] Time:          Sun Mar 15 2026 09:54:13 GMT+0900 (대한민국 표준시)
+[debug] [2026-03-15T00:54:13.520Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-15T00:54:15.106Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-15T00:54:15.107Z] > authorizing via signed-in user (hwanizero01@gmail.com)
+[debug] [2026-03-15T00:54:15.107Z] [iam] checking project ai-project-ce41f for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-03-15T00:54:15.108Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:15.109Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:15.109Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ai-project-ce41f:testIamPermissions [none]
+[debug] [2026-03-15T00:54:15.110Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ai-project-ce41f:testIamPermissions  x-goog-user-project=ai-project-ce41f
+[debug] [2026-03-15T00:54:15.110Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ai-project-ce41f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-15T00:54:15.362Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ai-project-ce41f:testIamPermissions 200
+[debug] [2026-03-15T00:54:15.362Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ai-project-ce41f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-15T00:54:15.363Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:15.363Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:15.363Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f [none]
+[debug] [2026-03-15T00:54:15.806Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f 200
+[debug] [2026-03-15T00:54:15.806Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f {"projectId":"ai-project-ce41f","projectNumber":"287186253524","displayName":"AI Project","name":"projects/ai-project-ce41f","resources":{"hostingSite":"ai-project-ce41f"},"state":"ACTIVE","etag":"1_c30e09f5-8434-48a7-b912-15018caaee99"}
+[debug] [2026-03-15T00:54:17.753Z] defaultcredentials: writing to file C:\Users\AIcreator\AppData\Roaming\firebase\hwanizero01_gmail_com_application_default_credentials.json
+[debug] [2026-03-15T00:54:17.754Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:17.755Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:17.755Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites pageToken=&pageSize=10
+[debug] [2026-03-15T00:54:18.472Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites 200
+[debug] [2026-03-15T00:54:18.473Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites {"sites":[{"name":"projects/ai-project-ce41f/sites/ai-project-ce41f","defaultUrl":"https://ai-project-ce41f.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-03-15T00:54:18.473Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:18.473Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:18.473Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites 
+[debug] [2026-03-15T00:54:19.111Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites 200
+[debug] [2026-03-15T00:54:19.111Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites {"sites":[{"name":"projects/ai-project-ce41f/sites/ai-project-ce41f","defaultUrl":"https://ai-project-ce41f.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-03-15T00:54:19.111Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:19.111Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:19.112Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f/webApps/-/config [none]
+[debug] [2026-03-15T00:54:19.800Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f/webApps/-/config 200
+[debug] [2026-03-15T00:54:19.800Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ai-project-ce41f/webApps/-/config {"projectId":"ai-project-ce41f","storageBucket":"ai-project-ce41f.firebasestorage.app","apiKey":"AIzaSyD661gFi59xD6kDYcbqpr4XOghQtGX9_JI","authDomain":"ai-project-ce41f.firebaseapp.com","messagingSenderId":"287186253524","projectNumber":"287186253524","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-03-15T00:54:24.689Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:24.690Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:24.690Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f [none]
+[debug] [2026-03-15T00:54:25.419Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f 200
+[debug] [2026-03-15T00:54:25.419Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f {"name":"projects/ai-project-ce41f/sites/ai-project-ce41f","defaultUrl":"https://ai-project-ce41f.web.app","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.1.6 (Turbopack)
+
+[info] - Environments: .env.local, .env.production
+
+
+[info]   Creating an optimized production build ...
+
+[info] ✓ Compiled successfully in 2.6s
+
+[info]   Running TypeScript ...
+
+[info]   Collecting page data using 15 workers ...
+
+[info] ⚠ Using edge runtime on a page currently disables static generation for that page
+
+[info]   Generating static pages using 15 workers (0/29) ...
+
+[info]   Generating static pages using 15 workers (7/29) 
+
+[info]   Generating static pages using 15 workers (14/29) 
+
+[info]   Generating static pages using 15 workers (21/29) 
+
+[info] ✓ Generating static pages using 15 workers (29/29) in 773.3ms
+
+[info]   Finalizing page optimization ...
+
+[info] 
+
+[info] Route (app)                       Revalidate  Expire
+┌ ○ /
+├ ○ /_not-found
+├ ○ /ai
+├ ƒ /api/ai-check
+├ ƒ /api/ai-eligibility
+├ ƒ /api/ai-recommend
+├ ƒ /api/auth/kakao
+├ ƒ /api/auth/kakao/callback
+├ ƒ /api/benefits
+├ ƒ /api/benefits/[id]
+├ ƒ /api/cron/check-new-benefits
+├ ƒ /api/cron/notify
+├ ƒ /api/indexnow
+├ ƒ /api/payments/confirm
+├ ƒ /api/premium/activate
+├ ƒ /api/premium/payment-date
+├ ƒ /api/push/cron-deadline
+├ ƒ /api/push/send
+├ ƒ /api/push/subscribe
+├ ƒ /api/user/profile
+├ ○ /calendar
+├ ƒ /detail/[id]
+├ ƒ /opengraph-image
+├ ○ /premium
+├ ○ /premium/fail
+├ ○ /premium/success
+├ ○ /privacy
+├ ○ /profile
+├ ○ /refund-policy
+├ ○ /robots.txt
+├ ○ /search
+├ ○ /sitemap.xml                          1h      1y
+└ ○ /terms
+
+
+[info] 
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+[info] Building a Cloud Function to run this application. This is needed due to:
+[info]  • use of revalidate /sitemap.xml
+[info]  • non-static component /api/ai-check/route
+[info]  • non-static component /api/ai-eligibility/route
+[info]  • non-static component /api/ai-recommend/route
+[info]  • non-static component /api/auth/kakao/callback/route
+[debug] [2026-03-15T00:54:40.302Z]  • non-static component /api/auth/kakao/route
+[debug] [2026-03-15T00:54:40.302Z]  • non-static component /api/benefits/[id]/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/benefits/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/cron/check-new-benefits/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/cron/notify/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/indexnow/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/payments/confirm/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/premium/activate/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/premium/payment-date/route
+[debug] [2026-03-15T00:54:40.303Z]  • non-static component /api/push/cron-deadline/route
+[debug] [2026-03-15T00:54:40.304Z]  • non-static component /api/push/send/route
+[debug] [2026-03-15T00:54:40.304Z]  • non-static component /api/push/subscribe/route
+[debug] [2026-03-15T00:54:40.304Z]  • non-static component /api/user/profile/route
+[debug] [2026-03-15T00:54:40.304Z]  • non-static component /detail/[id]/page
+[info] 
+[debug] [2026-03-15T00:54:40.395Z] skipping /sitemap.xml due to revalidate
+[debug] [2026-03-15T00:54:41.139Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:41.139Z] Checked if tokens are valid: true, expires at: 1773539602898
+[debug] [2026-03-15T00:54:41.139Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f [none]
+[debug] [2026-03-15T00:54:41.927Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f 200
+[debug] [2026-03-15T00:54:41.928Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ai-project-ce41f/sites/ai-project-ce41f {"name":"projects/ai-project-ce41f/sites/ai-project-ce41f","defaultUrl":"https://ai-project-ce41f.web.app","type":"DEFAULT_SITE"}
+[debug] [2026-03-15T00:54:43.983Z] Error: EPERM: operation not permitted, symlink 'E:\AI_Programing\naedon-finder\node_modules\firebase-admin' -> 'E:\AI_Programing\naedon-finder\.firebase\ai-project-ce41f\functions\.next\node_modules\firebase-admin-a14c8a5423a75469'

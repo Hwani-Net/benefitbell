@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { AppProvider } from '@/lib/context'
 import Script from 'next/script'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
-import InstallBanner from '@/components/pwa/InstallBanner'
 import PushMessageReceiver from '@/components/pwa/PushMessageReceiver'
 import '@/styles/globals.css'
 
@@ -165,7 +164,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppProvider>
           <div className="app-container">
             {children}
-            <InstallBanner />
             <PushMessageReceiver />
           </div>
         </AppProvider>

@@ -1,0 +1,73 @@
+/* [project]/src/components/pwa/PushToggle.module.css [app-client] (css) */
+.PushToggle-module__2f1vcq__row {
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  display: flex;
+}
+
+.PushToggle-module__2f1vcq__info {
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  display: flex;
+}
+
+.PushToggle-module__2f1vcq__icon {
+  flex-shrink: 0;
+  font-size: 24px;
+}
+
+.PushToggle-module__2f1vcq__label {
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.PushToggle-module__2f1vcq__desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.PushToggle-module__2f1vcq__toggle {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-full);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  transition: background .25s, border-color .25s;
+  position: relative;
+}
+
+.PushToggle-module__2f1vcq__toggle.PushToggle-module__2f1vcq__on {
+  background: var(--color-coral);
+  border-color: var(--color-coral);
+}
+
+.PushToggle-module__2f1vcq__toggle.PushToggle-module__2f1vcq__loading {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.PushToggle-module__2f1vcq__knob {
+  background: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 4px #0003;
+}
+
+.PushToggle-module__2f1vcq__toggle.PushToggle-module__2f1vcq__on .PushToggle-module__2f1vcq__knob {
+  transform: translateX(22px);
+}
+
+/*# sourceMappingURL=src_components_pwa_PushToggle_module_css_bad6b30c._.single.css.map*/

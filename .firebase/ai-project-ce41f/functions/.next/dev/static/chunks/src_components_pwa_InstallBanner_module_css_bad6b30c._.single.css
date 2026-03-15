@@ -1,0 +1,96 @@
+/* [project]/src/components/pwa/InstallBanner.module.css [app-client] (css) */
+.InstallBanner-module__YT1LzW__banner {
+  bottom: calc(var(--bottom-nav-height)  + 12px);
+  width: calc(100% - 32px);
+  max-width: calc(var(--max-width)  - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-xl);
+  z-index: 900;
+  opacity: 0;
+  pointer-events: none;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  transition: opacity .35s, transform .35s cubic-bezier(.34, 1.56, .64, 1);
+  display: flex;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%)translateY(20px);
+  box-shadow: 0 8px 32px #00000024, 0 2px 8px #0000000f;
+}
+
+.InstallBanner-module__YT1LzW__banner.InstallBanner-module__YT1LzW__visible {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(-50%)translateY(0);
+}
+
+.InstallBanner-module__YT1LzW__icon {
+  flex-shrink: 0;
+  font-size: 32px;
+}
+
+.InstallBanner-module__YT1LzW__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.InstallBanner-module__YT1LzW__title {
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.InstallBanner-module__YT1LzW__desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.InstallBanner-module__YT1LzW__desc strong {
+  color: var(--color-coral);
+}
+
+.InstallBanner-module__YT1LzW__actions {
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.InstallBanner-module__YT1LzW__installBtn {
+  background: var(--gradient-coral);
+  color: #fff;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-coral);
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.InstallBanner-module__YT1LzW__installBtn:active {
+  transform: scale(.96);
+}
+
+.InstallBanner-module__YT1LzW__dismissBtn {
+  color: var(--text-tertiary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 16px;
+  line-height: 1;
+  transition: color .15s;
+}
+
+.InstallBanner-module__YT1LzW__dismissBtn:hover {
+  color: var(--text-secondary);
+}
+
+/*# sourceMappingURL=src_components_pwa_InstallBanner_module_css_bad6b30c._.single.css.map*/

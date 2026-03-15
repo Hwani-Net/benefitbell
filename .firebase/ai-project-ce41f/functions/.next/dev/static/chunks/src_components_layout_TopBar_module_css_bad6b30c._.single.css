@@ -1,0 +1,120 @@
+/* [project]/src/components/layout/TopBar.module.css [app-client] (css) */
+.TopBar-module__LYwH0W__topBar {
+  width: 100%;
+  max-width: var(--max-width);
+  height: var(--top-bar-height);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.TopBar-module__LYwH0W__logo {
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__logoIcon {
+  background: var(--gradient-coral);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  box-shadow: var(--shadow-coral);
+  border-radius: 10px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__logoText {
+  background: var(--gradient-coral);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.TopBar-module__LYwH0W__actions {
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__actionBtn {
+  background: var(--bg-secondary);
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__actionBtn:active {
+  transform: scale(.93);
+}
+
+.TopBar-module__LYwH0W__langText {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.TopBar-module__LYwH0W__avatar {
+  background: var(--gradient-coral);
+  color: #fff;
+  cursor: pointer;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__loginBtn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: all var(--transition);
+  border-radius: 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+}
+
+.TopBar-module__LYwH0W__loginBtn:active {
+  transform: scale(.96);
+}
+
+.TopBar-module__LYwH0W__avatarGuest {
+  background: var(--bg-tertiary);
+  width: 28px;
+  height: 28px;
+  color: var(--text-tertiary);
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  display: flex;
+}
+
+/*# sourceMappingURL=src_components_layout_TopBar_module_css_bad6b30c._.single.css.map*/

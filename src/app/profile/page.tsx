@@ -497,11 +497,22 @@ export default function ProfilePage() {
             </div>
           </div>
         ) : (
-          <div className={styles.profileHero}>
-            <div className={styles.avatarGuest}>👤</div>
-            <div className={styles.profileInfo}>
-              <h1 className={styles.profileName} style={{ fontSize: 16 }}>{lang === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h1>
-              <p className={styles.profileSub}>{lang === 'ko' ? '카카오로 로그인하면 맞춤 혜택을 받아볼 수 있어요' : 'Login with Kakao to get personalized benefits'}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className={styles.profileHero} style={{ marginBottom: 0 }}>
+              <div className={styles.avatarGuest}>👤</div>
+              <div className={styles.profileInfo}>
+                <h1 className={styles.profileName} style={{ fontSize: 16 }}>{lang === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h1>
+                <p className={styles.profileSub}>{lang === 'ko' ? '카카오로 로그인하면 맞춤 혜택을 받아볼 수 있어요' : 'Login with Kakao to get personalized benefits'}</p>
+              </div>
+            </div>
+            <div className="section" style={{ paddingTop: 0 }}>
+              <div className={styles.coffeeCard}>
+                <p className={styles.coffeeTitle}>{lang === 'ko' ? '🔐 카카오 간편 로그인' : '🔐 Kakao Quick Login'}</p>
+                <p className={styles.coffeeDesc}>{lang === 'ko' ? '로그인하고 내 프로필 정보와 저장한 혜택을 기기 간 연동하세요.' : 'Login to sync your profile and saved benefits across devices.'}</p>
+                <a href="/api/auth/kakao" className="btn btn-kakao w-full mt-12" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', lineHeight: '24px' }}>
+                  {lang === 'ko' ? '1초 만에 카카오로 시작하기' : 'Login with Kakao'}
+                </a>
+              </div>
             </div>
           </div>
         )}

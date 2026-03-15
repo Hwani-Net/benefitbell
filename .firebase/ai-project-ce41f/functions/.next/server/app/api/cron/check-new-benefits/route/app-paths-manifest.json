@@ -1,0 +1,3 @@
+{
+  "/api/cron/check-new-benefits/route": "app/api/cron/check-new-benefits/route.js"
+}
