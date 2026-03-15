@@ -18,7 +18,7 @@ import { UserProfile } from './context'
  * Uses structured fields (targetAge, incomeLevel, category, eligibilityChecks)
  * instead of GPT API calls.
  */
-export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
+export function computeRuleScore(benefit: Benefit, profile: UserProfile, isVerified: boolean = true): {
   score: number
   verdict: 'likely' | 'partial' | 'unlikely'
   summary: string
@@ -189,7 +189,8 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
   }
 
   // ── 점수 제한 + 판정 ────────────────────────────
-  score = Math.min(score, 95) // 절대 100% 불가 (실제 확인 필요)
+  const maxConfidence = isVerified ? 95 : 85 // 로그인 안 했으면(unverified) 확신도 캡(85%)
+  score = Math.min(score, maxConfidence)
   score = Math.max(score, 5)  // 최소 5%
 
   const verdict: 'likely' | 'partial' | 'unlikely' =
@@ -201,7 +202,9 @@ export function computeRuleScore(benefit: Benefit, profile: UserProfile): {
     : verdict === 'partial' ? '일부 조건이 일치합니다. 세부 요건을 확인하세요.'
     : '현재 프로필 기준으로 해당 가능성이 낮습니다.'
 
-  return { score, verdict, summary }
+  const finalSummary = isVerified ? summary : `⚠️ (미인증) ${summary}`
+
+  return { score, verdict, summary: finalSummary }
 }
 
 // ── Helper: 카테고리 매칭 ──────────────────────────
@@ -497,13 +500,14 @@ export type FilteredBenefit = Benefit & {
 export function getFilteredBenefits(
   benefits: Benefit[],
   profile: UserProfile,
+  isVerified: boolean = true
 ): { likely: FilteredBenefit[]; partial: FilteredBenefit[]; unlikely: FilteredBenefit[] } {
   const likely: FilteredBenefit[] = []
   const partial: FilteredBenefit[] = []
   const unlikely: FilteredBenefit[] = []
 
   for (const benefit of benefits) {
-    const { score, verdict, summary } = computeRuleScore(benefit, profile)
+    const { score, verdict, summary } = computeRuleScore(benefit, profile, isVerified)
     const enriched: FilteredBenefit = {
       ...benefit,
       ruleScore: score,
@@ -529,10 +533,14 @@ export function getFilteredBenefits(
  * Synchronous keyword-based personalization (for home page).
  * Returns only benefits with score > 0, sorted by score desc.
  */
-export function getPersonalizedBenefits(benefits: Benefit[], profile: UserProfile | null): Benefit[] {
+export function getPersonalizedBenefits(
+  benefits: Benefit[],
+  profile: UserProfile | null,
+  isVerified: boolean = true
+): Benefit[] {
   if (!profile || !profile.birthYear || !profile.region) return benefits
   return benefits
-    .map(b => ({ benefit: b, score: computeRuleScore(b, profile).score }))
+    .map(b => ({ benefit: b, score: computeRuleScore(b, profile, isVerified).score }))
     .filter(s => s.score > 20) // above base score
     .sort((a, b) => b.score - a.score)
     .map(s => s.benefit)

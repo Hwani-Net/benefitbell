@@ -101,7 +101,7 @@ export default function HomePage() {
     : benefits.slice(0, 5)
 
   // 맞춤 혜택 = userProfile 기반으로 추천 점수 매긴 전체 목록
-  const allPersonalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile) : []
+  const allPersonalizedBenefits = kakaoUser ? getPersonalizedBenefits(benefits, userProfile, !!kakaoUser) : []
   const personalizedBenefits = allPersonalizedBenefits.slice(0, 5)
 
   // 신규 혜택 = new 플래그 있는 것 우선, 없으면 목록 마지막 5건 (가장 최근 추가)

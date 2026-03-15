@@ -88,8 +88,8 @@ export default function AiPage() {
   // ─── Tab 1: 규칙 기반 즉시 계산 (API 호출 없음) ───
   const filtered = useMemo(() => {
     if (!hasProfile || allBenefits.length === 0) return null
-    return getFilteredBenefits(allBenefits, userProfile!)
-  }, [hasProfile, allBenefits, userProfile])
+    return getFilteredBenefits(allBenefits, userProfile!, !!kakaoUser)
+  }, [hasProfile, allBenefits, userProfile, kakaoUser])
 
   // ─── Free usage tracking ───
   useEffect(() => {
