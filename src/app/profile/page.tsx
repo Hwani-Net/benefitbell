@@ -606,6 +606,8 @@ export default function ProfilePage() {
   }, [userProfile]);
 
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const isPremium = userProfile?.isPremium || false;
   const [isKakaoLinked, setIsKakaoLinked] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
@@ -836,15 +838,18 @@ export default function ProfilePage() {
     setUserProfile(finalProfile);
     localStorage.setItem("push_categories", JSON.stringify(selectedCategories));
 
+    setSaving(true);
+    setSaveError(null);
+
     if (kakaoUser?.id) {
       try {
         const auth = getFirebaseAuth();
         if (!auth?.currentUser) {
-          throw new Error("Firebase 인증 상태 없음 — 다시 로그인 필요");
+          throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
         }
         const idToken = await auth.currentUser.getIdToken();
         // Firestore users 컬렉션 — 전체 프로필 + 개인화 데이터 저장
-        await fetch("/api/user/profile", {
+        const res = await fetch("/api/user/profile", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -896,8 +901,25 @@ export default function ProfilePage() {
               : undefined,
           }),
         });
+        if (!res.ok) {
+          let msg = `저장 실패 (HTTP ${res.status})`;
+          try {
+            const body = await res.json();
+            if (body?.error) msg = body.error;
+          } catch {
+            /* ignore parse error */
+          }
+          throw new Error(msg);
+        }
       } catch (e) {
         console.warn("user profile sync failed:", e);
+        setSaveError(
+          e instanceof Error
+            ? e.message
+            : "프로필 저장 중 오류가 발생했습니다.",
+        );
+        setSaving(false);
+        return;
       }
     }
 
@@ -929,6 +951,7 @@ export default function ProfilePage() {
       setCategorySaving(false);
     }
 
+    setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -1916,12 +1939,18 @@ export default function ProfilePage() {
                       className="btn btn-primary"
                       style={{ flex: 2 }}
                       onClick={handleSave}
+                      disabled={saving}
+                      aria-busy={saving}
                     >
-                      {saved
-                        ? `✅ ${t.saved}`
-                        : lang === "ko"
-                          ? "✓ 저장 완료"
-                          : "✓ Save All"}
+                      {saving
+                        ? lang === "ko"
+                          ? "저장 중..."
+                          : "Saving..."
+                        : saved
+                          ? `✅ ${t.saved}`
+                          : lang === "ko"
+                            ? "✓ 저장 완료"
+                            : "✓ Save All"}
                     </button>
                   </div>
                 </div>
@@ -2087,9 +2116,32 @@ export default function ProfilePage() {
               <button
                 className={`btn btn-primary btn-full btn-lg`}
                 onClick={handleSave}
+                disabled={saving}
+                aria-busy={saving}
               >
-                {saved ? `✅ ${t.saved}` : t.saveSettings}
+                {saving
+                  ? lang === "ko"
+                    ? "저장 중..."
+                    : "Saving..."
+                  : saved
+                    ? `✅ ${t.saved}`
+                    : t.saveSettings}
               </button>
+              {saveError && (
+                <p
+                  role="alert"
+                  style={{
+                    marginTop: 12,
+                    padding: "10px 12px",
+                    background: "#FEE2E2",
+                    color: "#991B1B",
+                    borderRadius: 8,
+                    fontSize: 14,
+                  }}
+                >
+                  ⚠️ {saveError}
+                </p>
+              )}
             </div>
           </>
         )}
