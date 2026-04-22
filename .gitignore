@@ -58,3 +58,6 @@ private_welfare.csv
 *.keystore
 *.aab
 *.apk
+
+# QA artifacts
+.qa-screenshots/

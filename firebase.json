@@ -5,5 +5,10 @@
   },
   "firestore": {
     "rules": "firestore.rules"
-  }
+  },
+  "apphosting": [
+    {
+      "backendId": "benefitbell-web"
+    }
+  ]
 }
