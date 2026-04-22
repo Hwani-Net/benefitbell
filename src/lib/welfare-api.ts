@@ -229,7 +229,7 @@ function classifyCategory(
  * Handles: "YYYYMMDD", "YYYY-MM-DD", "YYYY.MM.DD", "YYYY/MM/DD"
  * Returns "상시" for year-round, "" for empty/invalid
  */
-function normalizeDateStr(dateStr: string | null | undefined): string {
+export function normalizeDateStr(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
   if (
     dateStr.includes("상시") ||
