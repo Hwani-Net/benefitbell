@@ -178,7 +178,14 @@ export default function ConsentPage() {
                 type="checkbox"
                 checked={generalConsent}
                 onChange={(e) => setGeneralConsent(e.target.checked)}
-                style={{ display: "none" }}
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  width: 1,
+                  height: 1,
+                  margin: 0,
+                }}
+                aria-label="일반 개인정보 수집·이용 동의"
               />
               <div
                 style={{
@@ -352,7 +359,14 @@ export default function ConsentPage() {
                 type="checkbox"
                 checked={sensitiveConsent}
                 onChange={(e) => setSensitiveConsent(e.target.checked)}
-                style={{ display: "none" }}
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  width: 1,
+                  height: 1,
+                  margin: 0,
+                }}
+                aria-label="민감정보 수집·이용 동의"
               />
               <div
                 style={{
