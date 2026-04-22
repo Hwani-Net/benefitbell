@@ -142,15 +142,12 @@ export const translations = {
     isBasicLivingRecipient: "기초수급 여부",
     basicRecipient: "기초수급자",
     notBasicRecipient: "해당없음",
-    healthInsuranceType: "건강보험 유형",
-    employedInsurance: "직장가입자",
-    regionalInsurance: "지역가입자",
-    medicalAid: "의료급여",
-    unknownInsurance: "잘 모르겠음",
-    disabilityGrade: "장애 등급",
+    isMedicalAidRecipient: "의료급여 수급 여부",
+    medicalAidYes: "의료급여 대상",
+    medicalAidNo: "해당없음",
+    hasDisability: "장애 여부",
     noDisability: "해당없음",
-    mildDisability: "경증 (구 4~6급)",
-    severeDisability: "중증 (구 1~3급)",
+    yesDisability: "장애 있음",
     specialStatus: "특이사항",
     disability: "장애",
     singleParent: "한부모",
@@ -359,15 +356,12 @@ export const translations = {
     isBasicLivingRecipient: "Basic Living Recipient",
     basicRecipient: "Recipient",
     notBasicRecipient: "Not Applicable",
-    healthInsuranceType: "Health Insurance",
-    employedInsurance: "Employed",
-    regionalInsurance: "Regional",
-    medicalAid: "Medical Aid",
-    unknownInsurance: "Not Sure",
-    disabilityGrade: "Disability Grade",
+    isMedicalAidRecipient: "Medical Aid Recipient",
+    medicalAidYes: "Medical Aid",
+    medicalAidNo: "Not Applicable",
+    hasDisability: "Disability",
     noDisability: "None",
-    mildDisability: "Mild",
-    severeDisability: "Severe",
+    yesDisability: "Has Disability",
     specialStatus: "Special Status",
     disability: "Disability",
     singleParent: "Single Parent",
@@ -471,8 +465,10 @@ export interface UserProfile {
   isPregnant: boolean;
   // Step 3: 상세 (선택)
   isBasicLivingRecipient: boolean;
-  healthInsuranceType: "employed" | "regional" | "medicalAid" | "unknown";
-  disabilityGrade: "none" | "mild" | "severe";
+  /** @privacy 의료급여 수급 여부만 수집 (직장/지역 구분 불필요) */
+  isMedicalAidRecipient: boolean;
+  /** @privacy 장애 여부만 수집 (등급 숫자 미수집) */
+  hasDisability: boolean;
   specialStatus: string[];
   // Step 4: 사업자 (선택)
   isBusinessOwner: boolean;
@@ -505,8 +501,8 @@ const defaultProfile: UserProfile = {
   isPregnant: false,
   // Step 3
   isBasicLivingRecipient: false,
-  healthInsuranceType: "unknown",
-  disabilityGrade: "none",
+  isMedicalAidRecipient: false,
+  hasDisability: false,
   specialStatus: [],
   // Step 4
   isBusinessOwner: false,
@@ -618,10 +614,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...(d.isBasicLivingRecipient != null
           ? { isBasicLivingRecipient: d.isBasicLivingRecipient }
           : {}),
-        ...(d.healthInsuranceType
-          ? { healthInsuranceType: d.healthInsuranceType }
-          : {}),
-        ...(d.disabilityGrade ? { disabilityGrade: d.disabilityGrade } : {}),
+        // 신규 필드: isMedicalAidRecipient (구 healthInsuranceType 마이그레이션 포함)
+        ...(d.isMedicalAidRecipient != null
+          ? { isMedicalAidRecipient: d.isMedicalAidRecipient }
+          : d.healthInsuranceType === "medicalAid"
+            ? { isMedicalAidRecipient: true }
+            : {}),
+        // 신규 필드: hasDisability (구 disabilityGrade 마이그레이션 포함)
+        ...(d.hasDisability != null
+          ? { hasDisability: d.hasDisability }
+          : d.disabilityGrade && d.disabilityGrade !== "none"
+            ? { hasDisability: true }
+            : {}),
         ...(d.specialStatus?.length ? { specialStatus: d.specialStatus } : {}),
         // Step 4: 사업자
         ...(d.isBusinessOwner != null

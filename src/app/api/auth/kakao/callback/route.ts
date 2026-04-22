@@ -99,7 +99,26 @@ export async function GET(request: Request) {
       );
     }
 
-    const response = NextResponse.redirect(`${origin}/profile`);
+    // 4. 개인정보 동의 여부 확인 → 미동의 시 /consent 로 리다이렉트
+    let needsConsent = false;
+    try {
+      const { getAdminFirestore } = await import("@/lib/firebase-admin");
+      const db = getAdminFirestore();
+      const userDoc = await db.collection("users").doc(kakaoId).get();
+      if (!userDoc.exists || !userDoc.data()?.consent_agreed_at) {
+        needsConsent = true;
+      }
+    } catch (dbErr) {
+      // Firestore 조회 실패 시 동의 화면으로 보내는 것이 안전 (미동의 간주)
+      console.error(
+        "[kakao/callback] Firestore consent check failed — treating as needs-consent:",
+        dbErr,
+      );
+      needsConsent = true;
+    }
+
+    const redirectPath = needsConsent ? "/consent?redirect=/" : "/profile";
+    const response = NextResponse.redirect(`${origin}${redirectPath}`);
 
     // 기존 kakao_profile 쿠키 (하위 호환 유지)
     const profileData = {

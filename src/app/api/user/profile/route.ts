@@ -78,6 +78,17 @@ export async function GET(req: Request) {
         isPregnant: data.isPregnant ?? null,
         // Step 3: 상세
         isBasicLivingRecipient: data.isBasicLivingRecipient ?? null,
+        // 신규 필드 (구 healthInsuranceType → isMedicalAidRecipient 마이그레이션)
+        isMedicalAidRecipient:
+          data.isMedicalAidRecipient ??
+          (data.healthInsuranceType === "medicalAid" ? true : null),
+        // 신규 필드 (구 disabilityGrade → hasDisability 마이그레이션)
+        hasDisability:
+          data.hasDisability ??
+          (data.disabilityGrade && data.disabilityGrade !== "none"
+            ? true
+            : null),
+        // 구 필드 호환성 유지 (context.tsx 마이그레이션용)
         healthInsuranceType: data.healthInsuranceType ?? null,
         disabilityGrade: data.disabilityGrade ?? null,
         specialStatus: data.specialStatus ?? [],
@@ -157,10 +168,11 @@ export async function POST(req: Request) {
     // Step 3: 상세
     if (body.isBasicLivingRecipient !== undefined)
       updateData.isBasicLivingRecipient = body.isBasicLivingRecipient;
-    if (body.healthInsuranceType !== undefined)
-      updateData.healthInsuranceType = body.healthInsuranceType;
-    if (body.disabilityGrade !== undefined)
-      updateData.disabilityGrade = body.disabilityGrade;
+    // 신규 필드 저장 (민감정보 최소화: 의료급여 여부만, 장애 여부만)
+    if (body.isMedicalAidRecipient !== undefined)
+      updateData.isMedicalAidRecipient = body.isMedicalAidRecipient;
+    if (body.hasDisability !== undefined)
+      updateData.hasDisability = body.hasDisability;
     // Step 4: 사업자
     if (body.isBusinessOwner !== undefined)
       updateData.isBusinessOwner = body.isBusinessOwner;

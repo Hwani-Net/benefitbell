@@ -810,8 +810,8 @@ export default function ProfilePage() {
       childrenAgeGroup: [],
       isPregnant: false,
       isBasicLivingRecipient: false,
-      healthInsuranceType: "unknown",
-      disabilityGrade: "none",
+      isMedicalAidRecipient: false,
+      hasDisability: false,
       specialStatus: [],
       isBusinessOwner: false,
       businessType: "none",
@@ -875,8 +875,8 @@ export default function ProfilePage() {
             isPregnant: finalProfile.isPregnant,
             // Step 3: 상세
             isBasicLivingRecipient: finalProfile.isBasicLivingRecipient,
-            healthInsuranceType: finalProfile.healthInsuranceType,
-            disabilityGrade: finalProfile.disabilityGrade,
+            isMedicalAidRecipient: finalProfile.isMedicalAidRecipient,
+            hasDisability: finalProfile.hasDisability,
             specialStatus: finalProfile.specialStatus,
             // Step 4: 사업자
             isBusinessOwner: finalProfile.isBusinessOwner,
@@ -1731,51 +1731,42 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   </div>
-                  {/* 건강보험 유형 */}
+                  {/* 의료급여 수급 여부 */}
                   <div className={styles.formRow}>
                     <label className={styles.label}>
-                      {t.healthInsuranceType}
+                      {t.isMedicalAidRecipient}
                     </label>
                     <div className={styles.chipRow}>
-                      {[
-                        {
-                          key: "employed" as const,
-                          label: t.employedInsurance,
-                        },
-                        {
-                          key: "regional" as const,
-                          label: t.regionalInsurance,
-                        },
-                        { key: "medicalAid" as const, label: t.medicalAid },
-                        { key: "unknown" as const, label: t.unknownInsurance },
-                      ].map((h) => (
-                        <button
-                          key={h.key}
-                          className={`chip ${profile.healthInsuranceType === h.key ? "active" : ""}`}
-                          onClick={() => update("healthInsuranceType", h.key)}
-                        >
-                          {h.label}
-                        </button>
-                      ))}
+                      <button
+                        className={`chip ${!profile.isMedicalAidRecipient ? "active" : ""}`}
+                        onClick={() => update("isMedicalAidRecipient", false)}
+                      >
+                        {t.medicalAidNo}
+                      </button>
+                      <button
+                        className={`chip ${profile.isMedicalAidRecipient ? "active" : ""}`}
+                        onClick={() => update("isMedicalAidRecipient", true)}
+                      >
+                        {t.medicalAidYes}
+                      </button>
                     </div>
                   </div>
-                  {/* 장애등급 */}
+                  {/* 장애 여부 */}
                   <div className={styles.formRow}>
-                    <label className={styles.label}>{t.disabilityGrade}</label>
+                    <label className={styles.label}>{t.hasDisability}</label>
                     <div className={styles.chipRow}>
-                      {[
-                        { key: "none" as const, label: t.noDisability },
-                        { key: "mild" as const, label: t.mildDisability },
-                        { key: "severe" as const, label: t.severeDisability },
-                      ].map((d) => (
-                        <button
-                          key={d.key}
-                          className={`chip ${profile.disabilityGrade === d.key ? "active" : ""}`}
-                          onClick={() => update("disabilityGrade", d.key)}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
+                      <button
+                        className={`chip ${!profile.hasDisability ? "active" : ""}`}
+                        onClick={() => update("hasDisability", false)}
+                      >
+                        {t.noDisability}
+                      </button>
+                      <button
+                        className={`chip ${profile.hasDisability ? "active" : ""}`}
+                        onClick={() => update("hasDisability", true)}
+                      >
+                        {t.yesDisability}
+                      </button>
                     </div>
                   </div>
                   {/* 특이사항 */}
