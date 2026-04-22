@@ -18,6 +18,7 @@ import { getAdminFirestore } from "@/lib/firebase-admin";
 import {
   fetchAllWelfareSources,
   fetchWelfareDetail,
+  isValidDateRange,
   normalizeDateStr,
 } from "@/lib/welfare-api";
 
@@ -162,9 +163,10 @@ export async function GET(req: Request) {
 
     const skipped = skipSet.size;
 
-    // 5. Fetch detail for non-skipped items with bounded concurrency
+    // 5. Fetch detail for non-skipped items with bounded concurrency (no Firestore writes here)
     let processed = 0;
     let errors = 0;
+    let invalidRanges = 0;
 
     if (toFetch.length > 0) {
       const tasks = toFetch.map((servId) => async () => {
@@ -174,43 +176,60 @@ export async function GET(req: Request) {
         const applicationStart = normalizeDateStr(detail.applyBgnDt ?? "");
         const applicationEnd = normalizeDateStr(detail.applyEndDt ?? "");
 
-        // 7. Write to Firestore welfare_dates/{servId}
-        await datesCol.doc(servId).set(
-          {
-            applicationStart,
-            applicationEnd,
-            fetchedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-        return servId;
+        // Flag upstream inconsistencies (GPT-4.1 review Quick Win A)
+        if (!isValidDateRange(applicationStart, applicationEnd)) {
+          console.warn(
+            `[enrich-dates] Invalid range for ${servId}: ${applicationStart} → ${applicationEnd}`,
+          );
+          invalidRanges++;
+        }
+
+        return { servId, applicationStart, applicationEnd };
       });
 
       const results = await pLimit(tasks, CONCURRENCY);
-      processed = results.filter(
-        (r) => r.status === "fulfilled" && r.value !== null,
-      ).length;
-      errors = results.filter(
-        (r) =>
-          r.status === "rejected" ||
-          (r.status === "fulfilled" && r.value === null),
-      ).length;
+      const toWrite: {
+        servId: string;
+        applicationStart: string;
+        applicationEnd: string;
+      }[] = [];
 
-      // Log specific failed servIds for audit trail (GPT-4.1 review HIGH-B)
-      const failedIds = results
-        .map((r, i) =>
-          r.status === "rejected" ||
-          (r.status === "fulfilled" && r.value === null)
-            ? toFetch[i]
-            : null,
-        )
-        .filter((id): id is string => id !== null);
-      if (failedIds.length > 0) {
-        console.warn(
-          `[enrich-dates] Failed servIds (${failedIds.length}):`,
-          failedIds.slice(0, 20).join(","),
-          failedIds.length > 20 ? "...(truncated)" : "",
-        );
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value !== null) {
+          toWrite.push(r.value);
+        } else {
+          errors++;
+          console.warn(`[enrich-dates] Fetch failed: ${toFetch[i]}`);
+        }
+      });
+
+      // 6. Write to Firestore in batches of 500 (GPT-4.1 review HIGH-C)
+      // Firestore writeBatch: up to 500 ops/commit, fewer round trips = faster + cheaper
+      const BATCH_LIMIT = 500;
+      for (let b = 0; b < toWrite.length; b += BATCH_LIMIT) {
+        const chunk = toWrite.slice(b, b + BATCH_LIMIT);
+        const batch = db.batch();
+        chunk.forEach(({ servId, applicationStart, applicationEnd }) => {
+          batch.set(
+            datesCol.doc(servId),
+            {
+              applicationStart,
+              applicationEnd,
+              fetchedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        });
+        try {
+          await batch.commit();
+          processed += chunk.length;
+        } catch (batchErr) {
+          console.error(
+            `[enrich-dates] Batch commit failed for ${chunk.length} items:`,
+            batchErr,
+          );
+          errors += chunk.length;
+        }
       }
     }
 
@@ -253,6 +272,8 @@ export async function GET(req: Request) {
       nextIndex,
       batchSize,
       elapsed,
+      invalidRanges,
+      systemicFailure,
       cycleComplete: nextIndex === 0,
     });
   } catch (err) {

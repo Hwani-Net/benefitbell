@@ -244,7 +244,29 @@ export function normalizeDateStr(dateStr: string | null | undefined): string {
   const day = cleaned.substring(6, 8);
   if (isNaN(Number(year)) || isNaN(Number(month)) || isNaN(Number(day)))
     return "";
+  // Range validation — invalid calendar dates (month 13, day 32) indicate bad source data
+  const mNum = Number(month);
+  const dNum = Number(day);
+  if (mNum < 1 || mNum > 12 || dNum < 1 || dNum > 31) return "";
   return `${year}.${month}.${day}`;
+}
+
+/**
+ * Validate start ≤ end for a benefit date pair.
+ * Returns true if both empty, both "상시", or chronologically valid.
+ * Used to flag upstream-API inconsistencies during logging.
+ */
+export function isValidDateRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): boolean {
+  if (!start || !end) return true;
+  if (start === "상시" || end === "상시") return true;
+  // Both should be YYYY.MM.DD format after normalizeDateStr
+  const s = start.replace(/\./g, "");
+  const e = end.replace(/\./g, "");
+  if (s.length !== 8 || e.length !== 8) return true; // can't judge
+  return s <= e;
 }
 
 /**
