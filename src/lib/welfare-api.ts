@@ -526,6 +526,8 @@ export async function fetchWelfareDetail(
         slctCriteria: extract("slctCriteria"),
         alwServCn: extract("alwServCn"),
         aplWayContent: extract("aplWayContent"),
+        applyBgnDt: extract("applyBgnDt"),
+        applyEndDt: extract("applyEndDt"),
       } as unknown as WelfareDetailItem;
     }
 
