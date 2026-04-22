@@ -4,7 +4,13 @@
  * into Firestore welfare_dates/{servId} collection.
  *
  * State machine: cron_state/enrich_dates tracks progress across runs.
- * Runs daily at UTC 18:00 (KST 03:00) via Vercel Cron.
+ *
+ * Schedule via Cloud Scheduler (Firebase App Hosting환경):
+ *   gcloud scheduler jobs create http enrich-dates-daily \
+ *     --schedule="0 18 * * *" --time-zone="UTC" --location=asia-east1 \
+ *     --uri="https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app/api/cron/enrich-dates?batchSize=200" \
+ *     --http-method=GET \
+ *     --headers="Authorization=Bearer $CRON_SECRET"
  */
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
