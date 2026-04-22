@@ -23,6 +23,10 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:287186253524:web:98d9a50c0d48dabafa2d41
 
+  # ─── 앱 공개 URL (SEO sitemap/robots, Kakao share, IndexNow) ──────────
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
+
   # ─── 토스 클라이언트 키 (프론트엔드) ─────────────────────────────────
   - variable: NEXT_PUBLIC_TOSS_CLIENT_KEY
     value: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
