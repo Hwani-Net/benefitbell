@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getFirebaseAuth } from "@/lib/firebase";
 
-export default function ConsentPage() {
+function ConsentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
@@ -558,5 +558,13 @@ export default function ConsentPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ConsentPage() {
+  return (
+    <Suspense>
+      <ConsentContent />
+    </Suspense>
   );
 }

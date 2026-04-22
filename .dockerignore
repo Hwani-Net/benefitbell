@@ -1,0 +1,7 @@
+.git
+.next
+node_modules
+.env*.local
+.firebase
+firebase-debug.log
+.qa-screenshots
