@@ -80,17 +80,21 @@ async function getCachedBenefits(): Promise<Benefit[]> {
           });
         }
 
-        // Apply Firestore dates only where applicationEnd is missing
+        // Prefer Firestore dates (freshest — from welfare detail API) over list API
+        // cache. Firestore is updated by nightly cron, so it's authoritative when present.
+        // (GPT-4.1 review CRITICAL-B: avoid serving stale list-API dates)
         let enriched = 0;
         for (const benefit of benefits) {
-          if (!benefit.applicationEnd) {
-            const dates = dateMap.get(benefit.id);
-            if (dates?.applicationEnd) {
+          const dates = dateMap.get(benefit.id);
+          if (dates?.applicationEnd) {
+            // Firestore has fresh data — prefer it
+            if (benefit.applicationEnd !== dates.applicationEnd) {
               benefit.applicationEnd = dates.applicationEnd;
-              benefit.applicationStart =
-                benefit.applicationStart || dates.applicationStart;
               benefit.dDay = calculateDDay(dates.applicationEnd);
               enriched++;
+            }
+            if (dates.applicationStart && !benefit.applicationStart) {
+              benefit.applicationStart = dates.applicationStart;
             }
           }
         }

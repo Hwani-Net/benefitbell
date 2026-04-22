@@ -29,10 +29,15 @@ const REFETCH_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
 // Max concurrency for detail API calls
 const CONCURRENCY = 5;
 
-/** Verify CRON_SECRET from Authorization header or x-cron-secret header */
+/** Verify CRON_SECRET from Authorization header or x-cron-secret header.
+ *  Production requires CRON_SECRET to be set — missing env var in prod = reject. */
 function verifyCron(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // no secret configured = allow (dev mode)
+  if (!cronSecret) {
+    // Only allow unauthenticated access in explicit dev mode
+    if (process.env.NODE_ENV === "development") return true;
+    return false;
+  }
   const authHeader = req.headers.get("authorization");
   if (authHeader === `Bearer ${cronSecret}`) return true;
   const xSecret = req.headers.get("x-cron-secret");
@@ -190,12 +195,40 @@ export async function GET(req: Request) {
           r.status === "rejected" ||
           (r.status === "fulfilled" && r.value === null),
       ).length;
+
+      // Log specific failed servIds for audit trail (GPT-4.1 review HIGH-B)
+      const failedIds = results
+        .map((r, i) =>
+          r.status === "rejected" ||
+          (r.status === "fulfilled" && r.value === null)
+            ? toFetch[i]
+            : null,
+        )
+        .filter((id): id is string => id !== null);
+      if (failedIds.length > 0) {
+        console.warn(
+          `[enrich-dates] Failed servIds (${failedIds.length}):`,
+          failedIds.slice(0, 20).join(","),
+          failedIds.length > 20 ? "...(truncated)" : "",
+        );
+      }
     }
 
-    // 8. Update cron_state
-    const nextIndex =
-      safeStart + batchSize >= total ? 0 : safeStart + batchSize;
+    // 8. Update cron_state — don't advance cursor on systemic failure (GPT-4.1 review CRITICAL-A)
+    const errorRate = toFetch.length > 0 ? errors / toFetch.length : 0;
+    const systemicFailure = errorRate > 0.5 && toFetch.length >= 5;
+    const nextIndex = systemicFailure
+      ? safeStart // retry same batch next run
+      : safeStart + batchSize >= total
+        ? 0
+        : safeStart + batchSize;
     const newTotalProcessed = totalProcessed + processed;
+
+    if (systemicFailure) {
+      console.error(
+        `[enrich-dates] Systemic failure detected (${errors}/${toFetch.length} failed) — cursor NOT advanced`,
+      );
+    }
 
     await stateRef.set(
       {
