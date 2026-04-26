@@ -85,7 +85,7 @@ export default function RootLayout({
         {/* Prevent FOUC: apply saved theme before first paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');var f=localStorage.getItem('fontScale');if(f==='large')document.documentElement.setAttribute('data-font-scale','large')}catch(e){}})()`,
           }}
         />
         <script

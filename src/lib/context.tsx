@@ -434,6 +434,8 @@ interface AppContextType {
   t: Translations;
   theme: "light" | "dark";
   toggleTheme: () => void;
+  fontScale: "normal" | "large";
+  toggleFontScale: () => void;
   bookmarks: string[];
   toggleBookmark: (id: string) => void;
   isBookmarked: (id: string) => boolean;
@@ -527,6 +529,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     return (localStorage.getItem("theme") as "light" | "dark") ?? "light";
+  });
+  const [fontScale, setFontScale] = useState<"normal" | "large">(() => {
+    if (typeof window === "undefined") return "normal";
+    return (
+      (localStorage.getItem("fontScale") as "normal" | "large") ?? "normal"
+    );
   });
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -745,6 +753,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-font-scale", fontScale);
+    localStorage.setItem("fontScale", fontScale);
+  }, [fontScale]);
+
+  useEffect(() => {
     localStorage.setItem("lang", lang);
   }, [lang]);
 
@@ -778,6 +791,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [userProfile]);
 
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+  const toggleFontScale = () =>
+    setFontScale((s) => (s === "normal" ? "large" : "normal"));
 
   const toggleBookmark = (id: string) => {
     setBookmarks((prev) =>
@@ -797,6 +812,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         t,
         theme,
         toggleTheme,
+        fontScale,
+        toggleFontScale,
         bookmarks,
         toggleBookmark,
         isBookmarked,

@@ -593,6 +593,8 @@ export default function ProfilePage() {
     isBookmarked,
     benefits: allBenefits,
     benefitsLoading,
+    fontScale,
+    toggleFontScale,
   } = useApp();
   const [activeTab, setActiveTab] = useState<"bookmarks" | "settings">(
     "bookmarks",
@@ -1978,6 +1980,34 @@ export default function ProfilePage() {
                     {label}
                   </button>
                 ))}
+              </div>
+            </section>
+
+            {/* 접근성 설정 */}
+            <section className="section">
+              <h2 className="section-title mb-12">
+                {lang === "ko" ? "접근성" : "Accessibility"}
+              </h2>
+              <div className={styles.notifCard}>
+                <div className={styles.notifRow}>
+                  <div>
+                    <p className={styles.notifLabel}>
+                      🔠 {lang === "ko" ? "큰 글자 모드" : "Large Text"}
+                    </p>
+                    <p className={styles.notifDesc}>
+                      {lang === "ko"
+                        ? "화면 전체 글자를 20% 크게 표시합니다"
+                        : "Increases all text size by 20%"}
+                    </p>
+                  </div>
+                  <button
+                    className={`toggle ${fontScale === "large" ? "on" : ""}`}
+                    onClick={toggleFontScale}
+                    aria-label={
+                      lang === "ko" ? "큰 글자 모드 토글" : "Toggle large text"
+                    }
+                  />
+                </div>
               </div>
             </section>
 
