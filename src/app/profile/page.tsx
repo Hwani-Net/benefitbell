@@ -656,17 +656,17 @@ export default function ProfilePage() {
   );
 
   const CATEGORY_CHIPS = [
-    { key: "youth", label: "청년" },
-    { key: "small-biz", label: "소상공인" },
-    { key: "startup", label: "창업" },
-    { key: "closure-restart", label: "폐업·재창업" },
-    { key: "debt-relief", label: "채무조정" },
-    { key: "employment", label: "취업" },
-    { key: "housing", label: "주거" },
-    { key: "medical", label: "의료" },
-    { key: "education", label: "교육" },
-    { key: "basic-living", label: "기초생활" },
-    { key: "senior", label: "노인" },
+    { key: "youth", label: "청년", en: "Youth" },
+    { key: "small-biz", label: "소상공인", en: "Small Biz" },
+    { key: "startup", label: "창업", en: "Startup" },
+    { key: "closure-restart", label: "폐업·재창업", en: "Closure & Restart" },
+    { key: "debt-relief", label: "채무조정", en: "Debt Relief" },
+    { key: "employment", label: "취업", en: "Employment" },
+    { key: "housing", label: "주거", en: "Housing" },
+    { key: "medical", label: "의료", en: "Medical" },
+    { key: "education", label: "교육", en: "Education" },
+    { key: "basic-living", label: "기초생활", en: "Basic Living" },
+    { key: "senior", label: "노인", en: "Senior Welfare" },
   ];
 
   const toggleCategory = (key: string) => {
@@ -1981,14 +1981,14 @@ export default function ProfilePage() {
                   : "Get push notifications when benefits in selected fields open or close soon."}
               </p>
               <div className={styles.chipGrid}>
-                {CATEGORY_CHIPS.map(({ key, label }) => (
+                {CATEGORY_CHIPS.map(({ key, label, en }) => (
                   <button
                     key={key}
                     className={`chip ${selectedCategories.includes(key) ? "active" : ""}`}
                     onClick={() => toggleCategory(key)}
                   >
                     {selectedCategories.includes(key) ? "✓ " : ""}
-                    {label}
+                    {lang === "en" ? en : label}
                   </button>
                 ))}
               </div>
