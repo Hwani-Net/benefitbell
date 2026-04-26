@@ -102,6 +102,7 @@ export default function AiPage() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(0);
   const [sharedId, setSharedId] = useState<string | null>(null);
+  const [showUsageLimit, setShowUsageLimit] = useState(false);
 
   const isKo = lang === "ko";
   const hasProfile = !!(userProfile?.birthYear && userProfile?.region);
@@ -138,15 +139,7 @@ export default function AiPage() {
       const latestCount =
         latestUsage.date === today ? (latestUsage.count as number) : 0;
       if (latestCount >= 10) {
-        if (
-          confirm(
-            isKo
-              ? "무료 제공량(일 10회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?"
-              : "You have exhausted your free daily limit (10 times).\nWould you like to upgrade to Premium for unlimited analysis?",
-          )
-        ) {
-          window.location.href = "/premium";
-        }
+        setShowUsageLimit(true);
         return;
       }
     }
@@ -157,15 +150,7 @@ export default function AiPage() {
       let usage = usageStr ? JSON.parse(usageStr) : { date: today, count: 0 };
       if (usage.date !== today) usage = { date: today, count: 0 };
       if (usage.count >= 10) {
-        if (
-          confirm(
-            isKo
-              ? "무료 제공량(일 10회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?"
-              : "You have exhausted your free daily limit (10 times).\nWould you like to upgrade to Premium for unlimited analysis?",
-          )
-        ) {
-          window.location.href = "/premium";
-        }
+        setShowUsageLimit(true);
         return;
       }
       localStorage.setItem(
@@ -538,6 +523,85 @@ export default function AiPage() {
                       : "🔍 Find Benefits"}
                 </button>
               </div>
+
+              {/* PP-AI-001: inline usage-limit confirm (replaces window.confirm — PWA safe) */}
+              {showUsageLimit && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border-color)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                      margin: 0,
+                    }}
+                  >
+                    {isKo
+                      ? "무료 제공량(일 10회)을 모두 소진했습니다."
+                      : "You have exhausted your free daily limit (10 times)."}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text-secondary)",
+                      margin: 0,
+                    }}
+                  >
+                    {isKo
+                      ? "무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?"
+                      : "Would you like to upgrade to Premium for unlimited analysis?"}
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowUsageLimit(false)}
+                      style={{
+                        padding: "7px 16px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border-color)",
+                        background: "none",
+                        fontSize: 13,
+                        cursor: "pointer",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {isKo ? "취소" : "Cancel"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.location.href = "/premium";
+                      }}
+                      style={{
+                        padding: "7px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "var(--color-coral)",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {isKo ? "프리미엄 업그레이드" : "Upgrade to Premium"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Example prompts */}

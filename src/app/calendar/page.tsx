@@ -57,7 +57,9 @@ export default function CalendarPage() {
               try {
                 await navigator.clipboard.writeText(url);
                 copied = true;
-              } catch (_) {}
+              } catch (err) {
+                console.warn("[calendar] share failed:", err);
+              }
             }
             if (!copied) {
               const el = document.createElement("textarea");
@@ -68,7 +70,9 @@ export default function CalendarPage() {
               el.select();
               try {
                 copied = document.execCommand("copy");
-              } catch (_) {}
+              } catch (err) {
+                console.warn("[calendar] share failed:", err);
+              }
               document.body.removeChild(el);
             }
             if (copied) {
@@ -83,7 +87,9 @@ export default function CalendarPage() {
           try {
             await navigator.clipboard.writeText(url);
             copied = true;
-          } catch (_) {}
+          } catch (err) {
+            console.warn("[calendar] share failed:", err);
+          }
         }
         if (!copied) {
           const el = document.createElement("textarea");
@@ -94,7 +100,9 @@ export default function CalendarPage() {
           el.select();
           try {
             copied = document.execCommand("copy");
-          } catch (_) {}
+          } catch (err) {
+            console.warn("[calendar] share failed:", err);
+          }
           document.body.removeChild(el);
         }
         if (copied) {
