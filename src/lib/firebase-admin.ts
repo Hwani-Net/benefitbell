@@ -33,7 +33,15 @@ function getAdminApp(): App {
     console.log("[firebase-admin] Using SA Key file");
   } else if (keyJson) {
     // 인라인 JSON (로컬 .env.local 또는 Vercel env)
-    const serviceAccount = JSON.parse(keyJson) as ServiceAccount;
+    let serviceAccount: ServiceAccount;
+    try {
+      serviceAccount = JSON.parse(keyJson) as ServiceAccount;
+    } catch {
+      console.error(
+        "[firebase-admin] FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON",
+      );
+      return adminApp ?? initializeApp({ credential: applicationDefault() });
+    }
     adminApp = initializeApp({ credential: cert(serviceAccount) });
     console.log("[firebase-admin] Using SA Key JSON env var");
   } else {
