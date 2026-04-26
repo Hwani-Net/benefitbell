@@ -385,7 +385,7 @@ export default function PremiumPage() {
 
                   <button
                     onClick={() => {
-                      window.open(KAKAOPAY_LINK, "_blank");
+                      if (KAKAOPAY_LINK) window.open(KAKAOPAY_LINK, "_blank");
                     }}
                     style={{
                       marginTop: 12,

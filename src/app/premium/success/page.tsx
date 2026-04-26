@@ -58,7 +58,8 @@ function SuccessContent() {
           setUserProfile({ ...userProfile, isPremium: true });
         }
         setStatus("success");
-      } catch (_err) {
+      } catch (err) {
+        console.error("[premium/success] payment approval error:", err);
         window.location.href =
           "/premium/fail?message=" +
           encodeURIComponent(
