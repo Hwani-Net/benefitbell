@@ -345,6 +345,91 @@ export default function AiEligibilityCheck({
     );
   }
 
+  // ── Friendly i18n error message for detailError ───
+  function getFriendlyError(err: string | null): string {
+    if (!err) return "";
+    if (err.includes("AI_KEY_INVALID")) {
+      return isKo
+        ? "AI 서비스 점검 중입니다."
+        : "AI service is temporarily unavailable.";
+    }
+    if (err.toLowerCase().includes("rate limit")) {
+      return isKo
+        ? "요청이 많습니다. 잠시 후 다시 시도해 주세요."
+        : "Too many requests. Please try again later.";
+    }
+    return isKo
+      ? "분석 중 오류가 발생했습니다."
+      : "An error occurred during analysis.";
+  }
+
+  // ── Detail body renderer ───────────────────────────
+  function renderDetailBody() {
+    if (detailLoading) {
+      return (
+        <div className={styles.centerState}>
+          <div className={styles.spinner} />
+          <p>
+            {isKo
+              ? "AI가 자격 조건을 상세 분석 중..."
+              : "AI analyzing eligibility in detail..."}
+          </p>
+        </div>
+      );
+    }
+
+    if (detailError) {
+      return (
+        <div className={styles.errorBox}>
+          <p>⚠️ {getFriendlyError(detailError)}</p>
+          <button className={styles.resetBtn} onClick={loadDetailedAnalysis}>
+            {isKo ? "다시 시도" : "Retry"}
+          </button>
+        </div>
+      );
+    }
+
+    if (detailResult) {
+      const vInfo = verdictInfo[detailResult.verdict];
+      return (
+        <div className={styles.result}>
+          <div
+            className={styles.verdictBadge}
+            style={{ borderColor: vInfo.color, color: vInfo.color }}
+          >
+            <span className={styles.verdictIcon}>{vInfo.icon}</span>
+            <span className={styles.verdictLabel}>
+              {isKo ? vInfo.label.ko : vInfo.label.en}
+            </span>
+          </div>
+          <p className={styles.reasonText}>{detailResult.reason}</p>
+          {detailResult.details && detailResult.details.length > 0 && (
+            <ul className={styles.inlineSummaryList} style={{ marginTop: 12 }}>
+              {detailResult.details.map((d, i) => (
+                <li key={i}>{d}</li>
+              ))}
+            </ul>
+          )}
+          {detailResult.tips && (
+            <div className={styles.tipsBox}>
+              <p className={styles.tipsLabel}>
+                {isKo ? "💡 다음 단계" : "💡 Next Steps"}
+              </p>
+              <p>{detailResult.tips}</p>
+            </div>
+          )}
+          <div className={styles.disclaimer}>
+            {isKo
+              ? "⚠️ AI 분석 결과는 참고용이며 법적 효력이 없습니다."
+              : "⚠️ AI results are for reference only."}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
   // ══════════════════════════════════════════════════
   // MODAL VARIANT RENDER (버튼 → 바로 상세 분석)
   // ══════════════════════════════════════════════════
@@ -399,70 +484,4 @@ export default function AiEligibilityCheck({
       </div>
     </div>
   );
-
-  function renderDetailBody() {
-    if (detailLoading) {
-      return (
-        <div className={styles.centerState}>
-          <div className={styles.spinner} />
-          <p>
-            {isKo
-              ? "AI가 자격 조건을 상세 분석 중..."
-              : "AI analyzing eligibility in detail..."}
-          </p>
-        </div>
-      );
-    }
-
-    if (detailError) {
-      return (
-        <div className={styles.errorBox}>
-          <p>⚠️ {detailError}</p>
-          <button className={styles.resetBtn} onClick={loadDetailedAnalysis}>
-            {isKo ? "다시 시도" : "Retry"}
-          </button>
-        </div>
-      );
-    }
-
-    if (detailResult) {
-      const vInfo = verdictInfo[detailResult.verdict];
-      return (
-        <div className={styles.result}>
-          <div
-            className={styles.verdictBadge}
-            style={{ borderColor: vInfo.color, color: vInfo.color }}
-          >
-            <span className={styles.verdictIcon}>{vInfo.icon}</span>
-            <span className={styles.verdictLabel}>
-              {isKo ? vInfo.label.ko : vInfo.label.en}
-            </span>
-          </div>
-          <p className={styles.reasonText}>{detailResult.reason}</p>
-          {detailResult.details && detailResult.details.length > 0 && (
-            <ul className={styles.inlineSummaryList} style={{ marginTop: 12 }}>
-              {detailResult.details.map((d, i) => (
-                <li key={i}>{d}</li>
-              ))}
-            </ul>
-          )}
-          {detailResult.tips && (
-            <div className={styles.tipsBox}>
-              <p className={styles.tipsLabel}>
-                {isKo ? "💡 다음 단계" : "💡 Next Steps"}
-              </p>
-              <p>{detailResult.tips}</p>
-            </div>
-          )}
-          <div className={styles.disclaimer}>
-            {isKo
-              ? "⚠️ AI 분석 결과는 참고용이며 법적 효력이 없습니다."
-              : "⚠️ AI results are for reference only."}
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  }
 }

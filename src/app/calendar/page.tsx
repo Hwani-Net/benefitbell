@@ -135,12 +135,17 @@ export default function CalendarPage() {
 
   // Benefits that are always open (상시)
   const alwaysOpenBenefits = allBenefits.filter(
-    (b) => b.applicationEnd === "상시" || b.applicationStart === "상시",
+    (b) =>
+      b.applicationEnd === "상시" ||
+      b.applicationEnd === "always" ||
+      b.applicationStart === "상시" ||
+      b.applicationStart === "always",
   );
 
   // Benefits with deadlines this month
   const monthlyDeadlines = allBenefits.filter((b) => {
-    if (b.applicationEnd === "상시") return false;
+    if (b.applicationEnd === "상시" || b.applicationEnd === "always")
+      return false;
     const parts = b.applicationEnd.split(".");
     if (parts.length < 2) return false;
     const endYear = parseInt(parts[0]);
