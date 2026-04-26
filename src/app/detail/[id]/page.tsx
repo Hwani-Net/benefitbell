@@ -233,7 +233,11 @@ export default function DetailPage({
                 margin: "0 auto 12px",
               }}
             />
-            <p>혜택 정보를 불러오고 있습니다...</p>
+            <p>
+              {lang === "ko"
+                ? "혜택 정보를 불러오고 있습니다..."
+                : "Loading benefit info..."}
+            </p>
           </div>
         </main>
         <BottomNav />
@@ -247,9 +251,13 @@ export default function DetailPage({
         <TopBar />
         <div className={styles.notFound}>
           <span style={{ fontSize: 48 }}>🔍</span>
-          <p>혜택 정보를 찾을 수 없습니다</p>
+          <p>
+            {lang === "ko"
+              ? "혜택 정보를 찾을 수 없습니다"
+              : "Benefit not found"}
+          </p>
           <Link href="/" className="btn btn-primary">
-            홈으로
+            {lang === "ko" ? "홈으로" : "Go Home"}
           </Link>
         </div>
         <BottomNav />

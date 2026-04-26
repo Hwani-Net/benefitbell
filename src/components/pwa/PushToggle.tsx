@@ -5,8 +5,11 @@ import styles from "./PushToggle.module.css";
 
 import { getFirebaseMessaging } from "@/lib/firebase";
 import { getToken, deleteToken } from "firebase/messaging";
+import { useApp } from "@/lib/context";
 
 export default function PushToggle() {
+  const { lang } = useApp();
+  const isKo = lang === "ko";
   const [status, setStatus] = useState<
     "unsupported" | "denied" | "subscribed" | "unsubscribed"
   >("unsubscribed");
@@ -105,13 +108,21 @@ export default function PushToggle() {
       <div className={styles.info}>
         <span className={styles.icon}>🔔</span>
         <div>
-          <p className={styles.label}>마감 임박 알림</p>
+          <p className={styles.label}>
+            {isKo ? "마감 임박 알림" : "Deadline Alerts"}
+          </p>
           <p className={styles.desc}>
             {status === "denied"
-              ? "알림이 차단되었습니다."
+              ? isKo
+                ? "알림이 차단되었습니다."
+                : "Notifications are blocked."
               : status === "subscribed"
-                ? "알림이 활성화되어 있습니다"
-                : "신청 마감 전 푸시 알림을 받으세요"}
+                ? isKo
+                  ? "알림이 활성화되어 있습니다"
+                  : "Notifications are enabled"
+                : isKo
+                  ? "신청 마감 전 푸시 알림을 받으세요"
+                  : "Get push alerts before deadlines"}
           </p>
           {status === "denied" && (
             <div className={styles.deniedWrap}>
@@ -119,13 +130,30 @@ export default function PushToggle() {
                 className={styles.deniedBtn}
                 onClick={() => setShowDeniedGuide((v) => !v)}
               >
-                {showDeniedGuide ? "안내 닫기 ▲" : "설정 안내 보기 ▼"}
+                {showDeniedGuide
+                  ? isKo
+                    ? "안내 닫기 ▲"
+                    : "Hide Guide ▲"
+                  : isKo
+                    ? "설정 안내 보기 ▼"
+                    : "Show Settings Guide ▼"}
               </button>
               {showDeniedGuide && (
                 <p className={styles.deniedGuide}>
-                  주소창 왼쪽 🔒 아이콘 → <strong>사이트 설정</strong> →{" "}
-                  <strong>알림</strong> → <strong>허용</strong>으로 변경 후
-                  새로고침 해주세요.
+                  {isKo ? (
+                    <>
+                      주소창 왼쪽 🔒 아이콘 → <strong>사이트 설정</strong> →{" "}
+                      <strong>알림</strong> → <strong>허용</strong>으로 변경 후
+                      새로고침 해주세요.
+                    </>
+                  ) : (
+                    <>
+                      Click the 🔒 icon in the address bar →{" "}
+                      <strong>Site settings</strong> →{" "}
+                      <strong>Notifications</strong> → set to{" "}
+                      <strong>Allow</strong>, then refresh.
+                    </>
+                  )}
                 </p>
               )}
             </div>
@@ -138,7 +166,15 @@ export default function PushToggle() {
           className={`${styles.toggle} ${status === "subscribed" ? styles.on : ""} ${loading ? styles.loading : ""}`}
           onClick={status === "subscribed" ? unsubscribe : subscribe}
           disabled={loading}
-          aria-label={status === "subscribed" ? "알림 끄기" : "알림 켜기"}
+          aria-label={
+            status === "subscribed"
+              ? isKo
+                ? "알림 끄기"
+                : "Turn off notifications"
+              : isKo
+                ? "알림 켜기"
+                : "Turn on notifications"
+          }
         >
           <span className={styles.knob} />
         </button>
