@@ -5,6 +5,7 @@
  * Usage: call this API after publishing new benefit data
  */
 import { NextResponse } from "next/server";
+import { verifyCron } from "@/lib/cron-auth";
 
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "benefitbell2026";
 const BASE_URL =
@@ -68,7 +69,10 @@ export async function POST(request: Request) {
 /**
  * GET /api/indexnow?trigger=all — Submit all sitemap URLs at once
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = verifyCron(request);
+  if (authError) return authError;
+
   try {
     // Fetch current sitemap URLs
     const sitemapRes = await fetch(`${BASE_URL}/sitemap.xml`);

@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
 | P1 (High) | 18 | **18** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 24 | **22** | 0 | 2 (PP-SW-004/PP-YAML-001 Known + PP-201 Out of Scope) |
+| P2 (Medium) | 26 | **24** | 0 | 2 (PP-SW-004/PP-YAML-001 Known + PP-201 Out of Scope) + PP-DOMAIN-001 수동 조치 필요 |
 | P3 (Low) | 40 | **34** | 0 | 3 (PP-302/PP-303 Out of Scope) + 3 known low-risk |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
@@ -118,13 +118,17 @@
 - ⚠️ PP-NEW-001: Next.js middleware 부재 (Edge 레벨 인증 없음) — 앱 레벨 인증으로 대체 중
 - ⚠️ PP-NEW-003: layout.tsx naver-site-verification 메타 태그 중복
 - ⚠️ PP-NEW-005: detail/[id] catch 완전 무음
-- ⚠️ PP-NEW-007: detail/[id] localStorage key 오염 가능성
+- ✅ PP-NEW-007: detail/[id] localStorage key sanitize 추가 (commit `35d4571`)
 - ⚠️ PP-NEW-012: ai-eligibility optional chaining 패턴
 
 **집계 수치 (PP-NEW 배치 반영)**:
 - P1 신규 해소 +1 (PP-NEW-004) → P1 전체 해소 유지
 - P2 신규 해소 +5 (PP-NEW-002/006/010/011/013) → P2 미수정 known 5건
 - P3 신규 해소 +1 (PP-NEW-008) → P3 미수정 known 5건 이하
+
+**도메인·보안 감사 라운드 (2026-04-27 세션 — indexnow 인증 + 도메인)**:
+- ✅ PP-INDEXNOW-001 (P2 수정 완료, 이번 커밋): indexnow API GET 엔드포인트 인증 없음 → `verifyCron` Bearer 가드 추가. 누구나 IndexNow 크롤링 트리거 가능했던 문제 해결
+- ⚠️ PP-DOMAIN-001 (P2 Known/수동 조치 필요): benefitbell.kr 커스텀 도메인 연결 끊김 — `curl https://benefitbell.kr/` HTTP 000 응답. firebase.json/apphosting.yaml에 커스텀 도메인 설정 없음. Firebase Console (App Hosting → Domains) 에서 도메인 재연결 필요 (수동 조치 사항)
 
 **Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
