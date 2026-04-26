@@ -65,6 +65,38 @@ function SearchContent() {
         lang === "ko"
           ? `💡 ${title} — 혜택알리미에서 확인하세요!`
           : `💡 ${title} — Check on BenefitBell!`;
+      const copyToClipboard = async (): Promise<boolean> => {
+        let copied = false;
+        if (navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(url);
+            copied = true;
+          } catch (clipErr) {
+            // Clipboard API 권한 거부 또는 비보안 컨텍스트 — execCommand fallback으로 진행
+            console.error(
+              "[share] clipboard.writeText failed, trying execCommand:",
+              clipErr,
+            );
+          }
+        }
+        if (!copied) {
+          const el = document.createElement("textarea");
+          el.value = url;
+          el.style.position = "fixed";
+          el.style.opacity = "0";
+          document.body.appendChild(el);
+          el.select();
+          try {
+            copied = document.execCommand("copy");
+          } catch (execErr) {
+            // execCommand도 미지원 환경 (Firefox 최신, iOS Safari 등) — 복사 불가로 처리
+            console.error("[share] execCommand copy failed:", execErr);
+          }
+          document.body.removeChild(el);
+        }
+        return copied;
+      };
+
       if (navigator.share) {
         try {
           await navigator.share({ title, text, url });
@@ -76,15 +108,19 @@ function SearchContent() {
           const errName = (err as { name?: string })?.name;
           if (errName !== "AbortError") {
             console.error("[share] navigator.share failed:", err);
-            await navigator.clipboard?.writeText(url);
-            setSharedId(benefitId);
-            setTimeout(() => setSharedId(null), 2500);
+            const copied = await copyToClipboard();
+            if (copied) {
+              setSharedId(benefitId);
+              setTimeout(() => setSharedId(null), 2500);
+            }
           }
         }
       } else {
-        await navigator.clipboard?.writeText(url);
-        setSharedId(benefitId);
-        setTimeout(() => setSharedId(null), 2500);
+        const copied = await copyToClipboard();
+        if (copied) {
+          setSharedId(benefitId);
+          setTimeout(() => setSharedId(null), 2500);
+        }
       }
     },
     [lang],

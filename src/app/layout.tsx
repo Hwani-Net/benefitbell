@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AppProvider } from "@/lib/context";
 import Script from "next/script";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import WebVitals from "@/components/analytics/WebVitals";
 import PushMessageReceiver from "@/components/pwa/PushMessageReceiver";
 import "@/styles/globals.css";
 
@@ -171,6 +172,7 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
         <GoogleAnalytics />
+        <WebVitals />
         <AppProvider>
           <div className="app-container">
             {children}

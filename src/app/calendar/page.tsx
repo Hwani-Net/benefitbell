@@ -52,15 +52,55 @@ export default function CalendarPage() {
           setTimeout(() => setSharedId(null), 2500);
         } catch (err) {
           if ((err as { name?: string })?.name !== "AbortError") {
-            await navigator.clipboard?.writeText(url);
-            setSharedId(benefitId);
-            setTimeout(() => setSharedId(null), 2500);
+            let copied = false;
+            if (navigator.clipboard) {
+              try {
+                await navigator.clipboard.writeText(url);
+                copied = true;
+              } catch (_) {}
+            }
+            if (!copied) {
+              const el = document.createElement("textarea");
+              el.value = url;
+              el.style.position = "fixed";
+              el.style.opacity = "0";
+              document.body.appendChild(el);
+              el.select();
+              try {
+                copied = document.execCommand("copy");
+              } catch (_) {}
+              document.body.removeChild(el);
+            }
+            if (copied) {
+              setSharedId(benefitId);
+              setTimeout(() => setSharedId(null), 2500);
+            }
           }
         }
       } else {
-        await navigator.clipboard?.writeText(url);
-        setSharedId(benefitId);
-        setTimeout(() => setSharedId(null), 2500);
+        let copied = false;
+        if (navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(url);
+            copied = true;
+          } catch (_) {}
+        }
+        if (!copied) {
+          const el = document.createElement("textarea");
+          el.value = url;
+          el.style.position = "fixed";
+          el.style.opacity = "0";
+          document.body.appendChild(el);
+          el.select();
+          try {
+            copied = document.execCommand("copy");
+          } catch (_) {}
+          document.body.removeChild(el);
+        }
+        if (copied) {
+          setSharedId(benefitId);
+          setTimeout(() => setSharedId(null), 2500);
+        }
       }
     },
     [lang],

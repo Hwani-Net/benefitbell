@@ -313,11 +313,13 @@ export async function GET(
       });
 
       // Save to in-memory cache
+      if (detailCache.size >= 500) {
+        const oldestKey = detailCache.keys().next().value;
+        if (oldestKey !== undefined) detailCache.delete(oldestKey);
+      }
       detailCache.set(servId, { data: detail, timestamp: Date.now() });
 
       return NextResponse.json({ success: true, data: detail, source: "api" });
-      // NOTE: Firestore 저장은 응답 반환 후 백그라운드로 (fire-and-forget)
-      // getAdminFirestore().collection('benefit_cache').doc(servId).set({ data: detail, fetched_at: FieldValue.serverTimestamp() })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       lastError = msg.includes("abort") ? "Timeout" : msg;
