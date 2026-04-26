@@ -133,7 +133,9 @@ export default function CalendarPage() {
     const dateStr = `${year}.${String(month + 1).padStart(2, "0")}.${String(day).padStart(2, "0")}`;
     const benefits = allBenefits.filter((b) => b.applicationEnd === dateStr);
     if (benefits.length === 0) return null;
-    return Math.min(...benefits.map((b) => b.dDay));
+    const validDDays = benefits.map((b) => b.dDay).filter((d) => !isNaN(d));
+    if (validDDays.length === 0) return null;
+    return Math.min(...validDDays);
   };
 
   const hasBenefits = (day: number) => {
@@ -154,10 +156,12 @@ export default function CalendarPage() {
   const monthlyDeadlines = allBenefits.filter((b) => {
     if (b.applicationEnd === "상시" || b.applicationEnd === "always")
       return false;
+    if (!b.applicationEnd) return false;
     const parts = b.applicationEnd.split(".");
     if (parts.length < 2) return false;
-    const endYear = parseInt(parts[0]);
-    const endMonth = parseInt(parts[1]);
+    const endYear = parseInt(parts[0], 10);
+    const endMonth = parseInt(parts[1], 10);
+    if (isNaN(endYear) || isNaN(endMonth)) return false;
     return endYear === year && endMonth === month + 1;
   });
 

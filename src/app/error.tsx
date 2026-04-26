@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 export default function Error({ reset }: { reset: () => void }) {
   return (
@@ -25,6 +26,18 @@ export default function Error({ reset }: { reset: () => void }) {
       >
         다시 시도
       </button>
+      <Link
+        href="/"
+        style={{
+          display: "inline-block",
+          marginTop: 12,
+          color: "var(--text-secondary)",
+          fontSize: 14,
+          textDecoration: "underline",
+        }}
+      >
+        홈으로 돌아가기
+      </Link>
     </div>
   );
 }
