@@ -140,7 +140,7 @@ function useUnreadBadge(pathname: string) {
 }
 
 export default function BottomNav() {
-  const { t } = useApp();
+  const { t, lang } = useApp();
   const pathname = usePathname();
   const unread = useUnreadBadge(pathname);
 
@@ -153,7 +153,10 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className={styles.nav} aria-label="메인 내비게이션">
+    <nav
+      className={styles.nav}
+      aria-label={lang === "ko" ? "메인 내비게이션" : "Main navigation"}
+    >
       {tabs.map(({ href, label, Icon, badge }) => {
         const active = pathname === href;
         return (
@@ -164,7 +167,7 @@ export default function BottomNav() {
             aria-current={active ? "page" : undefined}
             aria-label={
               badge > 0
-                ? `${label} (${badge > 9 ? "9+" : badge}개 알림)`
+                ? `${label} (${badge > 9 ? "9+" : badge}${lang === "ko" ? "개 알림" : " notifications"})`
                 : label
             }
           >

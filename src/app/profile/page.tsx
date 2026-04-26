@@ -1000,7 +1000,7 @@ export default function ProfilePage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={kakaoUser.profile_image}
-                alt="프로필"
+                alt={lang === "ko" ? "프로필" : "Profile"}
                 className={styles.avatarImg}
               />
             ) : (
@@ -2097,10 +2097,15 @@ export default function ProfilePage() {
                   border: "1px solid #FDE68A",
                 }}
               >
-                <p className={styles.coffeeTitle}>💬 카카오톡 채널 추가하기</p>
+                <p className={styles.coffeeTitle}>
+                  {lang === "ko"
+                    ? "💬 카카오톡 채널 추가하기"
+                    : "💬 Add KakaoTalk Channel"}
+                </p>
                 <p className={styles.coffeeDesc}>
-                  혜택알리미 채널을 추가하면 최신 혜택 소식을 카카오톡으로 받을
-                  수 있습니다
+                  {lang === "ko"
+                    ? "혜택알리미 채널을 추가하면 최신 혜택 소식을 카카오톡으로 받을 수 있습니다"
+                    : "Add our channel to receive the latest benefit news via KakaoTalk."}
                 </p>
                 <a
                   href={`https://pf.kakao.com/${KAKAO_CHANNEL_ID}/friend`}
@@ -2114,7 +2119,9 @@ export default function ProfilePage() {
                     lineHeight: "24px",
                   }}
                 >
-                  카카오톡 채널 추가 @hyetack-alimi
+                  {lang === "ko"
+                    ? "카카오톡 채널 추가 @hyetack-alimi"
+                    : "Add Channel @hyetack-alimi"}
                 </a>
               </div>
             </section>
