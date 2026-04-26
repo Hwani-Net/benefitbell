@@ -62,11 +62,20 @@
   border: 1px solid var(--border-color);
 }
 
-.actionBtn:active { transform: scale(0.93); }
+.actionBtn:active {
+  transform: scale(0.93);
+}
 
 .langText {
   font-size: 13px;
   font-weight: 700;
+  /* PP-031: WCAG AA — text-secondary (#6b7280) on bg-secondary (#f3f4f6) = 4.39:1 (fail)
+     explicit #4b5563 = 6.87:1 ✅ */
+  color: #4b5563;
+}
+
+[data-theme="dark"] .langText {
+  color: #cbd5e1; /* on dark bg-secondary #1e293b = 7.3:1 ✅ */
 }
 
 .avatar {
@@ -98,7 +107,9 @@
   transition: all var(--transition);
 }
 
-.loginBtn:active { transform: scale(0.96); }
+.loginBtn:active {
+  transform: scale(0.96);
+}
 
 .avatarGuest {
   width: 28px;
