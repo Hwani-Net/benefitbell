@@ -65,7 +65,7 @@ export default function PushToggle() {
         await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fcmToken: currentToken }),
+          body: JSON.stringify({ fcmToken: currentToken, lang }),
         });
         setStatus("subscribed");
       } else {

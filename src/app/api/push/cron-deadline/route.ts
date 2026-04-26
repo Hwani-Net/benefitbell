@@ -33,6 +33,7 @@ interface PushSubscription {
   age_group?: string; // 'youth' | 'middle-aged' | 'senior'
   region?: string;
   is_premium?: boolean;
+  lang?: string; // 'ko' | 'en'
 }
 
 export async function GET(request: Request) {
@@ -125,23 +126,39 @@ export async function GET(request: Request) {
 
       // 가장 긴급한 혜택 1개로 알림 (스팸 방지)
       const top = matchedBenefits.sort((a, b) => a.dDay - b.dDay)[0];
+      const isEn = sub.lang === "en";
       const dDayLabel =
         top.dDay === 0
-          ? "오늘 마감"
+          ? isEn
+            ? "Ends today"
+            : "오늘 마감"
           : top.dDay === 1
-            ? "내일 마감"
+            ? isEn
+              ? "Ends tomorrow"
+              : "내일 마감"
             : `D-${top.dDay}`;
 
       const hasMore =
-        matchedBenefits.length > 1 ? ` 외 ${matchedBenefits.length - 1}건` : "";
+        matchedBenefits.length > 1
+          ? isEn
+            ? ` and ${matchedBenefits.length - 1} more`
+            : ` 외 ${matchedBenefits.length - 1}건`
+          : "";
+
+      const notifTitle = isEn
+        ? `⏰ ${dDayLabel}! Don't miss this benefit`
+        : `⏰ ${dDayLabel}! 혜택을 놓치지 마세요`;
+      const notifBody = isEn
+        ? `${top.titleEn || top.title}${hasMore} — Check it now`
+        : `${top.title}${hasMore} — 지금 바로 확인하세요`;
 
       try {
         if (sub.fcmToken) {
           const message = {
             token: sub.fcmToken,
             notification: {
-              title: `⏰ ${dDayLabel}! 혜택을 놓치지 마세요`,
-              body: `${top.title}${hasMore} — 지금 바로 확인하세요`,
+              title: notifTitle,
+              body: notifBody,
             },
             webpush: {
               fcmOptions: {
