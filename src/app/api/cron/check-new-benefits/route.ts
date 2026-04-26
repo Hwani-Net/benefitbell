@@ -192,8 +192,10 @@ async function handleCron(req: Request) {
           errCode === "messaging/invalid-registration-token"
         ) {
           await db.collection("push_subscriptions").doc(sub.docId).delete();
+          // Expired token cleanup is a normal path — don't count as failure
+        } else {
+          failed.push(sub.fcmToken || sub.docId);
         }
-        failed.push(sub.fcmToken || sub.endpoint || sub.docId);
       }
     }
 

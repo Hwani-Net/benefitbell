@@ -187,10 +187,8 @@ async function handleCron(req: Request) {
         applicationEnd: string;
       }[] = [];
 
-      // PP-ENRICH-001: filter(Boolean) guards against sparse-array undefined
-      // slots that can occur if a pLimit worker exits abnormally, preventing
-      // r?.status access TypeError in the forEach below.
-      results.filter(Boolean).forEach((r, i) => {
+      results.forEach((r, i) => {
+        if (!r) return; // pLimit always fills all slots, but guard defensively
         if (r.status === "fulfilled" && r.value !== null) {
           toWrite.push(r.value);
         } else {

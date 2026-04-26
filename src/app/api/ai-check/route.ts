@@ -20,15 +20,13 @@ const FREE_DAILY_LIMIT = 10;
 
 async function checkRateLimit(
   req: NextRequest,
-  isPremium: boolean,
 ): Promise<{ allowed: boolean; remaining: number }> {
-  if (isPremium) return { allowed: true, remaining: 999 };
-
   // PP-G01: prefer Firebase uid from Authorization header (tamper-proof)
   // fallback to kakao cookie id, then IP
   let identifier =
     "ip:" +
     (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
+  let isPremium = false; // always server-verified, never trusted from request body
 
   const authHeader = req.headers.get("authorization") ?? "";
   const bearerToken = authHeader.startsWith("Bearer ")
@@ -38,7 +36,24 @@ async function checkRateLimit(
   if (bearerToken) {
     try {
       const decoded = await getAdminAuth().verifyIdToken(bearerToken);
-      if (decoded.uid) identifier = "uid:" + decoded.uid;
+      if (decoded.uid) {
+        identifier = "uid:" + decoded.uid;
+        // Server-side premium status check — never trust body.isPremium
+        try {
+          const userSnap = await getAdminFirestore()
+            .collection("users")
+            .doc(decoded.uid)
+            .get();
+          isPremium = userSnap.exists
+            ? userSnap.data()?.isPremium === true
+            : false;
+        } catch (fsErr) {
+          console.error(
+            "[ai-check] isPremium Firestore lookup failed — treating as free:",
+            fsErr instanceof Error ? fsErr.message : String(fsErr),
+          );
+        }
+      }
     } catch (tokenErr) {
       // Token invalid/expired — fall through to cookie fallback
       console.warn(
@@ -47,6 +62,8 @@ async function checkRateLimit(
       );
     }
   }
+
+  if (isPremium) return { allowed: true, remaining: 999 };
 
   // Fallback: kakao cookie (only used when no valid Bearer token)
   if (identifier.startsWith("ip:")) {
@@ -105,12 +122,7 @@ function extractServId(benefitId: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      benefitId,
-      benefitTitle = "",
-      lang = "ko",
-      isPremium = false,
-    } = body;
+    const { benefitId, benefitTitle = "", lang = "ko" } = body;
 
     if (!benefitId) {
       return NextResponse.json(
@@ -119,7 +131,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { allowed, remaining } = await checkRateLimit(req, isPremium);
+    const { allowed, remaining } = await checkRateLimit(req);
     if (!allowed) {
       return NextResponse.json(
         {
@@ -278,13 +290,7 @@ Respond in JSON:
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      benefitId,
-      benefitTitle = "",
-      lang = "ko",
-      profile,
-      isPremium = false,
-    } = body;
+    const { benefitId, benefitTitle = "", lang = "ko", profile } = body;
 
     if (!benefitId) {
       return NextResponse.json(
@@ -294,7 +300,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // PP-G02: PUT 핸들러에도 POST와 동일한 rate limit 적용
-    const { allowed, remaining } = await checkRateLimit(req, isPremium);
+    const { allowed, remaining } = await checkRateLimit(req);
     if (!allowed) {
       return NextResponse.json(
         {
