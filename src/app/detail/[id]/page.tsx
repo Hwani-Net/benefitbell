@@ -965,7 +965,10 @@ function DocumentChecklist({
     ...doc,
     downloadLink: normalizedDocs[i]?.link || "",
   }));
-  const storageKey = `doc_check_${benefitId}`;
+  const safeId = String(benefitId)
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 100);
+  const storageKey = `doc_check_${safeId}`;
 
   const [checked, setChecked] = useState<Record<number, boolean>>(() => {
     if (typeof window === "undefined") return {};
