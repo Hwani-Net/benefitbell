@@ -1,86 +1,118 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
-import { fetchWelfareDetail } from '@/lib/welfare-api'
-import { getAdminFirestore } from '@/lib/firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
+import { fetchWelfareDetail } from "@/lib/welfare-api";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 // =====================
 // Rate Limiting (free: 3 req/day, premium: unlimited) — Firestore 기반
 // =====================
-const FREE_DAILY_LIMIT = 10
+const FREE_DAILY_LIMIT = 10;
 
-async function checkRateLimit(req: NextRequest, isPremium: boolean): Promise<{ allowed: boolean; remaining: number }> {
-  if (isPremium) return { allowed: true, remaining: 999 }
+async function checkRateLimit(
+  req: NextRequest,
+  isPremium: boolean,
+): Promise<{ allowed: boolean; remaining: number }> {
+  if (isPremium) return { allowed: true, remaining: 999 };
 
-  const cookieHeader = req.headers.get('cookie') ?? ''
-  const kakaoMatch = cookieHeader.match(/kakao_profile=([^;]+)/)
-  let identifier = 'ip:' + (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown')
+  const cookieHeader = req.headers.get("cookie") ?? "";
+  const kakaoMatch = cookieHeader.match(/kakao_profile=([^;]+)/);
+  let identifier =
+    "ip:" +
+    (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
   if (kakaoMatch) {
     try {
-      const profile = JSON.parse(decodeURIComponent(kakaoMatch[1]))
-      if (profile.id) identifier = 'kakao:' + profile.id
-    } catch { /* cookie parse failed, use IP */ }
+      const profile = JSON.parse(decodeURIComponent(kakaoMatch[1]));
+      if (profile.id) identifier = "kakao:" + profile.id;
+    } catch {
+      /* cookie parse failed, use IP */
+    }
   }
 
-  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const docId = `${identifier.replace(/[^a-zA-Z0-9_-]/g, '_')}:${today}`
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const docId = `${identifier.replace(/[^a-zA-Z0-9_-]/g, "_")}:${today}`;
 
   try {
-    const db = getAdminFirestore()
-    const ref = db.collection('ai_rate_limits').doc(docId)
-    const snap = await ref.get()
-    const count = snap.exists ? (snap.data()?.count ?? 0) : 0
+    const db = getAdminFirestore();
+    const ref = db.collection("ai_rate_limits").doc(docId);
+    const snap = await ref.get();
+    const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
 
-    if (count >= FREE_DAILY_LIMIT) return { allowed: false, remaining: 0 }
+    if (count >= FREE_DAILY_LIMIT) return { allowed: false, remaining: 0 };
 
     await ref.set(
-      { count: FieldValue.increment(1), date: today, updated_at: FieldValue.serverTimestamp() },
-      { merge: true }
-    )
-    return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 }
+      {
+        count: FieldValue.increment(1),
+        date: today,
+        updated_at: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 };
   } catch {
     // Firestore 오류 시 허용 (availability > security)
-    return { allowed: true, remaining: FREE_DAILY_LIMIT }
+    return { allowed: true, remaining: FREE_DAILY_LIMIT };
   }
 }
 
 function extractServId(benefitId: string): string {
   // Remove known prefixes (api-, LG-, SUB-, BIZ-, KSU-)
-  return benefitId.replace(/^(api-|LG-|SUB-|BIZ-|KSU-)/, '')
+  return benefitId.replace(/^(api-|LG-|SUB-|BIZ-|KSU-)/, "");
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { benefitId, benefitTitle = '', lang = 'ko', isPremium = false } = body
+    const body = await req.json();
+    const {
+      benefitId,
+      benefitTitle = "",
+      lang = "ko",
+      isPremium = false,
+    } = body;
 
     if (!benefitId) {
-      return NextResponse.json({ error: 'benefitId required' }, { status: 400 })
+      return NextResponse.json(
+        { error: "benefitId required" },
+        { status: 400 },
+      );
     }
 
-    const { allowed, remaining } = await checkRateLimit(req, isPremium)
+    const { allowed, remaining } = await checkRateLimit(req, isPremium);
     if (!allowed) {
       return NextResponse.json(
-        { error: '오늘 AI 분석 횟수를 모두 사용했어요.', code: 'RATE_LIMIT_EXCEEDED', remaining: 0 },
-        { status: 429 }
-      )
+        {
+          error: "오늘 AI 분석 횟수를 모두 사용했어요.",
+          code: "RATE_LIMIT_EXCEEDED",
+          remaining: 0,
+        },
+        { status: 429 },
+      );
     }
 
-    const client = createAIClient()
+    const client = createAIClient();
 
-    const servId = extractServId(benefitId)
-    const detail = await fetchWelfareDetail(servId)
+    const servId = extractServId(benefitId);
+    const detail = await fetchWelfareDetail(servId);
 
     // Fallback: API상세 조회 실패 시 benefitTitle로 대체
-    const hasDetail = detail && detail.servNm
-    const benefitName = hasDetail ? detail.servNm : benefitTitle || benefitId
-    const targetInfo = hasDetail ? (detail.trgterIndvdl || '정보 없음') : '정보 없음'
-    const criteriaInfo = hasDetail ? (detail.slctCriteria || '정보 없음') : '정보 없음'
-    const supportInfo = hasDetail ? (detail.alwServCn || '정보 없음') : '정보 없음'
-    const overviewInfo = hasDetail ? (detail.servDgst || '정보 없음') : '정보 없음'
+    const hasDetail = detail && detail.servNm;
+    const benefitName = hasDetail ? detail.servNm : benefitTitle || benefitId;
+    const targetInfo = hasDetail
+      ? detail.trgterIndvdl || "정보 없음"
+      : "정보 없음";
+    const criteriaInfo = hasDetail
+      ? detail.slctCriteria || "정보 없음"
+      : "정보 없음";
+    const supportInfo = hasDetail
+      ? detail.alwServCn || "정보 없음"
+      : "정보 없음";
+    const overviewInfo = hasDetail
+      ? detail.servDgst || "정보 없음"
+      : "정보 없음";
 
-    const isKo = lang === 'ko'
-    const prompt = isKo ? `
+    const isKo = lang === "ko";
+    const prompt = isKo
+      ? `
 다음 정부 지원 혜택에 대해 분석해주세요:
 
 제목: ${benefitName}
@@ -101,7 +133,8 @@ export async function POST(req: NextRequest) {
 }
 
 summary는 일반인이 이해하기 쉬운 말로, quickVerdict는 이 혜택을 대부분의 사람이 받을 수 있는지 추정값입니다.
-    ` : `
+    `
+      : `
 Analyze this government benefit:
 
 Title: ${benefitName}
@@ -115,43 +148,85 @@ Respond in JSON:
   "quickVerdict": "likely" | "partial" | "unlikely",
   "questions": ["question1", "question2", "question3"]
 }
-    `
+    `;
 
-    const text = await callAIWithFallback(client, [
-      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.' },
-      { role: 'user', content: prompt },
-    ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
+    const text = await callAIWithFallback(
+      client,
+      [
+        {
+          role: "system",
+          content:
+            "당신은 대한민국 정부 복지 혜택 분석 전문가입니다. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.",
+        },
+        { role: "user", content: prompt },
+      ],
+      { temperature: 0.3, maxTokens: 800, jsonMode: true },
+    );
 
     // 마크다운 코드블록 제거 (일부 모델이 ```json ... ``` 로 감싸는 경우)
-    const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const cleaned = text
+      .replace(/```(?:json)?\s*/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('[ai-check] 파싱 실패 - AI 원본 응답:', text.substring(0, 500))
-      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+      console.error(
+        "[ai-check] 파싱 실패 - AI 원본 응답:",
+        text.substring(0, 500),
+      );
+      return NextResponse.json(
+        { error: "AI 분석 결과를 파싱할 수 없습니다." },
+        { status: 500 },
+      );
     }
 
-    let parsed: { summary?: string[]; quickVerdict?: string; questions?: string[] }
+    let parsed: {
+      summary?: string[];
+      quickVerdict?: string;
+      questions?: string[];
+    };
     try {
-      parsed = JSON.parse(jsonMatch[0])
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (parseErr) {
-      console.error('[ai-check] JSON 파싱 오류:', parseErr, '\n원본:', jsonMatch[0].substring(0, 300))
-      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+      console.error(
+        "[ai-check] JSON 파싱 오류:",
+        parseErr,
+        "\n원본:",
+        jsonMatch[0].substring(0, 300),
+      );
+      return NextResponse.json(
+        { error: "AI 분석 결과를 파싱할 수 없습니다." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       questions: parsed.questions ?? [],
       summary: parsed.summary ?? [],
-      quickVerdict: parsed.quickVerdict ?? 'partial',
+      quickVerdict: parsed.quickVerdict ?? "partial",
       remaining,
-    })
+    });
   } catch (err) {
-    console.error('[ai-check] Error:', err)
-    const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('429') || message.toLowerCase().includes('quota') || message.includes('rate_limit')) {
-      return NextResponse.json({ error: 'AI 서비스가 일시적으로 과부하 상태입니다.', code: 'AI_OVERLOADED' }, { status: 503 })
+    console.error("[ai-check] Error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (
+      message.includes("429") ||
+      message.toLowerCase().includes("quota") ||
+      message.includes("rate_limit")
+    ) {
+      return NextResponse.json(
+        {
+          error: "AI 서비스가 일시적으로 과부하 상태입니다.",
+          code: "AI_OVERLOADED",
+        },
+        { status: 503 },
+      );
     }
-    return NextResponse.json({ error: 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json(
+      { error: "AI 분석 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
   }
 }
 
@@ -160,42 +235,75 @@ Respond in JSON:
 // =====================
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { benefitId, benefitTitle = '', lang = 'ko', profile } = body
+    const body = await req.json();
+    const {
+      benefitId,
+      benefitTitle = "",
+      lang = "ko",
+      profile,
+      isPremium = false,
+    } = body;
 
     if (!benefitId) {
-      return NextResponse.json({ error: 'benefitId required' }, { status: 400 })
+      return NextResponse.json(
+        { error: "benefitId required" },
+        { status: 400 },
+      );
     }
 
-    const client = createAIClient()
-    const servId = extractServId(benefitId)
-    const detail = await fetchWelfareDetail(servId)
+    // PP-G02: PUT 핸들러에도 POST와 동일한 rate limit 적용
+    const { allowed, remaining } = await checkRateLimit(req, isPremium);
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error: "오늘 AI 분석 횟수를 모두 사용했어요.",
+          code: "RATE_LIMIT_EXCEEDED",
+          remaining: 0,
+        },
+        { status: 429 },
+      );
+    }
+
+    const client = createAIClient();
+    const servId = extractServId(benefitId);
+    const detail = await fetchWelfareDetail(servId);
 
     // ── Build prompt context: use API detail if available, otherwise fallback to title ──
-    const hasDetail = detail && detail.servNm
-    const benefitName = hasDetail ? detail.servNm : benefitTitle || benefitId
-    const targetInfo = hasDetail ? (detail.trgterIndvdl || '정보 없음') : '정보 없음'
-    const criteriaInfo = hasDetail ? (detail.slctCriteria || '정보 없음') : '정보 없음'
-    const supportInfo = hasDetail ? (detail.alwServCn || '정보 없음') : '정보 없음'
-    const overviewInfo = hasDetail ? (detail.servDgst || '정보 없음') : '정보 없음'
+    const hasDetail = detail && detail.servNm;
+    const benefitName = hasDetail ? detail.servNm : benefitTitle || benefitId;
+    const targetInfo = hasDetail
+      ? detail.trgterIndvdl || "정보 없음"
+      : "정보 없음";
+    const criteriaInfo = hasDetail
+      ? detail.slctCriteria || "정보 없음"
+      : "정보 없음";
+    const supportInfo = hasDetail
+      ? detail.alwServCn || "정보 없음"
+      : "정보 없음";
+    const overviewInfo = hasDetail
+      ? detail.servDgst || "정보 없음"
+      : "정보 없음";
 
     // ── C안: 프로필 기반 맞춤 분석 or 일반 분석 ──
-    const hasProfile = profile && profile.age && profile.region
-    const profileSection = hasProfile ? `
+    const hasProfile = profile && profile.age && profile.region;
+    const profileSection = hasProfile
+      ? `
 ## 사용자 프로필
 - 나이: ${profile.age}세
 - 거주지: ${profile.region}
-- 고용상태: ${profile.employmentStatus || '미입력'}
-- 소득수준: 중위소득 ${profile.incomePercent || '미입력'}% 이하
-- 특이사항: ${profile.specialStatus?.length > 0 ? profile.specialStatus.join(', ') : '없음'}
-` : ''
+- 고용상태: ${profile.employmentStatus || "미입력"}
+- 소득수준: 중위소득 ${profile.incomePercent || "미입력"}% 이하
+- 특이사항: ${profile.specialStatus?.length > 0 ? profile.specialStatus.join(", ") : "없음"}
+`
+      : "";
 
     const analysisTarget = hasProfile
-      ? '아래 사용자 프로필 기준으로 이 혜택에 해당되는지 맞춤 분석해주세요.'
-      : '일반 시민이 해당될 가능성을 상세 분석해주세요.'
+      ? "아래 사용자 프로필 기준으로 이 혜택에 해당되는지 맞춤 분석해주세요."
+      : "일반 시민이 해당될 가능성을 상세 분석해주세요.";
 
-    const isKo = lang === 'ko'
-    const prompt = isKo ? `
+    const isKo = lang === "ko";
+    const prompt = isKo
+      ? `
 다음 정부 지원 혜택에 대해 ${analysisTarget}
 사용자에게 질문하지 말고, 혜택 정보만으로 직접 판단하세요.
 ${profileSection}
@@ -208,7 +316,7 @@ ${profileSection}
 다음 형식의 JSON으로 답해주세요:
 {
   "verdict": "likely" | "partial" | "unlikely",
-  "reason": "${hasProfile ? '이 사용자가' : '누가'} 주로 해당되는지 쉬운 말로 2~3문장 설명",
+  "reason": "${hasProfile ? "이 사용자가" : "누가"} 주로 해당되는지 쉬운 말로 2~3문장 설명",
   "details": [
     "✅ 해당되는 경우: ~한 경우",
     "⚠️ 확인 필요: ~의 조건이 있음",
@@ -218,10 +326,11 @@ ${profileSection}
 }
 
 verdict 기준:
-- likely: ${hasProfile ? '사용자 프로필이 대부분 조건에 부합' : '대부분의 해당 계층이 받을 수 있는 보편적 혜택'}
+- likely: ${hasProfile ? "사용자 프로필이 대부분 조건에 부합" : "대부분의 해당 계층이 받을 수 있는 보편적 혜택"}
 - partial: 소득, 나이, 지역 등 특정 조건 확인이 필요
-- unlikely: ${hasProfile ? '사용자 프로필이 조건에 맞지 않음' : '매우 제한적인 대상만 해당'}
-    ` : `
+- unlikely: ${hasProfile ? "사용자 프로필이 조건에 맞지 않음" : "매우 제한적인 대상만 해당"}
+    `
+      : `
 Analyze this government benefit and determine general eligibility.
 Do NOT ask the user any questions. Judge based on the information provided.
 
@@ -242,43 +351,85 @@ Respond in JSON:
   ],
   "tips": "1 actionable next step"
 }
-    `
+    `;
 
-    const text = await callAIWithFallback(client, [
-      { role: 'system', content: '당신은 대한민국 정부 복지 혜택 자격 분석 전문가입니다. 사용자에게 질문하지 말고 혜택 정보만으로 직접 판단하세요. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.' },
-      { role: 'user', content: prompt },
-    ], { temperature: 0.3, maxTokens: 800, jsonMode: true })
+    const text = await callAIWithFallback(
+      client,
+      [
+        {
+          role: "system",
+          content:
+            "당신은 대한민국 정부 복지 혜택 자격 분석 전문가입니다. 사용자에게 질문하지 말고 혜택 정보만으로 직접 판단하세요. 반드시 JSON 형식으로만 응답하세요. 마크다운 코드블록(```)을 사용하지 마세요.",
+        },
+        { role: "user", content: prompt },
+      ],
+      { temperature: 0.3, maxTokens: 800, jsonMode: true },
+    );
 
     // 마크다운 코드블록 제거
-    const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const cleaned = text
+      .replace(/```(?:json)?\s*/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('[ai-check PUT] 파싱 실패 - AI 원본 응답:', text.substring(0, 500))
-      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+      console.error(
+        "[ai-check PUT] 파싱 실패 - AI 원본 응답:",
+        text.substring(0, 500),
+      );
+      return NextResponse.json(
+        { error: "AI 분석 결과를 파싱할 수 없습니다." },
+        { status: 500 },
+      );
     }
 
-    let parsed: { verdict?: string; reason?: string; tips?: string; details?: string[] }
+    let parsed: {
+      verdict?: string;
+      reason?: string;
+      tips?: string;
+      details?: string[];
+    };
     try {
-      parsed = JSON.parse(jsonMatch[0])
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (parseErr) {
-      console.error('[ai-check PUT] JSON 파싱 오류:', parseErr, '\n원본:', jsonMatch[0].substring(0, 300))
-      return NextResponse.json({ error: 'AI 분석 결과를 파싱할 수 없습니다.' }, { status: 500 })
+      console.error(
+        "[ai-check PUT] JSON 파싱 오류:",
+        parseErr,
+        "\n원본:",
+        jsonMatch[0].substring(0, 300),
+      );
+      return NextResponse.json(
+        { error: "AI 분석 결과를 파싱할 수 없습니다." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
-      verdict: parsed.verdict ?? 'partial',
-      reason: parsed.reason ?? '',
-      tips: parsed.tips ?? '',
+      verdict: parsed.verdict ?? "partial",
+      reason: parsed.reason ?? "",
+      tips: parsed.tips ?? "",
       details: parsed.details ?? [],
-    })
+    });
   } catch (err) {
-    console.error('[ai-check PUT] Error:', err)
-    const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('429') || message.toLowerCase().includes('quota') || message.includes('rate_limit')) {
-      return NextResponse.json({ error: 'AI 서비스가 일시적으로 과부하 상태입니다.', code: 'AI_OVERLOADED' }, { status: 503 })
+    console.error("[ai-check PUT] Error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (
+      message.includes("429") ||
+      message.toLowerCase().includes("quota") ||
+      message.includes("rate_limit")
+    ) {
+      return NextResponse.json(
+        {
+          error: "AI 서비스가 일시적으로 과부하 상태입니다.",
+          code: "AI_OVERLOADED",
+        },
+        { status: 503 },
+      );
     }
-    return NextResponse.json({ error: 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json(
+      { error: "AI 분석 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
   }
 }
-

@@ -13,6 +13,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // PP-C01: kakaoId 없으면 결제 시도 전 차단 (프리미엄 부여 불가 방지)
+    if (!kakaoId) {
+      return NextResponse.json({ error: "kakaoId required" }, { status: 400 });
+    }
+
+    // PP-C02: 서버 측 결제 금액 검증 (클라이언트 조작 방지)
+    const EXPECTED_AMOUNT = 4900;
+    if (Number(amount) !== EXPECTED_AMOUNT) {
+      return NextResponse.json(
+        { error: "Invalid payment amount" },
+        { status: 400 },
+      );
+    }
+
     const secretKey = process.env.TOSS_SECRET_KEY;
     if (!secretKey) {
       return NextResponse.json(
@@ -53,8 +67,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 승인 성공 시: Firestore에 프리미엄 권한 부여
-    if (kakaoId) {
+    // 승인 성공 시: Firestore에 프리미엄 권한 부여 (kakaoId 존재 보장됨 — 상단 가드 통과)
+    {
       const db = getAdminFirestore();
       try {
         await db

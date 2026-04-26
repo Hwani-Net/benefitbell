@@ -82,8 +82,7 @@ export async function GET(request: Request) {
     }
 
     const kakaoId = String(userData.id);
-    const nickname =
-      userData.kakao_account?.profile?.nickname || "카카오 사용자";
+    const nickname = userData.kakao_account?.profile?.nickname || "Kakao User";
     const profileImage =
       userData.kakao_account?.profile?.profile_image_url || null;
 
@@ -139,7 +138,7 @@ export async function GET(request: Request) {
         path: "/",
         maxAge: 60 * 5, // 5분 — 즉시 소비용 (Firebase custom token 자체 유효기간 1시간)
         sameSite: "lax",
-        httpOnly: false, // 클라이언트 JS에서 읽어야 함
+        httpOnly: false, // intentional: client needs to read token for Firebase Auth (P3 — by design)
       });
     }
 
