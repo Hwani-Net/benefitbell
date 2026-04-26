@@ -9,7 +9,8 @@ import { useApp } from "@/lib/context";
 function ConsentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const rawRedirect = searchParams.get("redirect") || "/";
+  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/";
   const { lang } = useApp();
   const isKo = lang === "ko";
 

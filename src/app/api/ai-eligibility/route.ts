@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
 import { getAdminFirestore } from "@/lib/firebase-admin";
@@ -16,12 +17,9 @@ import { FieldValue } from "firebase-admin/firestore";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
-/** 간단한 해시 (프로필 + 혜택 IDs 결합) */
 function makeCacheKey(profileDesc: string, benefitIds: string[]): string {
-  // 길이 제한 있는 Firestore 문서 ID용 간단 키
   const raw = profileDesc + "|" + benefitIds.sort().join(",");
-  // 앞 200자만 사용 (Firestore 문서 ID 최대 1500 bytes)
-  return raw.slice(0, 200).replace(/[\/\s]/g, "_");
+  return createHash("sha256").update(raw).digest("hex");
 }
 
 export async function POST(req: NextRequest) {
