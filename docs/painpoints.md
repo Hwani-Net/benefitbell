@@ -11,15 +11,18 @@
 
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
-| P0 (Critical) | 5 | **4** (라이브 PASS + 클라이언트 검증) | 0 | 1 |
+| P0 (Critical) | 6 | **6** (전체 해소) | 0 | 0 |
 | P1 (High) | 5 | **5** (PP-101~105 전체) | 0 | 0 |
-| P2 (Medium) | 5 | **4** (PP-202~205) | 0 | 1 |
-| P3 (Low) | 3 | 0 | 0 | 3 |
+| P2 (Medium) | 5 | **5** (PP-201~205 전체) | 0 | 0 |
+| P3 (Low) | 3 | **1** (PP-301 WebVitals) | 0 | 2 |
 
-**Task #3 dev 결과 (재QA 후 갱신)**:
+**Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
 - ✅ PP-006 (push/send Bearer 가드) 코드 수정 완료 (commit `a54ad69`) — 라이브 401 확인
-- ✅ **라이브 배포 완료** (2026-04-26 재QA 시점) — TV-NEW 401 + TV-9 404 PASS
+- ✅ PP-007 (신규) 신청방법 "바로가기 →" 링크 404 수정 (commit `f8c725f`) — resolveWelfareUrl() 헬퍼로 텍스트→빈값 필터
+- ✅ PP-201 (P2) 누락 해소 — GA4 + WebVitals 수집으로 데이터 기반 개선 가능
+- ✅ PP-301 (P3) 부분 해소 — WebVitals 컴포넌트 추가로 LCP/FCP/CLS GA4 자동 수집 (commit `0f5a650`)
+- ✅ **GitHub push 완료** (2026-04-26 재QA 시점) — 6개 커밋 push → Firebase 자동배포 트리거
 
 ---
 
@@ -32,6 +35,7 @@
 | PP-003 | 데이터 | 만료 혜택이 캐시에 잔존 → 클릭 시 404 가능 | 사용자 신뢰도 | ✅ **해소** — `dDay >= 0` 필터로 만료 혜택 자동 제외 (benefits.ts:101, page.tsx:92) |
 | PP-004 | API | `/api/benefits/[id]` 잘못된 ID → 502 (PRD §4 TV-7 위반) | 5xx 오류 | ✅ **해소** — commit 481d395 (`notFound` 플래그). 재QA 시점 라이브 404 확인 |
 | PP-006 (신규) | 보안 | `/api/push/send` Bearer 인증 누락 → 누구나 푸시 발송 가능 | P0 보안결함 | ✅ **해소** — commit a54ad69 (`verifyCron` Bearer 가드). 재QA 시점 라이브 401 확인 |
+| PP-007 (신규) | API | 혜택 상세 신청방법 "바로가기 →" 링크가 URL 아닌 텍스트를 href로 사용 → 클릭 시 Next.js 내부 404 | 사용자 신뢰도 | ✅ **해소** — commit f8c725f `resolveWelfareUrl()` 헬퍼: 비URL 텍스트 → `""` 반환하여 링크 숨김. 원인: 복지로 API `servSeDetailLink`가 텍스트 반환하는 케이스 무처리 |
 
 ---
 
