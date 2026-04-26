@@ -12,8 +12,8 @@
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
-| P1 (High) | 10 | **10** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 19 | **18** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
+| P1 (High) | 16 | **16** (전체 해소) | 0 | 0 |
+| P2 (Medium) | 22 | **21** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
 | P3 (Low) | 32 | **29** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
@@ -132,6 +132,12 @@
 
 | PP-CON-004 (신규) | 보안 | `consent/page.tsx` `?redirect=https://evil.com` 파라미터로 인증 후 외부 도메인 리다이렉트 가능 (Open Redirect). `redirectTo` 검증 없음 | ✅ **해소** — commit `d51e0db` `rawRedirect.startsWith("/") ? rawRedirect : "/"` 가드 추가 |
 | PP-AIELIG-001 (신규) | 보안 | `ai-eligibility/route.ts` `makeCacheKey()` 문자열 200자 슬라이스 → 200자 이후 다른 프로필이 동일 캐시 키 공유 (Cache Poisoning) | ✅ **해소** — commit `d51e0db` `crypto.createHash("sha256")` SHA-256 해시로 교체 |
+| PP-C01 (신규) | 보안 | `payments/confirm` kakaoId 가드 누락 — 결제 성공 후 프리미엄 미부여 가능 | ✅ **해소** — commit `d3b6ddb` kakaoId 필수 검증 추가 |
+| PP-C02 (신규) | 보안 | `payments/confirm` 결제 금액 서버 검증 없음 — 1원 결제로 프리미엄 취득 가능 | ✅ **해소** — commit `d3b6ddb` amount 서버사이드 검증 추가 |
+| PP-E01 (신규) | 보안 | `premium/payment-date` IDOR — 인증 없이 타 사용자 결제일 열람 가능 | ✅ **해소** — commit `d3b6ddb` 인증 미들웨어 적용 |
+| PP-F01 (신규) | 안정성 | `user/consent` adminAuth null 체크 누락 — 운영 중 503 발생 가능 | ✅ **해소** — commit `d3b6ddb` null guard 추가 |
+| PP-G02 (신규) | 보안 | `ai-check` PUT 핸들러 Rate Limit 누락 — AI API 비용 폭발 위험 | ✅ **해소** — commit `d3b6ddb` PUT에 `checkRateLimit` 적용 |
+| PP-B02 (신규) | UX | `auth/kakao/callback` 한국어 닉네임 기본값 — EN 모드 사용자에게 한국어 노출 | ✅ **해소** — commit `d3b6ddb` lang 분기 기본값 추가 |
 
 ### Quick Win 다음 라운드 (reviewer 미반영 항목)
 - **#1 AI 자연어 설명** — 자격 판정 결과에 GPT 요약 1줄 추가
@@ -161,6 +167,9 @@
 | PP-SRC-001 (신규) | UX | `search/page.tsx` "전체 지우기" 클릭 시 state만 초기화, localStorage는 잔존 → 새로고침 시 검색어 부활 | ✅ **해소** — commit `e111d5b` `localStorage.removeItem("recentSearches")` 추가 |
 | PP-BID-001 (신규) | 코드 | `api/benefits/[id]/route.ts` Firestore 캐시 조회 `catch {}` 빈 블록 — Firestore 오류 감지 불가 | ✅ **해소** — commit `e111d5b` `console.warn("[benefits/id] Firestore cache miss:", err)` 추가 |
 | PP-ENRICH-001 (신규) | 코드 | `cron/enrich-dates/route.ts` pLimit 비동기 작업 중 sparse array → `r.status` TypeError 위험 | ✅ **해소** — commit `22fffb5` `results.filter(Boolean)` 방어 레이어 추가 |
+| PP-G01 (신규) | 보안 | `ai-check` Rate Limit 키로 클라이언트 쿠키 `kakao_profile.id` 사용 — 쿠키 조작 시 타 사용자 할당량 소비 가능 | ✅ **해소** — 이번 커밋: `Authorization: Bearer` idToken uid 우선 사용, 쿠키는 fallback으로 유지 |
+| PP-G03 (신규) | 보안 | `ai-check` PUT 프롬프트에 `profile.region`, `profile.specialStatus` 등 사용자 입력 직접 삽입 — Prompt Injection 위험 | ✅ **해소** — 이번 커밋: `sanitizeForPrompt()` 헬퍼로 `\n\r[]{}` 및 injection 패턴 제거, 100자 슬라이스 |
+| PP-H03 (신규) | 안정성 | `ai-eligibility.ts` `profile.birthYear`가 0 또는 미래 연도일 때 `age` 음수/비정상값 → AI 프롬프트 오염 및 키워드 매칭 오작동 | ✅ **해소** — 이번 커밋: `callAIEligibility` + `keywordFallback` 양쪽에 `birthYear > 1900 && birthYear <= currentYear` 범위 검증 추가, 기본값 30 |
 
 ---
 

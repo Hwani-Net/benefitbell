@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
 import { fetchWelfareDetail } from "@/lib/welfare-api";
-import { getAdminFirestore } from "@/lib/firebase-admin";
+import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+
+// ── PP-G03: sanitize user-supplied strings before prompt injection ──
+function sanitizeForPrompt(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/[\n\r\[\]{}<>]/g, "")
+    .replace(/ignore\s+previous\s+instructions?/gi, "")
+    .slice(0, 100);
+}
 
 // =====================
 // Rate Limiting (free: 3 req/day, premium: unlimited) — Firestore 기반
@@ -15,17 +24,44 @@ async function checkRateLimit(
 ): Promise<{ allowed: boolean; remaining: number }> {
   if (isPremium) return { allowed: true, remaining: 999 };
 
-  const cookieHeader = req.headers.get("cookie") ?? "";
-  const kakaoMatch = cookieHeader.match(/kakao_profile=([^;]+)/);
+  // PP-G01: prefer Firebase uid from Authorization header (tamper-proof)
+  // fallback to kakao cookie id, then IP
   let identifier =
     "ip:" +
     (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
-  if (kakaoMatch) {
+
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
+
+  if (bearerToken) {
     try {
-      const profile = JSON.parse(decodeURIComponent(kakaoMatch[1]));
-      if (profile.id) identifier = "kakao:" + profile.id;
-    } catch {
-      /* cookie parse failed, use IP */
+      const decoded = await getAdminAuth().verifyIdToken(bearerToken);
+      if (decoded.uid) identifier = "uid:" + decoded.uid;
+    } catch (tokenErr) {
+      // Token invalid/expired — fall through to cookie fallback
+      console.warn(
+        "[ai-check] Bearer token verification failed:",
+        tokenErr instanceof Error ? tokenErr.message : String(tokenErr),
+      );
+    }
+  }
+
+  // Fallback: kakao cookie (only used when no valid Bearer token)
+  if (identifier.startsWith("ip:")) {
+    const cookieHeader = req.headers.get("cookie") ?? "";
+    const kakaoMatch = cookieHeader.match(/kakao_profile=([^;]+)/);
+    if (kakaoMatch) {
+      try {
+        const profile = JSON.parse(decodeURIComponent(kakaoMatch[1]));
+        if (profile.id) identifier = "kakao:" + profile.id;
+      } catch (cookieErr) {
+        console.warn(
+          "[ai-check] kakao_profile cookie parse failed:",
+          cookieErr instanceof Error ? cookieErr.message : String(cookieErr),
+        );
+      }
     }
   }
 
@@ -49,8 +85,14 @@ async function checkRateLimit(
       { merge: true },
     );
     return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 };
-  } catch {
+  } catch (firestoreErr) {
     // Firestore 오류 시 허용 (availability > security)
+    console.error(
+      "[ai-check] Firestore rate limit check failed:",
+      firestoreErr instanceof Error
+        ? firestoreErr.message
+        : String(firestoreErr),
+    );
     return { allowed: true, remaining: FREE_DAILY_LIMIT };
   }
 }
@@ -285,15 +327,16 @@ export async function PUT(req: NextRequest) {
       : "정보 없음";
 
     // ── C안: 프로필 기반 맞춤 분석 or 일반 분석 ──
+    // PP-G03: sanitize all profile fields before prompt injection
     const hasProfile = profile && profile.age && profile.region;
     const profileSection = hasProfile
       ? `
 ## 사용자 프로필
-- 나이: ${profile.age}세
-- 거주지: ${profile.region}
-- 고용상태: ${profile.employmentStatus || "미입력"}
-- 소득수준: 중위소득 ${profile.incomePercent || "미입력"}% 이하
-- 특이사항: ${profile.specialStatus?.length > 0 ? profile.specialStatus.join(", ") : "없음"}
+- 나이: ${sanitizeForPrompt(profile.age)}세
+- 거주지: ${sanitizeForPrompt(profile.region)}
+- 고용상태: ${sanitizeForPrompt(profile.employmentStatus) || "미입력"}
+- 소득수준: 중위소득 ${sanitizeForPrompt(profile.incomePercent) || "미입력"}% 이하
+- 특이사항: ${profile.specialStatus?.length > 0 ? (profile.specialStatus as unknown[]).map((s) => sanitizeForPrompt(s)).join(", ") : "없음"}
 `
       : "";
 

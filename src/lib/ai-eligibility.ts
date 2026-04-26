@@ -122,12 +122,21 @@ async function callAIEligibility(
   profile: UserProfile,
   benefits: BenefitMeta[],
 ): Promise<EligibilityResult[]> {
+  // PP-H03: validate birthYear before age calculation
+  const currentYear = new Date().getFullYear();
+  const age =
+    profile.birthYear &&
+    profile.birthYear > 1900 &&
+    profile.birthYear <= currentYear
+      ? currentYear - profile.birthYear
+      : 30; // safe fallback
+
   const res = await fetch("/api/ai-eligibility", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       profile: {
-        age: new Date().getFullYear() - profile.birthYear,
+        age,
         gender: profile.gender,
         region: profile.region,
         employmentStatus: profile.employmentStatus,
@@ -160,7 +169,14 @@ function keywordFallback(
   profile: UserProfile,
   benefit: BenefitMeta,
 ): EligibilityResult {
-  const age = new Date().getFullYear() - profile.birthYear;
+  // PP-H03: guard against invalid birthYear (0, future, pre-1900)
+  const currentYear = new Date().getFullYear();
+  const age =
+    profile.birthYear &&
+    profile.birthYear > 1900 &&
+    profile.birthYear <= currentYear
+      ? currentYear - profile.birthYear
+      : 30;
   const text = (
     benefit.title +
     " " +
