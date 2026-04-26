@@ -23,6 +23,7 @@ async function handleCron(req: Request) {
       endpoint?: string;
       docId: string;
       categories?: string[];
+      lang?: string;
     }[] = [];
     snapshot.docs.forEach((d) => {
       const data = d.data();
@@ -70,43 +71,73 @@ async function handleCron(req: Request) {
 
       const top = matched[0];
 
+      const isEn = sub.lang === "en";
       const categoryMessages: Record<
         string,
         {
-          title: (d: number, name: string) => string;
-          body: (name: string, amount: string) => string;
+          title: (d: number, name: string, en: boolean) => string;
+          body: (name: string, amount: string, en: boolean) => string;
         }
       > = {
         "small-biz": {
-          title: (d, name) =>
+          title: (d, name, en) =>
             d <= 7
-              ? `🏪 사장님, 마감 D-${d}: ${name}`
-              : `🏪 소상공인 지원금 소식`,
-          body: (_name, amount) =>
-            `${name} — ${amount ? amount + " 지원" : "신청 자격 확인해보세요!"}`,
+              ? en
+                ? `🏪 Deadline D-${d}: ${name}`
+                : `🏪 사장님, 마감 D-${d}: ${name}`
+              : en
+                ? `🏪 Small Business Support News`
+                : `🏪 소상공인 지원금 소식`,
+          body: (name, amount, en) =>
+            `${name} — ${amount ? amount + (en ? " support" : " 지원") : en ? "Check if you qualify!" : "신청 자격 확인해보세요!"}`,
         },
         youth: {
-          title: (d, _name) =>
-            d <= 7 ? `⏰ 청년 혜택 D-${d}일 남음` : `🎓 청년 혜택 안내`,
-          body: (name, amount) =>
-            `${name}${amount ? ` (${amount})` : ""} 신청 기간 확인하세요`,
+          title: (d, _name, en) =>
+            d <= 7
+              ? en
+                ? `⏰ Youth Benefit D-${d} left`
+                : `⏰ 청년 혜택 D-${d}일 남음`
+              : en
+                ? `🎓 Youth Benefit Info`
+                : `🎓 청년 혜택 안내`,
+          body: (name, amount, en) =>
+            `${name}${amount ? ` (${amount})` : ""} ${en ? "— Check the application period" : "신청 기간 확인하세요"}`,
         },
         senior: {
-          title: (d, _name) =>
-            d <= 7 ? `👴 복지 알림 D-${d}` : `👴 어르신 복지 소식`,
-          body: (name, _amount) => `${name} — 상세 내용을 확인해보세요`,
+          title: (d, _name, en) =>
+            d <= 7
+              ? en
+                ? `👴 Welfare Alert D-${d}`
+                : `👴 복지 알림 D-${d}`
+              : en
+                ? `👴 Senior Welfare News`
+                : `👴 어르신 복지 소식`,
+          body: (name, _amount, en) =>
+            `${name} — ${en ? "Check the details" : "상세 내용을 확인해보세요"}`,
         },
         housing: {
-          title: (d, _name) =>
-            d <= 7 ? `🏠 주거지원 D-${d}` : `🏠 주거 지원 안내`,
-          body: (name, amount) =>
-            `${name}${amount ? ` — ${amount}` : ""} 신청 기간 확인하세요`,
+          title: (d, _name, en) =>
+            d <= 7
+              ? en
+                ? `🏠 Housing Support D-${d}`
+                : `🏠 주거지원 D-${d}`
+              : en
+                ? `🏠 Housing Support Info`
+                : `🏠 주거 지원 안내`,
+          body: (name, amount, en) =>
+            `${name}${amount ? ` — ${amount}` : ""} ${en ? "— Check the application period" : "신청 기간 확인하세요"}`,
         },
         employment: {
-          title: (d, _name) =>
-            d <= 7 ? `💼 취업지원 D-${d}` : `💼 취업·일자리 혜택 안내`,
-          body: (name, amount) =>
-            `${name}${amount ? ` (${amount})` : ""} 놓치지 마세요!`,
+          title: (d, _name, en) =>
+            d <= 7
+              ? en
+                ? `💼 Job Support D-${d}`
+                : `💼 취업지원 D-${d}`
+              : en
+                ? `💼 Employment & Job Benefits`
+                : `💼 취업·일자리 혜택 안내`,
+          body: (name, amount, en) =>
+            `${name}${amount ? ` (${amount})` : ""} ${en ? "— Don't miss it!" : "놓치지 마세요!"}`,
         },
       };
 
@@ -114,13 +145,20 @@ async function handleCron(req: Request) {
       const msgTemplate = categoryMessages[firstCat];
       const dDay = top.dDay;
       const notifTitle = msgTemplate
-        ? msgTemplate.title(dDay, top.title)
+        ? msgTemplate.title(dDay, top.title, isEn)
         : dDay >= 0 && dDay <= 7
-          ? `📢 마감 D-${dDay}: ${top.title}`
-          : `🔔 새 혜택: ${top.title}`;
+          ? isEn
+            ? `📢 Deadline D-${dDay}: ${top.title}`
+            : `📢 마감 D-${dDay}: ${top.title}`
+          : isEn
+            ? `🔔 New Benefit: ${top.title}`
+            : `🔔 새 혜택: ${top.title}`;
       const notifBody = msgTemplate
-        ? msgTemplate.body(top.title, top.amount ?? "")
-        : top.amount || "내가 받을 수 있는지 확인해보세요";
+        ? msgTemplate.body(top.title, top.amount ?? "", isEn)
+        : top.amount ||
+          (isEn
+            ? "Check if you're eligible"
+            : "내가 받을 수 있는지 확인해보세요");
 
       try {
         if (sub.fcmToken) {
