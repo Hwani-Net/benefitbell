@@ -61,3 +61,6 @@ private_welfare.csv
 
 # QA artifacts
 .qa-screenshots/
+
+# Claude Code worktrees
+.claude/
