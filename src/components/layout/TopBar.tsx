@@ -3,6 +3,8 @@ import { useApp } from "@/lib/context";
 import styles from "./TopBar.module.css";
 
 const BellIcon = () => (
+  /* PP-032: WCAG 1.1.1 — SVG must have accessible name; aria-hidden hides from AT,
+     parent button carries the aria-label */
   <svg
     width="20"
     height="20"
@@ -12,6 +14,8 @@ const BellIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
   >
     <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
     <path d="M13.73 21a2 2 0 01-3.46 0" />
@@ -28,6 +32,8 @@ const SunIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
   >
     <circle cx="12" cy="12" r="5" />
     <line x1="12" y1="1" x2="12" y2="3" />
@@ -51,6 +57,8 @@ const MoonIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
   >
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
   </svg>
@@ -69,10 +77,11 @@ export default function TopBar() {
       </div>
       <div className={styles.actions}>
         {/* 언어 토글 */}
+        {/* PP-032: aria-label i18n 분기 — "언어 전환" → lang에 맞는 레이블 */}
         <button
           className={styles.actionBtn}
           onClick={() => setLang(lang === "ko" ? "en" : "ko")}
-          aria-label="언어 전환"
+          aria-label={lang === "ko" ? "Switch to English" : "한국어로 전환"}
         >
           <span className={styles.langText}>{lang === "ko" ? "EN" : "한"}</span>
         </button>
@@ -80,7 +89,7 @@ export default function TopBar() {
         <button
           className={styles.actionBtn}
           onClick={toggleTheme}
-          aria-label="테마 전환"
+          aria-label={lang === "ko" ? "테마 전환" : "Toggle theme"}
         >
           {theme === "light" ? <MoonIcon /> : <SunIcon />}
         </button>

@@ -13,8 +13,8 @@
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 8 | **8** (전체 해소) | 0 | 0 |
-| P3 (Low) | 11 | **9** | 0 | 2 |
+| P2 (Medium) | 10 | **10** (전체 해소) | 0 | 0 |
+| P3 (Low) | 13 | **11** | 0 | 2 |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -44,6 +44,16 @@
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 5~)**:
 - ✅ PP-013 (신규·P1) AI 에러 핸들링 — OpenAI AuthenticationError 401 미매칭 → `err.status === 401` + "Incorrect API key" 체크 추가, 503 반환 (commit `13bdb60`)
 - ⚠️ OPENAI_API_KEY 미해결 — Firebase Secret Manager 키 값 만료/무효 상태, 대표님 직접 교체 필요
+
+**접근성·성능 감사 라운드 (2026-04-27 세션 — expect MCP a11y audit)**:
+- ✅ PP-031 (신규·P2) WCAG 2.4.1 bypass blocks 미지원 — skip navigation link `#main-content` 추가 (layout.tsx, globals.css `.skip-link`)
+- ✅ PP-032 (신규·P2) SVG 접근성 이름 누락 + lang 버튼 aria-label 한국어 고정 — TopBar BellIcon/SunIcon/MoonIcon `aria-hidden="true" focusable="false"` 추가, lang/theme 버튼 aria-label i18n 분기 적용
+- ✅ PP-033 (신규·P2) WCAG 1.4.3 색상 대비 위반 — `.section-link` coral `#ff6b4a`(2.82:1) → `coral-dark #c94020`(4.96:1) 교체; 전역 `:focus-visible` ring `3px solid #c94020` 추가 (56개 버튼/링크 커버)
+- ✅ PP-034 (신규·P3) BottomNav Link "multiple tabbable elements" — 알림 badge span `aria-hidden="true"` 처리, Link에 `aria-label` 통합 (badge count 포함)
+- **성능 메트릭 (라이브 기준)**: FCP 244ms ✅ / LCP 916ms ✅ / CLS 0.021 ✅ / TTFB 115ms ✅ — 모든 임계값 통과 (PP-301 P3 미착수 → 실측 완료로 해소)
+- **보안 XSS/SQLi**: search param + ai-recommend POST 양쪽 안전 처리 확인 (서버측 에러 핸들러가 payload 도달 전 차단)
+- **콘솔 에러**: 0건 (AdSense `data-nscript` warning 1건은 외부 스크립트 — 수정 불가)
+- **잘못된 ID 상세 페이지**: `/detail/INVALID-TEST-ID-XYZ` → not-found UI 정상 (500 아님) ✅
 
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 7~)**:
 - ✅ PP-206 라이브 최종 확인 — popular 섹션 WLF00003274 등 urgent와 다른 5건 표시 ✅
@@ -108,6 +118,9 @@
 | PP-203 | SEO | sitemap.xml에 동적 `/detail/[id]` 미포함 가능 | 검색 노출 | ✅ **해소** — sitemap.ts L75-104에서 `/api/benefits` fetch 후 모든 benefit ID를 `/detail/[id]`로 매핑하여 이미 포함 |
 | PP-204 | i18n | 영어 번역에서 일부 한국어 잔재 (수동 번역) | 국제화 품질 | ✅ **해소** — context.tsx 영어 섹션 전체 스캔 결과 한국어 문자 없음 (한국어 고유명사는 영어 표기로 처리) |
 | PP-205 | 분석 | 사용자 행동 로그 미수집 (이탈 지점 파악 불가) | 개선 데이터 부족 | ✅ **해소** — GA4 gtag 이벤트 5종 추가: bookmark_add/remove, ai_analysis_start, benefit_detail_view, calendar_view, profile_save |
+| PP-031 (신규) | a11y | WCAG 2.4.1 skip navigation 미지원 — 키보드/스크린리더 반복 탐색 강요 | 접근성 P2 | ✅ **해소** — layout.tsx skip-link + `#main-content` + globals.css `.skip-link` 스타일 추가 |
+| PP-032 (신규) | a11y | SVG 접근성 이름 누락(BellIcon/SunIcon/MoonIcon) + lang·theme 버튼 aria-label 한국어 고정 | 접근성 P2 | ✅ **해소** — TopBar.tsx `aria-hidden="true" focusable="false"` + aria-label i18n 분기 |
+| PP-033 (신규) | a11y | WCAG 1.4.3 색상 대비 위반 — section-link coral(2.82:1) + 전역 focus indicator 없음(56 노드) | 접근성 P2 | ✅ **해소** — globals.css `:focus-visible` 3px ring 추가, `.section-link` → `color-coral-dark`(4.96:1) |
 
 ---
 
@@ -128,6 +141,7 @@
 | PP-027 (신규) | UX | 홈 "마감 임박 혜택" 섹션 폴백 `benefits.slice(0,10)`이 상시(dDay=365) 항목만 반환 → "추천 혜택" 제목 변경은 됐으나 dDay 31~364 실제 마감일 항목이 우선 표시되지 않음 | ✅ **해소** — `page.tsx` urgentDisplay 폴백 3단계: 급박(0~30) → 실마감일(31~364) → 전체(PP-026 연계 수정, commit 아래) |
 | PP-029 (신규) | i18n | `AiEligibilityCheck` inline/modal 헤더 "AI 자격 체크" EN 모드에서 한국어 하드코딩 (isKo 분기 없음, 2곳) | ✅ **해소** — `AiEligibilityCheck.tsx` isKo 분기 추가 → "AI Eligibility Check" |
 | PP-030 (신규) | i18n | `TopBar` 카카오 프로필 이미지 `alt="프로필"` — lang 분기 없이 항상 한국어 | ✅ **해소** — `TopBar.tsx` `lang === 'ko' ? '프로필' : 'Profile'` 분기 추가 |
+| PP-034 (신규) | a11y | BottomNav `<Link>` 내부 badge `<span>` → "link role has multiple tabbable elements" WCAG 4.1.2 위반 | ✅ **해소** — badge span `aria-hidden="true"`, Link에 `aria-label` 통합(badge count 포함) |
 
 ---
 
@@ -138,7 +152,7 @@
 
 ### 잔여 미착수 (P2/P3)
 - **PP-201** (P2): 지자체 자체 혜택 data.go.kr 외 소스 추가 — 별도 데이터 파이프라인 사이클
-- **PP-301** (P3): LCP 측정 — Lighthouse CI 도입
+- **PP-301** (P3): LCP 측정 — ✅ 실측 완료 (2026-04-27): LCP 916ms / FCP 244ms / CLS 0.021 / TTFB 115ms 모두 임계값 통과
 - **PP-302** (P3): Sentry — Out of Scope
 - **PP-303** (P3): TWA 직접 다운로드 경로 — 마케팅 사이클
 

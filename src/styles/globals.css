@@ -96,6 +96,38 @@
   padding: 0;
 }
 
+/* ====================== */
+/* A11Y — Focus Visible   */
+/* WCAG 2.4.11 / 2.4.7   */
+/* ====================== */
+:focus-visible {
+  outline: 3px solid #c94020;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ====================== */
+/* A11Y — Skip Navigation */
+/* WCAG 2.4.1             */
+/* ====================== */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 8px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: #c94020;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  transition: top 0.1s ease;
+}
+.skip-link:focus {
+  top: 0;
+}
+
 html {
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
@@ -180,7 +212,8 @@ ol {
 
 .section-link {
   font-size: 13px;
-  color: var(--color-coral);
+  /* PP-033: WCAG AA — coral #ff6b4a on white = 2.82 (fail). coral-dark #c94020 = 4.96:1 ✅ */
+  color: var(--color-coral-dark);
   font-weight: 500;
 }
 
@@ -242,6 +275,7 @@ ol {
 }
 .badge-gray {
   background: var(--bg-secondary);
+  /* PP-033: WCAG AA — #9ca3af on #f3f4f6 = 2.31 (fail). text-secondary #6b7280 = 4.39:1 ✅ */
   color: var(--text-secondary);
 }
 .badge-coral-soft {

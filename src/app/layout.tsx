@@ -173,9 +173,13 @@ export default function RootLayout({
         />
         <GoogleAnalytics />
         <WebVitals />
+        {/* PP-031: WCAG 2.4.1 — skip navigation for keyboard users */}
+        <a href="#main-content" className="skip-link">
+          본문 바로가기
+        </a>
         <AppProvider>
           <div className="app-container">
-            {children}
+            <main id="main-content">{children}</main>
             <PushMessageReceiver />
           </div>
         </AppProvider>
