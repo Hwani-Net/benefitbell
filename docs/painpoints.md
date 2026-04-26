@@ -105,6 +105,27 @@
   - calculateDDay 로직 정상, applicationEnd 포맷 정상 — enrich-dates cron이 근미래 마감일을 채우지 못한 상태
   - 조치 필요: enrich-dates cron 수동 트리거 또는 복지로 API 원본 데이터 확인
 
+**이번 커밋 수정 결과 (2026-04-27 세션 — PP-NEW 배치)**:
+- ✅ PP-NEW-004 (P1 수정 완료, commit `b0c2525`): firebase.ts getFirebaseMessaging Safari/Firefox isSupported() 가드 추가
+- ✅ PP-NEW-013 (P2 수정 완료, commit `b0c2525`): FCM 알림 아이콘 경로 오타 수정 (icon-192x192 → icon-192)
+- ✅ PP-NEW-006 (P2 수정 완료, commit `b0c2525`): detail/[id] "도움말에서 확인" i18n 추가
+- ✅ PP-NEW-010 (P2 수정 완료, commit `b0c2525`): premium 결제 버튼 KAKAOPAY_LINK 미설정 시 disabled 처리
+- ✅ PP-NEW-011 (P2 수정 완료, 이번 커밋): premium/page.tsx setUserProfile 조건 버그 수정 — `setUserProfile`은 context setter로 항상 존재하므로 불필요한 `&& setUserProfile` 체크 제거 → 활성화 성공 후 UI 즉시 갱신
+- ✅ PP-NEW-002 (P2 수정 완료, 이번 커밋): next.config.ts Content-Security-Policy 헤더 추가 — default-src/script-src/style-src/img-src/connect-src/font-src/frame-src 7개 디렉티브
+- ✅ PP-NEW-008 (P3 수정 완료, 이번 커밋): detail/[id] handleShare useCallback `lang` 의존성 추가 — share 텍스트가 lang 변경 시에도 올바르게 갱신됨
+
+**미수정 Known (PP-NEW 배치)**:
+- ⚠️ PP-NEW-001: Next.js middleware 부재 (Edge 레벨 인증 없음) — 앱 레벨 인증으로 대체 중
+- ⚠️ PP-NEW-003: layout.tsx naver-site-verification 메타 태그 중복
+- ⚠️ PP-NEW-005: detail/[id] catch 완전 무음
+- ⚠️ PP-NEW-007: detail/[id] localStorage key 오염 가능성
+- ⚠️ PP-NEW-012: ai-eligibility optional chaining 패턴
+
+**집계 수치 (PP-NEW 배치 반영)**:
+- P1 신규 해소 +1 (PP-NEW-004) → P1 전체 해소 유지
+- P2 신규 해소 +5 (PP-NEW-002/006/010/011/013) → P2 미수정 known 5건
+- P3 신규 해소 +1 (PP-NEW-008) → P3 미수정 known 5건 이하
+
 **Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
 - ✅ PP-006 (push/send Bearer 가드) 코드 수정 완료 (commit `a54ad69`) — 라이브 401 확인

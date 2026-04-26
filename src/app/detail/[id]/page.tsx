@@ -137,7 +137,7 @@ export default function DetailPage({
       setShared(true);
       setTimeout(() => setShared(false), 3000);
     }
-  }, [benefit]);
+  }, [benefit, lang]);
 
   // 카카오톡 공유
   const handleKakaoShare = useCallback(() => {

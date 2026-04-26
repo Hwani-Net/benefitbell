@@ -71,7 +71,7 @@ export default function PremiumPage() {
       }
 
       // Update local state
-      if (userProfile && setUserProfile) {
+      if (userProfile) {
         setUserProfile({ ...userProfile, isPremium: true });
       }
       setStep("done");
