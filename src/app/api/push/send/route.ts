@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminMessaging } from "@/lib/firebase-admin";
-import { getSubscriptions, removeSubscription } from "@/lib/push-store";
+import { getAdminFirestore, getAdminMessaging } from "@/lib/firebase-admin";
 import { verifyCron } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
@@ -29,26 +28,36 @@ export async function POST(req: Request) {
     const safeTitle = String(title).slice(0, 255);
     const safeBody = String(body).slice(0, 255);
 
-    const subs = await getSubscriptions();
+    // Firestore 기반 구독자 조회 (in-memory push-store는 cold start 시 항상 비어있어 사용 불가)
+    const db = getAdminFirestore();
+    const snapshot = await db.collection("push_subscriptions").get();
+    const subs: { fcmToken?: string; docId: string }[] = [];
+    snapshot.docs.forEach((d) => {
+      const data = d.data();
+      if (data.fcmToken) subs.push({ fcmToken: data.fcmToken, docId: d.id });
+    });
+
+    if (subs.length === 0) {
+      return NextResponse.json({ sent: 0, failed: 0, total: 0 });
+    }
 
     const messaging = getAdminMessaging();
+    const toDelete: string[] = [];
+
     const results = await Promise.allSettled(
       subs.map(async (sub) => {
-        if (sub.fcmToken) {
-          return messaging.send({
-            token: sub.fcmToken,
-            notification: {
-              title: safeTitle || "혜택알리미 🔔",
-              body: safeBody || "마감 임박 혜택이 있습니다!",
-            },
-            data: { url: url || "/" },
-          });
-        }
-        throw { code: "messaging/registration-token-not-registered" };
+        return messaging.send({
+          token: sub.fcmToken!,
+          notification: {
+            title: safeTitle || "혜택알리미 🔔",
+            body: safeBody || "마감 임박 혜택이 있습니다!",
+          },
+          data: { url: url || "/" },
+        });
       }),
     );
 
-    // Remove expired subscriptions
+    // Collect expired tokens for cleanup
     results.forEach((r, i) => {
       if (r.status === "rejected") {
         const code = (r.reason as { code?: string })?.code;
@@ -56,12 +65,19 @@ export async function POST(req: Request) {
           code === "messaging/registration-token-not-registered" ||
           code === "messaging/invalid-registration-token"
         ) {
-          removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(
-            () => {},
-          );
+          toDelete.push(subs[i].docId);
         }
       }
     });
+
+    // Remove expired subscriptions from Firestore
+    if (toDelete.length > 0) {
+      await Promise.allSettled(
+        toDelete.map((docId) =>
+          db.collection("push_subscriptions").doc(docId).delete(),
+        ),
+      );
+    }
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected").length;

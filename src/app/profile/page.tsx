@@ -927,14 +927,14 @@ export default function ProfilePage() {
 
     try {
       setCategorySaving(true);
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
+      // FCM 토큰은 PushToggle에서 구독 시 localStorage에 저장됨
+      const fcmToken = localStorage.getItem("fcm_token");
+      if (fcmToken) {
         await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            subscription: sub.toJSON(),
+            fcmToken,
             categories: selectedCategories,
             age_group: profile.birthYear
               ? new Date().getFullYear() - profile.birthYear < 35
@@ -948,7 +948,7 @@ export default function ProfilePage() {
         });
       }
     } catch (e) {
-      console.warn("push subscription update failed:", e);
+      console.error("[profile] push subscription category update failed:", e);
     } finally {
       setCategorySaving(false);
     }

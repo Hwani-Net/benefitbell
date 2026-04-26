@@ -67,6 +67,17 @@ export default function PushToggle() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fcmToken: currentToken, lang }),
         });
+        // profile 페이지의 category 업데이트가 fcmToken을 읽을 수 있도록 저장
+        try {
+          localStorage.setItem("fcm_token", currentToken);
+        } catch (storageErr) {
+          // localStorage 쓰기 실패 (storage full, private mode 등) — 기능 저하 허용
+          // 구독 자체는 성공했으므로 앱 실행은 계속되나, 카테고리 업데이트 시 fcmToken 재조회 불가
+          console.error(
+            "[PushToggle] fcm_token localStorage 저장 실패:",
+            storageErr,
+          );
+        }
         setStatus("subscribed");
       } else {
         console.warn(
