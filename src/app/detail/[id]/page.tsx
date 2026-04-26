@@ -85,11 +85,13 @@ export default function DetailPage({
     toggleBookmark,
     isBookmarked,
     benefits: allBenefits,
+    kakaoUser,
   } = useApp();
   const [enrichedBenefit, setEnrichedBenefit] = useState<Benefit | null>(null);
   const [apiDetail, setApiDetail] = useState<ApiDetail | null>(null);
   const [shared, setShared] = useState(false);
   const [kakaoShared, setKakaoShared] = useState(false);
+  const [loginPrompt, setLoginPrompt] = useState(false);
   const ctaRef = useRef<HTMLDivElement>(null);
   const showFloatingCta = useFloatingCta(ctaRef);
 
@@ -358,12 +360,38 @@ export default function DetailPage({
           <span className={styles.headerTitle}>{t.benefitDetail}</span>
           <button
             className={styles.bookmarkBtn}
-            onClick={() => toggleBookmark(benefit.id)}
+            onClick={() => {
+              if (!kakaoUser) {
+                setLoginPrompt(true);
+                setTimeout(() => setLoginPrompt(false), 3000);
+                return;
+              }
+              toggleBookmark(benefit.id);
+            }}
             aria-label="북마크"
           >
             {isBookmarked(benefit.id) ? "❤️" : "🤍"}
           </button>
         </div>
+
+        {/* 비로그인 북마크 유도 토스트 */}
+        {loginPrompt && (
+          <div
+            style={{
+              background: "var(--surface, #fff)",
+              border: "1px solid var(--border, #e5e7eb)",
+              borderRadius: 8,
+              padding: "10px 16px",
+              margin: "8px 16px 0",
+              fontSize: 14,
+              color: "var(--text-primary, #111)",
+              textAlign: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+          >
+            로그인 후 북마크를 사용할 수 있습니다
+          </div>
+        )}
 
         {/* AI 자격 체크 인라인 카드 — 전략 정렬: 상단 즉시 노출 */}
         <AiEligibilityCheck
