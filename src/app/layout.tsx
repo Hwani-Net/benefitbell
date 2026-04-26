@@ -178,7 +178,7 @@ export default function RootLayout({
         </a>
         <AppProvider>
           <div className="app-container">
-            <main id="main-content">{children}</main>
+            <div id="main-content">{children}</div>
             <PushMessageReceiver />
           </div>
         </AppProvider>
