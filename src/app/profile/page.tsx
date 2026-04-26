@@ -2152,6 +2152,39 @@ export default function ProfilePage() {
               </div>
             </section>
 
+            {/* 법적 링크 */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 16,
+                padding: "12px 16px 4px",
+                flexWrap: "wrap",
+              }}
+            >
+              {[
+                { href: "/terms", ko: "이용약관", en: "Terms" },
+                {
+                  href: "/privacy",
+                  ko: "개인정보처리방침",
+                  en: "Privacy Policy",
+                },
+                { href: "/refund-policy", ko: "환불정책", en: "Refund Policy" },
+              ].map(({ href, ko, en }) => (
+                <a
+                  key={href}
+                  href={href}
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-tertiary)",
+                    textDecoration: "underline",
+                  }}
+                >
+                  {lang === "ko" ? ko : en}
+                </a>
+              ))}
+            </div>
+
             {/* 저장 버튼 */}
             <div style={{ padding: "0 16px 20px" }}>
               <button
