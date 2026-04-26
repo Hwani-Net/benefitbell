@@ -11,10 +11,10 @@
 
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
-| P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
+| P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 11 | **11** (전체 해소) | 0 | 0 |
-| P3 (Low) | 21 | **17** | 0 | 4 |
+| P2 (Medium) | 12 | **8** | 0 | 4 (PP-201, PP-AIC-002, PP-AIC-003, PP-CAL-002) |
+| P3 (Low) | 29 | **26** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -110,6 +110,7 @@
 | PP-004 | API | `/api/benefits/[id]` 잘못된 ID → 502 (PRD §4 TV-7 위반) | 5xx 오류 | ✅ **해소** — commit 481d395 (`notFound` 플래그). 재QA 시점 라이브 404 확인 |
 | PP-006 (신규) | 보안 | `/api/push/send` Bearer 인증 누락 → 누구나 푸시 발송 가능 | P0 보안결함 | ✅ **해소** — commit a54ad69 (`verifyCron` Bearer 가드). 재QA 시점 라이브 401 확인 |
 | PP-007 (신규) | API | 혜택 상세 신청방법 "바로가기 →" 링크가 URL 아닌 텍스트를 href로 사용 → 클릭 시 Next.js 내부 404 | 사용자 신뢰도 | ✅ **해소** — commit f8c725f `resolveWelfareUrl()` 헬퍼: 비URL 텍스트 → `""` 반환하여 링크 숨김. 원인: 복지로 API `servSeDetailLink`가 텍스트 반환하는 케이스 무처리 |
+| PP-S01 (신규) | 보안 | `push/cron-deadline/route.ts` CRON_SECRET 미설정 시 `if (CRON_SECRET && ...)` 패턴으로 production에서 인증 우회 가능 (fail-open) | P0 보안결함 | ✅ **해소** — `verifyCron` 헬퍼로 교체. CRON_SECRET 미설정 시 401 반환 (fail-closed) |
 
 ---
 
@@ -142,7 +143,10 @@
 | PP-031 (신규) | a11y | WCAG 2.4.1 skip navigation 미지원 — 키보드/스크린리더 반복 탐색 강요 | 접근성 P2 | ✅ **해소** — layout.tsx skip-link + `#main-content` + globals.css `.skip-link` 스타일 추가 |
 | PP-032 (신규) | a11y | SVG 접근성 이름 누락(BellIcon/SunIcon/MoonIcon) + lang·theme 버튼 aria-label 한국어 고정 | 접근성 P2 | ✅ **해소** — TopBar.tsx `aria-hidden="true" focusable="false"` + aria-label i18n 분기 |
 | PP-033 (신규) | a11y | WCAG 1.4.3 색상 대비 위반 — section-link coral(2.82:1) + 전역 focus indicator 없음(56 노드) | 접근성 P2 | ✅ **해소** — globals.css `:focus-visible` 3px ring 추가, `.section-link` → `color-coral-dark`(4.96:1) |
-| PP-049 (신규) | UX | detail 페이지 `benefit.applyUrl` 빈 문자열일 때 `href=""` → 현재 페이지가 새탭으로 열림. inline CTA + floating CTA 버튼 2곳 모두 영향 | ✅ **해소** — `applyUrl || "https://www.bokjiro.go.kr"` 폴백 처리 (commit 아래) |
+| PP-045 (신규) | UX | detail 페이지 `benefit.applyUrl` 빈 문자열일 때 `href=""` → 현재 페이지가 새탭으로 열림. inline CTA + floating CTA 버튼 2곳 모두 영향 | ✅ **해소** — `applyUrl \|\| "https://www.bokjiro.go.kr"` 폴백 처리 (inline + floating CTA 2곳) |
+| PP-AIC-002 (신규) | 코드 | `AiEligibilityCheck` `renderDetailBody()` 함수가 return문 이후 선언 — 호이스팅으로 동작하나 가독성 저하 | **미수정 (P2)** — 리팩토링 백로그 |
+| PP-AIC-003 (신규) | UX | `AiEligibilityCheck` `detailError` 표시 시 원시 API 에러 문자열 직접 노출 — 언어 혼재(한·영 혼용) 가능 | **미수정 (P2)** — 에러 메시지 i18n 처리 필요 |
+| PP-CAL-002 (신규) | 데이터 | calendar `b.applicationEnd === "상시"` 한국어 리터럴 데이터 비교 — 영어 데이터셋 전환 시 매칭 실패 가능 (데이터 레이어 이슈) | **미수정 (P2)** — 데이터 레이어 정규화 시 처리 |
 
 ---
 
@@ -151,10 +155,9 @@
 | ID | 분류 | 증상 | 상태 |
 |---|---|---|---|
 | PP-301 | 성능 | 첫 로드 LCP 측정 미실시 | **미착수** |
-| PP-045 (신규) | UX | `/premium`, `/refund-policy`, `/consent`, `/terms`, `/privacy` 경로 진입 시 BottomNav 5탭 중 어느 탭도 active 아님 — 사용자가 자신이 어느 위치에 있는지 컨텍스트 손실 | **미착수** — profile 탭을 `/profile`로 시작하는 경로에서도 active 처리 권장 |
-| PP-046 (신규) | i18n | BottomNav `aria-label` badge 문구 `"개 알림"` 한국어 하드코딩 — EN 모드에서 "2개 알림" 노출 | **미착수** |
-| PP-047 (신규) | i18n | `profile/page.tsx` L1001 `<img alt="프로필">` 한국어 하드코딩 — TopBar 동일 이슈(PP-030) 수정됐으나 profile 페이지 자체 avatar img는 미수정 | **미착수** |
-| PP-048 (신규) | i18n | `profile/page.tsx` 카카오 채널 섹션 ("💬 카카오톡 채널 추가하기", "채널을 추가하면..." 등) EN i18n 미적용 | **미착수** |
+| PP-046 (신규) | i18n | BottomNav `aria-label` `"메인 내비게이션"` 한국어 하드코딩 + badge 문구 `"개 알림"` EN 미분기 — EN 모드에서 "2개 알림" 노출 | ✅ **해소** — lang 분기 추가, badge EN 분기(`" notifications"`) 적용 |
+| PP-047 (신규) | i18n | `profile/page.tsx` avatar `<img alt="프로필">` 한국어 하드코딩 — TopBar PP-030 수정됐으나 profile 페이지 자체 avatar는 미수정 | ✅ **해소** — EN 분기 `alt={isKo ? "프로필" : "Profile"}` 추가 |
+| PP-048 (신규) | i18n | `profile/page.tsx` 카카오 채널 섹션 ("💬 카카오톡 채널 추가하기", "채널을 추가하면..." 등) EN i18n 미적용 | ✅ **해소** — isKo 분기 추가 |
 | PP-302 | 운영 | Sentry 등 에러 트래킹 부재 | **미착수** — Out of Scope |
 | PP-303 | 마케팅 | TWA AAB 외 직접 다운로드 경로 없음 | **미착수** |
 | PP-014 (신규) | i18n | EN 모드 프로필 설정 카테고리 알림 버튼 한국어 하드코딩 | ✅ **해소** — commit `b0134c9` `lang==="en"` 분기 추가 |
