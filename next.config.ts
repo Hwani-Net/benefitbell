@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.tosspayments.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://firestore.googleapis.com https://fcm.googleapis.com https://www.google-analytics.com wss://",
+              "connect-src 'self' https://firestore.googleapis.com https://fcm.googleapis.com https://www.google-analytics.com wss://*.firebaseio.com",
               "font-src 'self'",
               "frame-src 'self' https://js.tosspayments.com https://pay.kakaopay.com",
             ].join("; "),
