@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminMessaging } from "@/lib/firebase-admin";
 import { getSubscriptions, removeSubscription } from "@/lib/push-store";
+import { verifyCron } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +13,9 @@ export const dynamic = "force-dynamic";
  * 미인증 시 401 반환. 프로덕션에 CRON_SECRET 미설정 시도 401 (fail-closed).
  * dev 모드(NODE_ENV=development)는 secret 없을 때 통과 허용.
  */
-function verifyCron(req: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "development") return true;
-    return false;
-  }
-  const authHeader = req.headers.get("authorization");
-  if (authHeader === `Bearer ${cronSecret}`) return true;
-  const xSecret = req.headers.get("x-cron-secret");
-  if (xSecret === cronSecret) return true;
-  return false;
-}
-
 export async function POST(req: Request) {
-  if (!verifyCron(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCron(req);
+  if (authError) return authError;
 
   try {
     const { title, body, url } = await req.json();

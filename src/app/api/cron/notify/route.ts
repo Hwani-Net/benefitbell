@@ -6,22 +6,14 @@ import {
   fetchAllWelfareSources,
   transformListItemToBenefit,
 } from "@/lib/welfare-api";
+import { verifyCron } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-// Verify cron secret to prevent unauthorized access
-function verifyCron(req: Request): boolean {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // no secret configured = allow
-  return authHeader === `Bearer ${cronSecret}`;
-}
-
 // PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
 async function handleCron(req: Request) {
-  if (!verifyCron(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCron(req);
+  if (authError) return authError;
 
   const subs = await getSubscriptions();
 

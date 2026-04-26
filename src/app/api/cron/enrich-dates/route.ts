@@ -21,6 +21,7 @@ import {
   isValidDateRange,
   normalizeDateStr,
 } from "@/lib/welfare-api";
+import { verifyCron } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -29,22 +30,6 @@ const REFETCH_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Max concurrency for detail API calls
 const CONCURRENCY = 5;
-
-/** Verify CRON_SECRET from Authorization header or x-cron-secret header.
- *  Production requires CRON_SECRET to be set — missing env var in prod = reject. */
-function verifyCron(req: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    // Only allow unauthenticated access in explicit dev mode
-    if (process.env.NODE_ENV === "development") return true;
-    return false;
-  }
-  const authHeader = req.headers.get("authorization");
-  if (authHeader === `Bearer ${cronSecret}`) return true;
-  const xSecret = req.headers.get("x-cron-secret");
-  if (xSecret === cronSecret) return true;
-  return false;
-}
 
 interface CronState {
   lastIndex: number;
@@ -85,9 +70,8 @@ async function pLimit<T>(
 
 // PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
 async function handleCron(req: Request) {
-  if (!verifyCron(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCron(req);
+  if (authError) return authError;
 
   const { searchParams } = new URL(req.url);
   const batchSize = Math.min(

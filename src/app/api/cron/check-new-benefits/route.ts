@@ -5,17 +5,12 @@ import {
   transformListItemToBenefit,
   calculateDDay,
 } from "@/lib/welfare-api";
-
-const CRON_SECRET = process.env.CRON_SECRET;
+import { verifyCron } from "@/lib/cron-auth";
 
 // PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
 async function handleCron(req: Request) {
-  if (CRON_SECRET) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  const authError = verifyCron(req);
+  if (authError) return authError;
 
   try {
     const db = getAdminFirestore();
