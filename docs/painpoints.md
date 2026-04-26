@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 12 | **8** | 0 | 4 (PP-201, PP-AIC-002, PP-AIC-003, PP-CAL-002) |
+| P2 (Medium) | 12 | **11** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
 | P3 (Low) | 29 | **26** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
@@ -144,9 +144,9 @@
 | PP-032 (신규) | a11y | SVG 접근성 이름 누락(BellIcon/SunIcon/MoonIcon) + lang·theme 버튼 aria-label 한국어 고정 | 접근성 P2 | ✅ **해소** — TopBar.tsx `aria-hidden="true" focusable="false"` + aria-label i18n 분기 |
 | PP-033 (신규) | a11y | WCAG 1.4.3 색상 대비 위반 — section-link coral(2.82:1) + 전역 focus indicator 없음(56 노드) | 접근성 P2 | ✅ **해소** — globals.css `:focus-visible` 3px ring 추가, `.section-link` → `color-coral-dark`(4.96:1) |
 | PP-045 (신규) | UX | detail 페이지 `benefit.applyUrl` 빈 문자열일 때 `href=""` → 현재 페이지가 새탭으로 열림. inline CTA + floating CTA 버튼 2곳 모두 영향 | ✅ **해소** — `applyUrl \|\| "https://www.bokjiro.go.kr"` 폴백 처리 (inline + floating CTA 2곳) |
-| PP-AIC-002 (신규) | 코드 | `AiEligibilityCheck` `renderDetailBody()` 함수가 return문 이후 선언 — 호이스팅으로 동작하나 가독성 저하 | **미수정 (P2)** — 리팩토링 백로그 |
-| PP-AIC-003 (신규) | UX | `AiEligibilityCheck` `detailError` 표시 시 원시 API 에러 문자열 직접 노출 — 언어 혼재(한·영 혼용) 가능 | **미수정 (P2)** — 에러 메시지 i18n 처리 필요 |
-| PP-CAL-002 (신규) | 데이터 | calendar `b.applicationEnd === "상시"` 한국어 리터럴 데이터 비교 — 영어 데이터셋 전환 시 매칭 실패 가능 (데이터 레이어 이슈) | **미수정 (P2)** — 데이터 레이어 정규화 시 처리 |
+| PP-AIC-002 (신규) | 코드 | `AiEligibilityCheck` `renderDetailBody()` 함수가 return문 이후 선언 — 호이스팅으로 동작하나 가독성 저하 | ✅ **해소** — commit `b0ffb07` 함수 선언을 return문 앞으로 이동 |
+| PP-AIC-003 (신규) | UX | `AiEligibilityCheck` `detailError` 표시 시 원시 API 에러 문자열 직접 노출 — 언어 혼재(한·영 혼용) 가능 | ✅ **해소** — commit `b0ffb07` 에러 유형별 isKo 친화적 메시지로 교체 |
+| PP-CAL-002 (신규) | 데이터 | calendar `b.applicationEnd === "상시"` 한국어 리터럴 데이터 비교 — 영어 데이터셋 전환 시 매칭 실패 가능 (데이터 레이어 이슈) | ✅ **해소** — commit `b0ffb07` `\|\| "always"` 폴백 추가 |
 
 ---
 
@@ -154,7 +154,7 @@
 
 | ID | 분류 | 증상 | 상태 |
 |---|---|---|---|
-| PP-301 | 성능 | 첫 로드 LCP 측정 미실시 | **미착수** |
+| PP-301 | 성능 | 첫 로드 LCP 측정 미실시 | ✅ **해소** — 실측 완료: LCP 916ms / FCP 244ms / CLS 0.021 / TTFB 115ms |
 | PP-046 (신규) | i18n | BottomNav `aria-label` `"메인 내비게이션"` 한국어 하드코딩 + badge 문구 `"개 알림"` EN 미분기 — EN 모드에서 "2개 알림" 노출 | ✅ **해소** — lang 분기 추가, badge EN 분기(`" notifications"`) 적용 |
 | PP-047 (신규) | i18n | `profile/page.tsx` avatar `<img alt="프로필">` 한국어 하드코딩 — TopBar PP-030 수정됐으나 profile 페이지 자체 avatar는 미수정 | ✅ **해소** — EN 분기 `alt={isKo ? "프로필" : "Profile"}` 추가 |
 | PP-048 (신규) | i18n | `profile/page.tsx` 카카오 채널 섹션 ("💬 카카오톡 채널 추가하기", "채널을 추가하면..." 등) EN i18n 미적용 | ✅ **해소** — isKo 분기 추가 |
