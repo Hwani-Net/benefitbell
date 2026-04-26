@@ -92,7 +92,7 @@ export default function AiEligibilityCheck({
     fetch("/api/ai-check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ benefitId, benefitTitle, lang, isPremium }),
+      body: JSON.stringify({ benefitId, benefitTitle, lang }),
       signal: controller.signal,
     })
       .then(async (r) => {
@@ -119,7 +119,7 @@ export default function AiEligibilityCheck({
       .finally(() => setInlineLoading(false));
 
     return () => controller.abort();
-  }, [variant, benefitId, benefitTitle, lang, isPremium, hasProfile]);
+  }, [variant, benefitId, benefitTitle, lang, hasProfile]);
 
   // ── Load detailed analysis (no questions!) ─────────
   async function loadDetailedAnalysis() {

@@ -30,13 +30,22 @@ function FailContent() {
           Error Code: {code}
         </p>
       )}
-      <a
-        href="/premium"
-        className="btn btn-outline"
-        style={{ display: "inline-block", textDecoration: "none" }}
-      >
-        {isKo ? "다시 시도하기" : "Try Again"}
-      </a>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <a
+          href="/premium"
+          className="btn btn-outline"
+          style={{ display: "inline-block", textDecoration: "none" }}
+        >
+          {isKo ? "다시 시도하기" : "Try Again"}
+        </a>
+        <a
+          href="/"
+          className="btn btn-primary"
+          style={{ display: "inline-block", textDecoration: "none" }}
+        >
+          {isKo ? "홈으로" : "Go Home"}
+        </a>
+      </div>
     </div>
   );
 }
