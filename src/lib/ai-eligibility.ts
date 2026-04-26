@@ -135,6 +135,9 @@ async function callAIEligibility(
         incomePercent: profile.incomePercent,
         householdSize: profile.householdSize,
         specialStatus: profile.specialStatus,
+        hasChildren: profile.hasChildren,
+        childrenCount: profile.childrenCount,
+        maritalStatus: profile.maritalStatus,
       },
       benefits: benefits.map((b) => ({
         id: b.id,

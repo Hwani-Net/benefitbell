@@ -156,10 +156,21 @@ export default function CalendarPage() {
             <div
               style={{
                 textAlign: "center",
-                padding: 20,
+                padding: "32px 20px",
                 color: "var(--text-secondary)",
               }}
             >
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  margin: "0 auto 12px",
+                  border: "3px solid var(--border-color)",
+                  borderTopColor: "var(--color-coral)",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
               {t.calLoading}
             </div>
           )}

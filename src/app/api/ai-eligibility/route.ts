@@ -44,6 +44,12 @@ export async function POST(req: NextRequest) {
       `주거형태: ${formatHousing(profile.housingType)}`,
       `가구원수: ${profile.householdSize}인`,
       `소득분위: 중위소득 ${profile.incomePercent}% 이하`,
+      profile.maritalStatus
+        ? `혼인상태: ${formatMarital(profile.maritalStatus)}`
+        : null,
+      profile.hasChildren
+        ? `자녀: ${profile.childrenCount ?? 0}명`
+        : `자녀: 없음`,
       profile.specialStatus?.length > 0
         ? `특이사항: ${profile.specialStatus.map(formatSpecial).join(", ")}`
         : null,
@@ -238,6 +244,16 @@ function formatHousing(s: string): string {
     monthly: "월세",
     deposit: "전세",
     owned: "자가",
+  };
+  return map[s] || s;
+}
+
+function formatMarital(s: string): string {
+  const map: Record<string, string> = {
+    single: "미혼",
+    married: "기혼",
+    divorced: "이혼",
+    widowed: "사별",
   };
   return map[s] || s;
 }
