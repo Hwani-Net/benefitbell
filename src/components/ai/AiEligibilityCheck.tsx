@@ -320,7 +320,9 @@ export default function AiEligibilityCheck({
             <div className={styles.modal}>
               <div className={styles.modalHeader}>
                 <div>
-                  <p className={styles.modalSub}>🤖 AI 상세 분석</p>
+                  <p className={styles.modalSub}>
+                    {isKo ? "🤖 AI 상세 분석" : "🤖 AI Detailed Analysis"}
+                  </p>
                   <h2 className={styles.modalTitle}>{benefitTitle}</h2>
                 </div>
                 <button className={styles.closeBtn} onClick={closeDetail}>
@@ -376,7 +378,9 @@ export default function AiEligibilityCheck({
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <div>
-            <p className={styles.modalSub}>🤖 AI 상세 분석</p>
+            <p className={styles.modalSub}>
+              {isKo ? "🤖 AI 상세 분석" : "🤖 AI Detailed Analysis"}
+            </p>
             <h2 className={styles.modalTitle}>{benefitTitle}</h2>
           </div>
           <button className={styles.closeBtn} onClick={closeDetail}>

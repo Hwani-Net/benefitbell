@@ -25,6 +25,14 @@
 - ✅ PP-011 (신규·P1) 캘린더 다음 달 이동 시 언어 EN 전환 — SSR/CSR hydration mismatch 수정, `useEffect` 후 localStorage 복원 (commit `2cf58ef`)
 - ✅ PP-012 (신규·P2) welfare API 일부 실패 시 ai-recommend 전체 500 — `Promise.all` → `Promise.allSettled`로 소스별 격리 (commit `9d4da1d`)
 
+**최종 검수 라운드 (2026-04-27 세션 — AI Chat 에러 처리 + 한국어 하드코딩 완결)**:
+- ✅ PP-028 (신규·P2) AI Chat `AI_KEY_INVALID` 503 수신 시 에러 메시지 lang 미분기 → `ai/page.tsx` isKo 분기 + `AI_KEY_INVALID` 코드 명시 처리 추가
+- ✅ PP-029 (신규·P3) `AiEligibilityCheck` 모달 헤더 `🤖 AI 상세 분석` 한국어 하드코딩 (inline·modal variant 모두) → isKo 분기 추가 (`🤖 AI Detailed Analysis`)
+- ✅ PP-030 (신규·P3) `premium/page.tsx` lang context 미사용 → `lang`/`isKo` 추출 + 전체 UI 텍스트(h1, li, 버튼, 테이블, 커피 후원, 하단 링크 등) EN 분기 적용
+- ✅ PP-031 (신규·P3) `premium/success/page.tsx` 결제 완료·승인 중 상태 텍스트 한국어 하드코딩 → isKo 분기 적용
+- ✅ PP-032 (신규·P3) `premium/success/page.tsx` catch 블록 에러 URL 한국어 하드코딩 → isKo 분기 적용
+- sitemap.xml: HTTP 200 ✅ / robots.txt: HTTP 200 ✅
+
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 5~)**:
 - ✅ PP-013 (신규·P1) AI 에러 핸들링 — OpenAI AuthenticationError 401 미매칭 → `err.status === 401` + "Incorrect API key" 체크 추가, 503 반환 (commit `13bdb60`)
 - ⚠️ OPENAI_API_KEY 미해결 — Firebase Secret Manager 키 값 만료/무효 상태, 대표님 직접 교체 필요
