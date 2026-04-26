@@ -1,51 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createAIClient, callAIWithFallback } from '@/lib/ai-client'
-import { fetchAllWelfareSources, transformListItemToBenefit } from '@/lib/welfare-api'
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
+import {
+  fetchAllWelfareSources,
+  transformListItemToBenefit,
+} from "@/lib/welfare-api";
 
 // In-memory cache for benefits context (expensive to rebuild every request)
-let cachedContext: string | null = null
-let cacheTimestamp = 0
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let cachedContext: string | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Build a compact summary of all benefits for RAG context (from real API)
 async function buildBenefitsContext(): Promise<string> {
-  const now = Date.now()
-  if (cachedContext && (now - cacheTimestamp) < CACHE_TTL) {
-    return cachedContext
+  const now = Date.now();
+  if (cachedContext && now - cacheTimestamp < CACHE_TTL) {
+    return cachedContext;
   }
 
-  const items = await fetchAllWelfareSources()
-  if (items.length === 0) return '(혜택 데이터를 불러오지 못했습니다)'
+  const items = await fetchAllWelfareSources();
+  if (items.length === 0) return "(혜택 데이터를 불러오지 못했습니다)";
   // Use first 100 items for context window (too many items = too many tokens)
-  const context = items.slice(0, 100).map((item, i) => {
-    const b = transformListItemToBenefit(item, i)
-    return JSON.stringify({
-      id: b.id,
-      title: b.title,
-      category: b.category,
-      amount: b.amount,
-      description: b.description.substring(0, 100),
-      ministry: b.ministry,
+  const context = items
+    .slice(0, 100)
+    .map((item, i) => {
+      const b = transformListItemToBenefit(item, i);
+      return JSON.stringify({
+        id: b.id,
+        title: b.title,
+        category: b.category,
+        amount: b.amount,
+        description: b.description.substring(0, 100),
+        ministry: b.ministry,
+      });
     })
-  }).join('\n')
+    .join("\n");
 
-  cachedContext = context
-  cacheTimestamp = now
-  return context
+  cachedContext = context;
+  cacheTimestamp = now;
+  return context;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { userMessage, lang = 'ko' } = await req.json()
+    const { userMessage, lang = "ko" } = await req.json();
 
-    if (!userMessage || typeof userMessage !== 'string') {
-      return NextResponse.json({ error: 'userMessage required' }, { status: 400 })
+    if (!userMessage || typeof userMessage !== "string") {
+      return NextResponse.json(
+        { error: "userMessage required" },
+        { status: 400 },
+      );
     }
 
-    const client = createAIClient()
+    const client = createAIClient();
 
-    const benefitsContext = await buildBenefitsContext()
-    const isKo = lang === 'ko'
+    const benefitsContext = await buildBenefitsContext();
+    const isKo = lang === "ko";
 
     const systemPrompt = isKo
       ? `당신은 대한민국 정부 복지·지원 혜택 안내 전문가입니다.
@@ -71,33 +80,55 @@ Analyze the user's situation and:
 3. Provide a short reason for each benefit (reasons object: key=benefitId, value=reason)
 
 Respond ONLY in this JSON format:
-{"benefitIds": ["id1", "id2"], "message": "explanation", "reasons": {"id1": "reason1", "id2": "reason2"}}`
+{"benefitIds": ["id1", "id2"], "message": "explanation", "reasons": {"id1": "reason1", "id2": "reason2"}}`;
 
-    const text = await callAIWithFallback(client, [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: isKo ? `사용자 상황: ${userMessage}` : `User situation: ${userMessage}` },
-    ], { temperature: 0.3, maxTokens: 1500, jsonMode: true })
+    const text = await callAIWithFallback(
+      client,
+      [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: isKo
+            ? `사용자 상황: ${userMessage}`
+            : `User situation: ${userMessage}`,
+        },
+      ],
+      { temperature: 0.3, maxTokens: 1500, jsonMode: true },
+    );
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid AI response format' }, { status: 500 })
+      return NextResponse.json(
+        { error: "Invalid AI response format" },
+        { status: 500 },
+      );
     }
 
-    const parsed = JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(jsonMatch[0]);
     return NextResponse.json({
       benefitIds: parsed.benefitIds ?? [],
-      message: parsed.message ?? '',
+      message: parsed.message ?? "",
       reasons: parsed.reasons ?? {},
-    })
+    });
   } catch (err) {
-    console.error('[ai-recommend] Error:', err)
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes('invalid_api_key') || msg.includes('not configured')) {
-      return NextResponse.json({ error: 'AI_KEY_INVALID' }, { status: 503 })
+    console.error("[ai-recommend] Error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    const status = (err as { status?: number }).status;
+    if (
+      status === 401 ||
+      msg.includes("invalid_api_key") ||
+      msg.includes("Incorrect API key") ||
+      msg.includes("not configured")
+    ) {
+      return NextResponse.json({ error: "AI_KEY_INVALID" }, { status: 503 });
     }
-    if (msg.includes('429') || msg.includes('quota') || msg.includes('rate_limit')) {
-      return NextResponse.json({ error: 'AI_QUOTA' }, { status: 429 })
+    if (
+      msg.includes("429") ||
+      msg.includes("quota") ||
+      msg.includes("rate_limit")
+    ) {
+      return NextResponse.json({ error: "AI_QUOTA" }, { status: 429 });
     }
-    return NextResponse.json({ error: 'AI service error' }, { status: 500 })
+    return NextResponse.json({ error: "AI service error" }, { status: 500 });
   }
 }

@@ -211,6 +211,15 @@ ${benefitsDesc}
   } catch (err) {
     console.error("[ai-eligibility] Error:", err);
     const msg = err instanceof Error ? err.message : String(err);
+    const status = (err as { status?: number }).status;
+    if (
+      status === 401 ||
+      msg.includes("invalid_api_key") ||
+      msg.includes("Incorrect API key") ||
+      msg.includes("not configured")
+    ) {
+      return NextResponse.json({ error: "AI_KEY_INVALID" }, { status: 503 });
+    }
     if (
       msg.includes("429") ||
       msg.includes("quota") ||
