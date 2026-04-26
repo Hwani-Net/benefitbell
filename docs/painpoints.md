@@ -12,8 +12,8 @@
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
-| P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 12 | **11** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
+| P1 (High) | 8 | **8** (전체 해소) | 0 | 0 |
+| P2 (Medium) | 14 | **13** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
 | P3 (Low) | 29 | **26** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
@@ -51,6 +51,12 @@
 - ✅ PP-033 (신규·P2) WCAG 1.4.3 색상 대비 위반 — `.section-link` coral `#ff6b4a`(2.82:1) → `coral-dark #c94020`(4.96:1) 교체; 전역 `:focus-visible` ring `3px solid #c94020` 추가 (56개 버튼/링크 커버)
 - ✅ PP-034 (신규·P3) BottomNav Link "multiple tabbable elements" — 알림 badge span `aria-hidden="true"` 처리, Link에 `aria-label` 통합 (badge count 포함)
 - **성능 메트릭 (라이브 기준)**: FCP 244ms ✅ / LCP 916ms ✅ / CLS 0.021 ✅ / TTFB 115ms ✅ — 모든 임계값 통과 (PP-301 P3 미착수 → 실측 완료로 해소)
+
+**Ralph Loop 검수 결과 (2026-04-27 세션 — 전 페이지·컴포넌트 최종 감사)**:
+- ✅ PP-049 (신규·P1) `premium/page.tsx` "Reopen KakaoPay" 버튼 KAKAOPAY_LINK 빈 문자열 시 빈 탭 열림 → `if (KAKAOPAY_LINK)` guard 추가 (commit `de221a8`)
+- ✅ PP-050 (신규·P2) `premium/success/page.tsx` catch 블록 에러 로깅 누락 → `console.error("[premium/success] payment approval error:", err)` 추가 (commit `de221a8`)
+- ✅ PP-051 (신규·P2) `detail/[id]/page.tsx` Web Share API 공유 텍스트 한국어 하드코딩 → `lang === "ko"` 분기로 EN `"Check on BenefitBell!"` 추가 (commit `cb4c131`)
+- ✅ PP-052 (신규·P1) `push/cron-deadline/route.ts` 알림 문자열 전부 한국어 고정 + 구독 시 `lang` 미저장 → subscribe API `lang` 필드 저장, cron에서 `sub.lang === "en"` 분기로 EN 알림 제공 (commit `097565d`)
 - **보안 XSS/SQLi**: search param + ai-recommend POST 양쪽 안전 처리 확인 (서버측 에러 핸들러가 payload 도달 전 차단)
 - **콘솔 에러**: 0건 (AdSense `data-nscript` warning 1건은 외부 스크립트 — 수정 불가)
 - **잘못된 ID 상세 페이지**: `/detail/INVALID-TEST-ID-XYZ` → not-found UI 정상 (500 아님) ✅
