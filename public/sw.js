@@ -54,8 +54,14 @@ self.addEventListener("fetch", (event) => {
         // 오프라인: 캐시에서 반환
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
-          // 캐시도 없으면 홈으로
-          return caches.match("/");
+          // 캐시도 없으면 오프라인 응답
+          return (
+            caches.match("/") ||
+            new Response(
+              "<html><body><p>오프라인 상태입니다. 인터넷 연결 후 다시 시도하세요.</p></body></html>",
+              { headers: { "Content-Type": "text/html; charset=utf-8" } },
+            )
+          );
         });
       }),
   );

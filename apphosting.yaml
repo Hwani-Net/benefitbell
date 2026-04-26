@@ -6,7 +6,7 @@ runConfig:
   maxInstances: 4
   cpu: 1
   memoryMiB: 512
-  concurrency: 80
+  concurrency: 40
 
 env:
   # ─── Firebase 클라이언트 (빌드타임 필요 → 직접 값) ───────────────────

@@ -12,9 +12,9 @@
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
-| P1 (High) | 16 | **16** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 22 | **21** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
-| P3 (Low) | 38 | **32** | 0 | 3 (PP-302/PP-303 Out of Scope) + 3 known low-risk |
+| P1 (High) | 18 | **18** (전체 해소) | 0 | 0 |
+| P2 (Medium) | 24 | **22** | 0 | 2 (PP-SW-004/PP-YAML-001 Known + PP-201 Out of Scope) |
+| P3 (Low) | 40 | **34** | 0 | 3 (PP-302/PP-303 Out of Scope) + 3 known low-risk |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -60,6 +60,15 @@
 - **보안 XSS/SQLi**: search param + ai-recommend POST 양쪽 안전 처리 확인 (서버측 에러 핸들러가 payload 도달 전 차단)
 - **콘솔 에러**: 0건 (AdSense `data-nscript` warning 1건은 외부 스크립트 — 수정 불가)
 - **잘못된 ID 상세 페이지**: `/detail/INVALID-TEST-ID-XYZ` → not-found UI 정상 (500 아님) ✅
+
+**SW·설정 감사 라운드 (2026-04-27 세션 — apphosting + sw.js)**:
+- ✅ PP-FCM-001 (P1 수정 완료, commit `0cfa19a`): firebase-messaging-sw.js Firebase 미초기화 → 백그라운드 FCM 알림 불동작 해결
+- ✅ PP-NEXT-001 (P1 수정 완료, commit `0cfa19a`): next.config.ts 보안 헤더 전무 → X-Frame-Options 외 5개 헤더 추가
+- ✅ PP-SW-001 (P2 수정 완료, commit `0cfa19a`): sw.js notificationclick 하드코딩 "/" → 혜택 상세 URL 이동 수정
+- ✅ PP-SW-002 (P3 수정 완료, 이번 커밋): apphosting.yaml concurrency 80→40 조정 (AI API 대기 중 OOM 위험 완화)
+- ✅ PP-SW-003 (P3 수정 완료, 이번 커밋): sw.js offline fallback `caches.match('/')` undefined 위험 → 오프라인 HTML Response 방어 추가
+- ⚠️ PP-SW-004 (P2 Known/미수정): sw.js CACHE_NAME `'hyetack-v1'` 고정 → 빌드 배포 시 수동 버전 업 필요 (배포 절차 주의사항)
+- ⚠️ PP-YAML-001 (P2 Known/미수정): apphosting.yaml Toss test 키 → 운영 전환 시 live 키 교체 필수
 
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 7~)**:
 - ✅ PP-206 라이브 최종 확인 — popular 섹션 WLF00003274 등 urgent와 다른 5건 표시 ✅
