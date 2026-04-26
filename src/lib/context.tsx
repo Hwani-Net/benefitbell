@@ -522,10 +522,9 @@ const defaultProfile: UserProfile = {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "ko";
-    return (localStorage.getItem("lang") as Lang) ?? "ko";
-  });
+  // Always start with "ko" on both SSR and CSR to prevent hydration mismatch.
+  // localStorage is read in useEffect (client-only) after hydration completes.
+  const [lang, setLang] = useState<Lang>("ko");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     return (localStorage.getItem("theme") as "light" | "dark") ?? "light";
@@ -756,6 +755,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-font-scale", fontScale);
     localStorage.setItem("fontScale", fontScale);
   }, [fontScale]);
+
+  // Restore lang from localStorage after hydration (client-only).
+  // Runs once on mount — prevents SSR/CSR hydration mismatch.
+  useEffect(() => {
+    const saved = localStorage.getItem("lang") as Lang | null;
+    if (saved && saved !== lang) setLang(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
