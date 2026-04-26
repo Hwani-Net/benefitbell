@@ -169,8 +169,8 @@ export async function GET(
         });
       }
     }
-  } catch {
-    // Firestore 오류 시 API 호출로 진행
+  } catch (err) {
+    console.warn("[benefits/id] Firestore cache miss:", err);
   }
 
   if (!DATA_GO_KR_SERVICE_KEY || DATA_GO_KR_SERVICE_KEY === "placeholder") {

@@ -57,6 +57,16 @@ function SearchContent() {
   const [inputValue, setInputValue] = useState(query);
   const [sharedId, setSharedId] = useState<string | null>(null);
   const [recentCleared, setRecentCleared] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem("recentSearches");
+      return stored ? (JSON.parse(stored) as string[]) : [];
+    } catch (err) {
+      console.error("[recentSearches] localStorage parse failed:", err);
+      return [];
+    }
+  });
 
   // Web Share API (web-share 스킬 준수)
   const handleShare = useCallback(
@@ -127,15 +137,6 @@ function SearchContent() {
     [lang],
   );
 
-  const recentSearches = recentCleared
-    ? []
-    : lang === "ko"
-      ? ["기초연금 신청", "서울시 청년지원", "차상위 의료비"]
-      : [
-          "Basic pension application",
-          "Seoul youth support",
-          "Near-poverty medical expenses",
-        ];
   const recommendedTags =
     lang === "ko"
       ? ["#청년월세", "#기초수급", "#K패스", "#부모급여", "#도약계좌"]
@@ -153,15 +154,28 @@ function SearchContent() {
     setInputValue(query);
   }, [query]);
 
-  // 검색어 선택 → URL push
+  // 검색어 선택 → URL push + localStorage 저장
   const applyQuery = useCallback(
     (q: string) => {
+      if (q && !recentCleared) {
+        setRecentSearches((prev) => {
+          const next = [q, ...prev.filter((s) => s !== q)].slice(0, 10);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("recentSearches", JSON.stringify(next));
+            } catch (err) {
+              console.error("[recentSearches] localStorage write failed:", err);
+            }
+          }
+          return next;
+        });
+      }
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       if (sort !== "popular") params.set("sort", sort);
       router.push(`/search${params.toString() ? "?" + params.toString() : ""}`);
     },
-    [router, sort],
+    [router, sort, recentCleared],
   );
 
   // 카테고리 키 선택 → URL push (?cat=basic-living)
@@ -461,7 +475,13 @@ function SearchContent() {
                   <h2 className="section-title">{t.recentSearches}</h2>
                   <button
                     className="section-link"
-                    onClick={() => setRecentCleared(true)}
+                    onClick={() => {
+                      setRecentCleared(true);
+                      setRecentSearches([]);
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem("recentSearches");
+                      }
+                    }}
                   >
                     {t.clearAll}
                   </button>
