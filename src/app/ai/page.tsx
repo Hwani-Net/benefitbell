@@ -642,12 +642,7 @@ export default function AiPage() {
             {/* Error */}
             {chatError && (
               <div className={styles.errorBox}>
-                <p>
-                  ⚠️{" "}
-                  {isKo
-                    ? "AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요."
-                    : "AI analysis failed. Please try again later."}
-                </p>
+                <p>⚠️ {chatError}</p>
               </div>
             )}
 
