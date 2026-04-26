@@ -56,6 +56,7 @@ function SearchContent() {
 
   const [inputValue, setInputValue] = useState(query);
   const [sharedId, setSharedId] = useState<string | null>(null);
+  const [recentCleared, setRecentCleared] = useState(false);
 
   // Web Share API (web-share 스킬 준수)
   const handleShare = useCallback(
@@ -126,8 +127,9 @@ function SearchContent() {
     [lang],
   );
 
-  const recentSearches =
-    lang === "ko"
+  const recentSearches = recentCleared
+    ? []
+    : lang === "ko"
       ? ["기초연금 신청", "서울시 청년지원", "차상위 의료비"]
       : [
           "Basic pension application",
@@ -453,24 +455,31 @@ function SearchContent() {
             </section>
 
             {/* 최근 검색어 */}
-            <section className="section">
-              <div className="section-header">
-                <h2 className="section-title">{t.recentSearches}</h2>
-                <button className="section-link">{t.clearAll}</button>
-              </div>
-              <ul className={styles.recentList}>
-                {recentSearches.map((s) => (
-                  <li
-                    key={s}
-                    className={styles.recentItem}
-                    onClick={() => applyQuery(s)}
+            {recentSearches.length > 0 && (
+              <section className="section">
+                <div className="section-header">
+                  <h2 className="section-title">{t.recentSearches}</h2>
+                  <button
+                    className="section-link"
+                    onClick={() => setRecentCleared(true)}
                   >
-                    <span className={styles.recentIcon}>🕐</span>
-                    <span className={styles.recentText}>{s}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+                    {t.clearAll}
+                  </button>
+                </div>
+                <ul className={styles.recentList}>
+                  {recentSearches.map((s) => (
+                    <li
+                      key={s}
+                      className={styles.recentItem}
+                      onClick={() => applyQuery(s)}
+                    >
+                      <span className={styles.recentIcon}>🕐</span>
+                      <span className={styles.recentText}>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </>
         ) : (
           <>
@@ -638,6 +647,15 @@ function SearchContent() {
                               e.preventDefault();
                               toggleBookmark(b.id);
                             }}
+                            aria-label={
+                              isBookmarked(b.id)
+                                ? lang === "ko"
+                                  ? "북마크 해제"
+                                  : "Remove bookmark"
+                                : lang === "ko"
+                                  ? "북마크 추가"
+                                  : "Add bookmark"
+                            }
                           >
                             {isBookmarked(b.id) ? "❤️" : "🤍"}
                           </button>

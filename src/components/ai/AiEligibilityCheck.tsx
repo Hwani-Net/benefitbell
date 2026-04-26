@@ -329,7 +329,11 @@ export default function AiEligibilityCheck({
                   </p>
                   <h2 className={styles.modalTitle}>{benefitTitle}</h2>
                 </div>
-                <button className={styles.closeBtn} onClick={closeDetail}>
+                <button
+                  className={styles.closeBtn}
+                  onClick={closeDetail}
+                  aria-label={isKo ? "닫기" : "Close"}
+                >
                   ✕
                 </button>
               </div>

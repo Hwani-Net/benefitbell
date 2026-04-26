@@ -4,11 +4,14 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { useApp } from "@/lib/context";
 
 function ConsentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const { lang } = useApp();
+  const isKo = lang === "ko";
 
   const [generalConsent, setGeneralConsent] = useState(false);
   const [sensitiveConsent, setSensitiveConsent] = useState(false);
@@ -25,7 +28,11 @@ function ConsentContent() {
     try {
       const auth = getFirebaseAuth();
       if (!auth?.currentUser) {
-        setError("로그인 상태를 확인할 수 없습니다. 다시 로그인해 주세요.");
+        setError(
+          isKo
+            ? "로그인 상태를 확인할 수 없습니다. 다시 로그인해 주세요."
+            : "Unable to verify login. Please sign in again.",
+        );
         setSubmitting(false);
         return;
       }
@@ -65,7 +72,10 @@ function ConsentContent() {
 
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || "동의 저장에 실패했습니다.");
+        throw new Error(
+          json.error ||
+            (isKo ? "동의 저장에 실패했습니다." : "Failed to save consent."),
+        );
       }
 
       router.replace(redirectTo);
@@ -74,7 +84,9 @@ function ConsentContent() {
       setError(
         err instanceof Error
           ? err.message
-          : "오류가 발생했습니다. 다시 시도해 주세요.",
+          : isKo
+            ? "오류가 발생했습니다. 다시 시도해 주세요."
+            : "An error occurred. Please try again.",
       );
       setSubmitting(false);
     }
@@ -131,7 +143,9 @@ function ConsentContent() {
             lineHeight: 1.4,
           }}
         >
-          서비스 이용을 위한 개인정보 동의
+          {isKo
+            ? "서비스 이용을 위한 개인정보 동의"
+            : "Personal Information Consent"}
         </h1>
         <p
           style={{
@@ -140,7 +154,9 @@ function ConsentContent() {
             marginTop: 4,
           }}
         >
-          맞춤 혜택 추천을 위해 아래 동의가 필요합니다.
+          {isKo
+            ? "맞춤 혜택 추천을 위해 아래 동의가 필요합니다."
+            : "The following consent is required for personalized benefit recommendations."}
         </p>
       </div>
 
@@ -185,7 +201,11 @@ function ConsentContent() {
                   height: 1,
                   margin: 0,
                 }}
-                aria-label="일반 개인정보 수집·이용 동의"
+                aria-label={
+                  isKo
+                    ? "일반 개인정보 수집·이용 동의"
+                    : "General Personal Information Consent"
+                }
               />
               <div
                 style={{
@@ -235,7 +255,7 @@ function ConsentContent() {
                     borderRadius: 99,
                   }}
                 >
-                  필수
+                  {isKo ? "필수" : "Required"}
                 </span>
                 <span
                   style={{
@@ -244,7 +264,9 @@ function ConsentContent() {
                     color: "var(--text-primary)",
                   }}
                 >
-                  일반 개인정보 수집·이용 동의
+                  {isKo
+                    ? "일반 개인정보 수집·이용 동의"
+                    : "General Personal Information Consent"}
                 </span>
               </div>
               <table
@@ -267,7 +289,7 @@ function ConsentContent() {
                         paddingBottom: 4,
                       }}
                     >
-                      수집 항목
+                      {isKo ? "수집 항목" : "Data Collected"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
                       카카오 ID, 이름, 거주 지역, 소득분위, 고용상태, 주거형태,
@@ -283,7 +305,7 @@ function ConsentContent() {
                         paddingBottom: 4,
                       }}
                     >
-                      목적
+                      {isKo ? "목적" : "Purpose"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
                       맞춤 혜택 추천 및 알림 발송
@@ -297,9 +319,11 @@ function ConsentContent() {
                         verticalAlign: "top",
                       }}
                     >
-                      보유기간
+                      {isKo ? "보유기간" : "Retention Period"}
                     </td>
-                    <td>회원 탈퇴 시까지</td>
+                    <td>
+                      {isKo ? "회원 탈퇴 시까지" : "Until account deletion"}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -313,7 +337,7 @@ function ConsentContent() {
                   textDecoration: "underline",
                 }}
               >
-                개인정보처리방침 전문 보기
+                {isKo ? "개인정보처리방침 전문 보기" : "View Privacy Policy"}
               </Link>
             </div>
           </label>
@@ -342,8 +366,17 @@ function ConsentContent() {
               lineHeight: 1.5,
             }}
           >
-            ⚠️ 아래는 <strong>민감정보</strong>입니다. 일반 동의와 별도로
-            수집됩니다.
+            {isKo ? (
+              <>
+                ⚠️ 아래는 <strong>민감정보</strong>입니다. 일반 동의와 별도로
+                수집됩니다.
+              </>
+            ) : (
+              <>
+                ⚠️ The following is <strong>sensitive data</strong> collected
+                separately.
+              </>
+            )}
           </div>
 
           <label
@@ -366,7 +399,11 @@ function ConsentContent() {
                   height: 1,
                   margin: 0,
                 }}
-                aria-label="민감정보 수집·이용 동의"
+                aria-label={
+                  isKo
+                    ? "민감정보 수집·이용 동의"
+                    : "Sensitive Information Consent"
+                }
               />
               <div
                 style={{
@@ -414,7 +451,7 @@ function ConsentContent() {
                     borderRadius: 99,
                   }}
                 >
-                  필수
+                  {isKo ? "필수" : "Required"}
                 </span>
                 <span
                   style={{
@@ -423,7 +460,9 @@ function ConsentContent() {
                     color: "var(--text-primary)",
                   }}
                 >
-                  민감정보 수집·이용 동의
+                  {isKo
+                    ? "민감정보 수집·이용 동의"
+                    : "Sensitive Information Consent"}
                 </span>
               </div>
               <table
@@ -446,10 +485,12 @@ function ConsentContent() {
                         paddingBottom: 4,
                       }}
                     >
-                      수집 항목
+                      {isKo ? "수집 항목" : "Data Collected"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
-                      임신 여부, 장애 여부, 의료급여 수급 여부
+                      {isKo
+                        ? "임신 여부, 장애 여부, 의료급여 수급 여부"
+                        : "Pregnancy status, disability status, medical aid status"}
                     </td>
                   </tr>
                   <tr>
@@ -461,10 +502,12 @@ function ConsentContent() {
                         paddingBottom: 4,
                       }}
                     >
-                      목적
+                      {isKo ? "목적" : "Purpose"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
-                      복지 혜택 자격 매칭 및 추천
+                      {isKo
+                        ? "복지 혜택 자격 매칭 및 추천"
+                        : "Welfare benefit eligibility matching and recommendations"}
                     </td>
                   </tr>
                   <tr>
@@ -476,9 +519,11 @@ function ConsentContent() {
                         paddingBottom: 4,
                       }}
                     >
-                      보유기간
+                      {isKo ? "보유기간" : "Retention Period"}
                     </td>
-                    <td style={{ paddingBottom: 4 }}>회원 탈퇴 시까지</td>
+                    <td style={{ paddingBottom: 4 }}>
+                      {isKo ? "회원 탈퇴 시까지" : "Until account deletion"}
+                    </td>
                   </tr>
                   <tr>
                     <td
@@ -488,9 +533,13 @@ function ConsentContent() {
                         verticalAlign: "top",
                       }}
                     >
-                      거부 시
+                      {isKo ? "거부 시" : "If refused"}
                     </td>
-                    <td>임신·장애·의료급여 관련 혜택 추천이 제한됩니다.</td>
+                    <td>
+                      {isKo
+                        ? "임신·장애·의료급여 관련 혜택 추천이 제한됩니다."
+                        : "Recommendations for pregnancy, disability, and medical aid benefits will be limited."}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -534,7 +583,13 @@ function ConsentContent() {
             boxShadow: allChecked ? "var(--shadow-coral)" : "none",
           }}
         >
-          {submitting ? "저장 중..." : "동의하고 시작하기"}
+          {submitting
+            ? isKo
+              ? "저장 중..."
+              : "Saving..."
+            : isKo
+              ? "동의하고 시작하기"
+              : "Agree and Continue"}
         </button>
 
         <p
@@ -545,16 +600,39 @@ function ConsentContent() {
             lineHeight: 1.6,
           }}
         >
-          위 항목에 모두 동의해야 서비스를 이용할 수 있습니다.
+          {isKo
+            ? "위 항목에 모두 동의해야 서비스를 이용할 수 있습니다."
+            : "You must agree to all items above to use the service."}
           <br />
-          동의 내용은 언제든지{" "}
-          <Link
-            href="/privacy"
-            style={{ color: "var(--color-coral)", textDecoration: "underline" }}
-          >
-            개인정보처리방침
-          </Link>
-          에서 확인 가능합니다.
+          {isKo ? (
+            <>
+              동의 내용은 언제든지{" "}
+              <Link
+                href="/privacy"
+                style={{
+                  color: "var(--color-coral)",
+                  textDecoration: "underline",
+                }}
+              >
+                개인정보처리방침
+              </Link>
+              에서 확인 가능합니다.
+            </>
+          ) : (
+            <>
+              You can review our{" "}
+              <Link
+                href="/privacy"
+                style={{
+                  color: "var(--color-coral)",
+                  textDecoration: "underline",
+                }}
+              >
+                Privacy Policy
+              </Link>
+              .
+            </>
+          )}
         </p>
       </div>
     </div>
