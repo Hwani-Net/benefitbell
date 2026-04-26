@@ -69,6 +69,27 @@
 - ⚠️ PP-206 라이브 재현 중 — commit `22b0173` + 수동 rollout 생성 (firebase apphosting:rollouts:create), 빌드 완료 후 해소 예정
 - ⚠️ PP-013 라이브 500 반환 중 — commit `13bdb60` 배포 완료 후 503으로 변경 예정 + OPENAI_API_KEY 교체 필요 (대표님 직접)
 
+**네비게이션 전수 검증 라운드 (2026-04-27 WCAG 수정 + EN 완결)**:
+- ✅ HTTP 200 전수 확인 — `/`, `/search`, `/calendar`, `/profile`, `/ai`, `/premium`, `/consent`, `/privacy`, `/terms`, `/refund-policy`, `/premium/success` 전부 200
+- ✅ PWA 아이콘 — `/icons/icon-192.png`, `/icons/icon-512.png`, `/screenshots/home.png`, `/screenshots/recommend.png` 전부 200
+- ✅ manifest.json 유효 — name/icons/categories/screenshots 정상
+- ✅ BottomNav 5탭 (`/`, `/search`, `/ai`, `/calendar`, `/profile`) href 정상, aria-label badge 포함 처리 확인
+- ✅ TopBar 로그인 링크 `/api/auth/kakao` 정상, EN 버튼 aria-label i18n 분기 확인
+- ✅ AI 페이지 EN 모드 — "AI Benefits", "My Benefits", "AI Chat", "3-second Login" 정상 영어 표시
+- ✅ AI 에러 UX — `AI_KEY_INVALID` 503 시 "AI service is temporarily unavailable." 영어 메시지 코드 확인 (line 170)
+- ✅ PP-035 (신규·P3) `premium/page.tsx` 가격·결제 버튼·paying 안내·문의 텍스트 한국어 하드코딩 6곳 → isKo 분기 추가 (commit 아래)
+  - 가격: "월 4,900원" / "커피 한 잔 가격" → EN: "₩4,900 / month" / "Price of a coffee"
+  - 결제 버튼: "💳 카카오페이로 결제하기" → EN: "💳 Pay with KakaoPay"
+  - 비로그인 버튼: "🔒 로그인 후 결제할 수 있어요" → EN: "🔒 Login to continue"
+  - paying 안내: "송금하셨나요?" / "송금이 완료되면..." → EN 분기 추가
+  - 활성화 버튼: "✅ 결제 완료! 프리미엄 활성화" → EN: "✅ Payment done! Activate Premium"
+  - 재열기 버튼: "카카오페이 다시 열기" → EN: "Reopen KakaoPay"
+  - 문의: "결제 관련 문의: 카카오톡 채널..." → EN: "Support: KakaoTalk channel..."
+- ⚠️ PP-036 (신규·P2) 캘린더 4월 마감 혜택 0건 — 코드 버그 아님, Firestore 데이터 파이프라인 이슈
+  - 총 5,237건 중 날짜 있는 혜택 314건, 이 중 dDay 0~30 = 0건 (4월 마감 = 0건, 5월 마감 = 1건)
+  - calculateDDay 로직 정상, applicationEnd 포맷 정상 — enrich-dates cron이 근미래 마감일을 채우지 못한 상태
+  - 조치 필요: enrich-dates cron 수동 트리거 또는 복지로 API 원본 데이터 확인
+
 **Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
 - ✅ PP-006 (push/send Bearer 가드) 코드 수정 완료 (commit `a54ad69`) — 라이브 401 확인

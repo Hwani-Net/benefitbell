@@ -247,7 +247,9 @@ export default function PremiumPage() {
                 </ul>
                 <div className={styles.priceContainer}>
                   <div>
-                    <span className={styles.price}>월 4,900원</span>
+                    <span className={styles.price}>
+                      {isKo ? "월 4,900원" : "₩4,900 / month"}
+                    </span>
                     <span
                       style={{
                         fontSize: 12,
@@ -255,7 +257,7 @@ export default function PremiumPage() {
                         marginLeft: 6,
                       }}
                     >
-                      커피 한 잔 가격
+                      {isKo ? "커피 한 잔 가격" : "Price of a coffee"}
                     </span>
                   </div>
                 </div>
@@ -287,7 +289,9 @@ export default function PremiumPage() {
                         width: "100%",
                       }}
                     >
-                      💳 카카오페이로 결제하기
+                      {isKo
+                        ? "💳 카카오페이로 결제하기"
+                        : "💳 Pay with KakaoPay"}
                     </button>
                   ) : (
                     <button
@@ -305,7 +309,9 @@ export default function PremiumPage() {
                         width: "100%",
                       }}
                     >
-                      🔒 로그인 후 결제할 수 있어요
+                      {isKo
+                        ? "🔒 로그인 후 결제할 수 있어요"
+                        : "🔒 Login to continue"}
                     </button>
                   )}
                 </>
@@ -329,7 +335,9 @@ export default function PremiumPage() {
                         marginBottom: 8,
                       }}
                     >
-                      💳 카카오페이로 송금하셨나요?
+                      {isKo
+                        ? "💳 카카오페이로 송금하셨나요?"
+                        : "💳 Did you complete the KakaoPay transfer?"}
                     </p>
                     <p
                       style={{
@@ -338,9 +346,19 @@ export default function PremiumPage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      송금이 완료되면 아래 버튼을 눌러
-                      <br />
-                      프리미엄을 활성화해주세요!
+                      {isKo ? (
+                        <>
+                          송금이 완료되면 아래 버튼을 눌러
+                          <br />
+                          프리미엄을 활성화해주세요!
+                        </>
+                      ) : (
+                        <>
+                          Once the transfer is complete,
+                          <br />
+                          tap the button below to activate Premium!
+                        </>
+                      )}
                     </p>
                   </div>
 
@@ -360,7 +378,9 @@ export default function PremiumPage() {
                       boxShadow: "0 4px 15px rgba(168, 85, 247, 0.3)",
                     }}
                   >
-                    ✅ 결제 완료! 프리미엄 활성화
+                    {isKo
+                      ? "✅ 결제 완료! 프리미엄 활성화"
+                      : "✅ Payment done! Activate Premium"}
                   </button>
 
                   <button
@@ -377,7 +397,7 @@ export default function PremiumPage() {
                       textDecoration: "underline",
                     }}
                   >
-                    카카오페이 다시 열기
+                    {isKo ? "카카오페이 다시 열기" : "Reopen KakaoPay"}
                   </button>
                 </div>
               )}
@@ -421,7 +441,9 @@ export default function PremiumPage() {
                   lineHeight: 1.5,
                 }}
               >
-                결제 관련 문의: 카카오톡 채널 @hyetack-alimi
+                {isKo
+                  ? "결제 관련 문의: 카카오톡 채널 @hyetack-alimi"
+                  : "Support: KakaoTalk channel @hyetack-alimi"}
               </p>
             </section>
 
