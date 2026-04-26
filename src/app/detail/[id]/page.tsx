@@ -353,7 +353,7 @@ export default function DetailPage({
           <button
             className={styles.backBtn}
             onClick={() => router.back()}
-            aria-label="뒤로가기"
+            aria-label={lang === "ko" ? "뒤로가기" : "Go back"}
           >
             ‹
           </button>
@@ -368,7 +368,7 @@ export default function DetailPage({
               }
               toggleBookmark(benefit.id);
             }}
-            aria-label="북마크"
+            aria-label={lang === "ko" ? "북마크" : "Bookmark"}
           >
             {isBookmarked(benefit.id) ? "❤️" : "🤍"}
           </button>
@@ -602,7 +602,7 @@ export default function DetailPage({
                   🔄
                 </span>
                 <div>
-                  <p className={styles.infoLabel}>지원 주기</p>
+                  <p className={styles.infoLabel}>{t.supportCycle}</p>
                   <p className={styles.infoValue}>{apiDetail.supportCycle}</p>
                 </div>
               </div>
@@ -843,7 +843,7 @@ export default function DetailPage({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3C6.48 3 2 6.58 2 11c0 2.84 1.72 5.34 4.33 6.88L5.2 21l4.1-2.07c.88.22 1.8.34 2.7.34 5.52 0 10-3.58 10-8S17.52 3 12 3z" />
             </svg>
-            {kakaoShared ? "✅ 공유됨!" : "카카오톡으로 공유"}
+            {kakaoShared ? t.kakaoSharedBtn : t.kakaoShareBtn}
           </button>
           {/* 링크 복사 버튼 */}
           <button
@@ -851,7 +851,7 @@ export default function DetailPage({
             onClick={handleShare}
             style={{ flex: 1, minWidth: 0 }}
           >
-            {shared ? "✅ 복사됨!" : "🔗 링크 복사"}
+            {shared ? t.copiedBtn : t.copyLinkBtn}
           </button>
           <a
             href={benefit.applyUrl}
@@ -875,7 +875,7 @@ export default function DetailPage({
         <button
           className={styles.floatingShare}
           onClick={handleKakaoShare}
-          aria-label="공유"
+          aria-label={lang === "ko" ? "공유" : "Share"}
         >
           📤
         </button>

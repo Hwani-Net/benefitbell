@@ -95,6 +95,11 @@ export const translations = {
     incomeLevel: "소득기준",
     paymentMethod: "지급방식",
     monthlyTransfer: "매월 계좌이체",
+    supportCycle: "지원 주기",
+    kakaoShareBtn: "카카오톡으로 공유",
+    kakaoSharedBtn: "✅ 공유됨!",
+    copyLinkBtn: "🔗 링크 복사",
+    copiedBtn: "✅ 복사됨!",
     myEligibility: "나의 자격 확인",
     eligibilityCheck: (fulfilled: number, total: number) =>
       `자격 조건 ${fulfilled}/${total} 충족`,
@@ -312,6 +317,11 @@ export const translations = {
     incomeLevel: "Income Level",
     paymentMethod: "Payment Method",
     monthlyTransfer: "Monthly Bank Transfer",
+    supportCycle: "Support Cycle",
+    kakaoShareBtn: "Share via KakaoTalk",
+    kakaoSharedBtn: "✅ Shared!",
+    copyLinkBtn: "🔗 Copy Link",
+    copiedBtn: "✅ Copied!",
     myEligibility: "My Eligibility Check",
     eligibilityCheck: (fulfilled: number, total: number) =>
       `${fulfilled}/${total} Conditions Met`,

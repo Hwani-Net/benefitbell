@@ -457,7 +457,7 @@ export default function HomePage() {
                           e.preventDefault();
                           toggleBookmark(benefit.id);
                         }}
-                        aria-label="북마크"
+                        aria-label={lang === "ko" ? "북마크" : "Bookmark"}
                       >
                         {isBookmarked(benefit.id) ? "❤️" : "🤍"}
                       </button>
@@ -706,7 +706,7 @@ export default function HomePage() {
                           e.preventDefault();
                           toggleBookmark(benefit.id);
                         }}
-                        aria-label="북마크"
+                        aria-label={lang === "ko" ? "북마크" : "Bookmark"}
                       >
                         {isBookmarked(benefit.id) ? "❤️" : "🤍"}
                       </button>
@@ -813,7 +813,7 @@ export default function HomePage() {
                         e.preventDefault();
                         toggleBookmark(benefit.id);
                       }}
-                      aria-label="북마크"
+                      aria-label={lang === "ko" ? "북마크" : "Bookmark"}
                     >
                       {isBookmarked(benefit.id) ? "❤️" : "🤍"}
                     </button>

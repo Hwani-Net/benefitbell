@@ -258,7 +258,7 @@ function SearchContent() {
                   setInputValue("");
                   applyQuery("");
                 }}
-                aria-label="검색어 지우기"
+                aria-label={lang === "ko" ? "검색어 지우기" : "Clear search"}
               >
                 ✕
               </button>
@@ -500,7 +500,7 @@ function SearchContent() {
                     color: "var(--text-tertiary)",
                   }}
                   onClick={() => router.push("/search")}
-                  aria-label="필터 초기화"
+                  aria-label={lang === "ko" ? "필터 초기화" : "Clear filter"}
                 >
                   ✕
                 </button>
@@ -534,7 +534,11 @@ function SearchContent() {
                     color: "var(--text-tertiary)",
                   }}
                   onClick={() => router.push("/search")}
-                  aria-label="카테고리 필터 초기화"
+                  aria-label={
+                    lang === "ko"
+                      ? "카테고리 필터 초기화"
+                      : "Clear category filter"
+                  }
                 >
                   ✕
                 </button>

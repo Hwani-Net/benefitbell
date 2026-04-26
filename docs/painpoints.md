@@ -14,7 +14,7 @@
 | P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
 | P2 (Medium) | 8 | **8** (전체 해소) | 0 | 0 |
-| P3 (Low) | 5 | **3** (PP-301, PP-014 카테고리번역, PP-015 상세헤딩번역) | 0 | 2 |
+| P3 (Low) | 8 | **6** (PP-301, PP-014, PP-015, PP-020, PP-021, PP-022) | 0 | 2 |
 
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 3~4)**:
 - ✅ PP-008 (신규·P2) 혜택 태그 빈 링크(`/search?q=`) — `split(",").filter(t=>t.trim())` 수정 (commit `680b0d6`)
@@ -105,6 +105,9 @@
 | PP-014 (신규) | i18n | EN 모드 프로필 설정 카테고리 알림 버튼 한국어 하드코딩 | ✅ **해소** — commit `b0134c9` `lang==="en"` 분기 추가 |
 | PP-015 (신규) | i18n | EN 모드 혜택 상세 페이지 섹션 헤딩 8개 한국어 하드코딩 | ✅ **해소** — commit `2a8b74e` lang 분기 + DocumentChecklist lang prop |
 | PP-016 (신규) | i18n | EN 모드 상세 페이지 "관련 법령"·"관련 홈페이지" 헤딩 한국어 잔존 | ✅ **해소** — commit `7df1f7c` → Related Laws / Related Websites |
+| PP-020 (신규) | i18n | EN 모드 상세 페이지 "지원 주기" 레이블 한국어 하드코딩 (lang 분기 없음) | ✅ **해소** — context.tsx `supportCycle` 키 추가 + detail `t.supportCycle` 사용 |
+| PP-021 (신규) | i18n | EN 모드 상세 페이지 CTA 공유 버튼 "카카오톡으로 공유"·"공유됨!"·"🔗 링크 복사"·"✅ 복사됨!" 한국어 하드코딩 | ✅ **해소** — context.tsx `kakaoShareBtn/kakaoSharedBtn/copyLinkBtn/copiedBtn` 추가 + `t.*` 사용 |
+| PP-022 (신규) | a11y | EN 모드 search/detail/홈 `aria-label` 한국어 하드코딩 — "검색어 지우기", "필터 초기화", "카테고리 필터 초기화", "뒤로가기", "북마크"(×4), "공유" 접근성 속성 미번역 | ✅ **해소** — 전 파일 `lang === "ko" ? "한국어" : "English"` 분기 추가 |
 
 ---
 
