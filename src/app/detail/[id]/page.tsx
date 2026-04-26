@@ -414,36 +414,45 @@ export default function DetailPage({
                 marginTop: 12,
               }}
             >
-              {apiDetail?.lifeStages?.split(",").map((tag, i) => (
-                <Link
-                  key={`life-${i}`}
-                  href={`/search?q=${encodeURIComponent(tag.trim())}`}
-                  className="badge badge-purple-soft"
-                  style={{ textDecoration: "none", cursor: "pointer" }}
-                >
-                  {tag.trim()}
-                </Link>
-              ))}
-              {apiDetail?.targetGroups?.split(",").map((tag, i) => (
-                <Link
-                  key={`target-${i}`}
-                  href={`/search?q=${encodeURIComponent(tag.trim())}`}
-                  className="badge badge-coral-soft"
-                  style={{ textDecoration: "none", cursor: "pointer" }}
-                >
-                  {tag.trim()}
-                </Link>
-              ))}
-              {apiDetail?.themes?.split(",").map((tag, i) => (
-                <Link
-                  key={`theme-${i}`}
-                  href={`/search?q=${encodeURIComponent(tag.trim())}`}
-                  className="badge badge-green-soft"
-                  style={{ textDecoration: "none", cursor: "pointer" }}
-                >
-                  {tag.trim()}
-                </Link>
-              ))}
+              {apiDetail?.lifeStages
+                ?.split(",")
+                .filter((t) => t.trim())
+                .map((tag, i) => (
+                  <Link
+                    key={`life-${i}`}
+                    href={`/search?q=${encodeURIComponent(tag.trim())}`}
+                    className="badge badge-purple-soft"
+                    style={{ textDecoration: "none", cursor: "pointer" }}
+                  >
+                    {tag.trim()}
+                  </Link>
+                ))}
+              {apiDetail?.targetGroups
+                ?.split(",")
+                .filter((t) => t.trim())
+                .map((tag, i) => (
+                  <Link
+                    key={`target-${i}`}
+                    href={`/search?q=${encodeURIComponent(tag.trim())}`}
+                    className="badge badge-coral-soft"
+                    style={{ textDecoration: "none", cursor: "pointer" }}
+                  >
+                    {tag.trim()}
+                  </Link>
+                ))}
+              {apiDetail?.themes
+                ?.split(",")
+                .filter((t) => t.trim())
+                .map((tag, i) => (
+                  <Link
+                    key={`theme-${i}`}
+                    href={`/search?q=${encodeURIComponent(tag.trim())}`}
+                    className="badge badge-green-soft"
+                    style={{ textDecoration: "none", cursor: "pointer" }}
+                  >
+                    {tag.trim()}
+                  </Link>
+                ))}
             </div>
           )}
         </div>
@@ -689,10 +698,10 @@ export default function DetailPage({
           <DocumentChecklist docs={docs} benefitId={benefit.id} />
         )}
 
-        {/* 담당 기관 연락체 */}
+        {/* 담당 기관 연락처 */}
         {apiDetail?.contacts && apiDetail.contacts.length > 0 && (
           <section className="section">
-            <h2 className="section-title mb-12">📞 담당 기관 연락체</h2>
+            <h2 className="section-title mb-12">📞 담당 기관 연락처</h2>
             <div className={styles.docList}>
               {apiDetail.contacts.map((contact, i) => (
                 <div key={i} className={styles.docItem}>
