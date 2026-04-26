@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
+import { useApp } from "@/lib/context";
 
-const SECTIONS = [
+const SECTIONS_KO = [
   {
     title: "제1조 (목적)",
     content: `혜택알리미(BenefitBell, 이하 "서비스")는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.`,
@@ -81,10 +82,192 @@ const SECTIONS = [
   },
 ];
 
-export default function PrivacyPage() {
+const SECTIONS_EN = [
+  {
+    title: "Article 1 (Purpose)",
+    content: `BenefitBell (혜택알리미, hereinafter "Service") establishes and discloses this Privacy Policy in accordance with Article 30 of the Personal Information Protection Act to protect users' personal information and handle related complaints promptly.`,
+  },
+  {
+    title: "Article 2 (Personal Information Collected)",
+    content: null,
+    subsections: [
+      {
+        label: "General Personal Information",
+        items: [
+          "Auto-collected via Kakao login: Kakao unique ID, nickname, profile image URL",
+          "User-entered: name, date of birth, gender, region, income level, employment status, housing type, household size",
+          "Auto-collected: FCM push token, service usage history",
+        ],
+      },
+      {
+        label: "Sensitive Information (separate consent required)",
+        items: [
+          "Pregnancy status",
+          "Disability status",
+          "Medical aid recipient status",
+        ],
+      },
+    ],
+  },
+  {
+    title: "Article 3 (Purpose of Collection & Use)",
+    content: null,
+    items: [
+      "Personalized government and local benefit recommendations",
+      "Eligibility matching and deadline notification delivery",
+      "Service quality improvement and statistical analysis",
+    ],
+  },
+  {
+    title: "Article 4 (Retention & Use Period)",
+    content:
+      "Collected personal information is immediately destroyed upon account deletion. Exceptions apply where retention is required by applicable law, for the period prescribed by such law.",
+  },
+  {
+    title: "Article 5 (Third-Party Disclosure)",
+    content:
+      "The Service does not, as a rule, provide users' personal information to third parties. Exceptions apply when the user consents or when a law enforcement agency requests disclosure pursuant to applicable law.",
+  },
+  {
+    title: "Article 6 (Processing Consignment)",
+    content: null,
+    items: [
+      "Firebase (Google LLC): Authentication, database, and push notification infrastructure",
+      "Kakao Corp.: Social login authentication",
+    ],
+  },
+  {
+    title: "Article 7 (Destruction of Personal Information)",
+    content:
+      "Personal information is destroyed without delay upon expiry of the retention period or achievement of the processing purpose. Electronic files are permanently deleted by an unrecoverable method; printed materials are shredded or incinerated.",
+  },
+  {
+    title: "Article 8 (Rights & Obligations of Data Subjects)",
+    content: null,
+    items: [
+      "Right to access, correct, delete, or suspend processing of personal information",
+      "Right to withdraw consent for personal information processing",
+      "To exercise rights: contact the Privacy Officer below via email",
+    ],
+  },
+  {
+    title: "Article 9 (Privacy Officer)",
+    content: null,
+    items: [
+      "Service: BenefitBell (혜택알리미)",
+      "Operator: BenefitBell",
+      "Email: stayicon@gmail.com",
+    ],
+  },
+  {
+    title: "Article 10 (Policy Changes)",
+    content:
+      "This Privacy Policy is effective from April 22, 2026. If the content changes due to legal, policy, or service updates, users will be notified via the in-app notice.",
+  },
+];
+
+type Section = {
+  title: string;
+  content?: string | null;
+  items?: string[];
+  subsections?: { label: string; items: string[] }[];
+};
+
+function SectionList({ sections }: { sections: Section[] }) {
   return (
     <>
-      {/* 간단한 헤더 (TopBar/BottomNav 없이 독립 페이지) */}
+      {sections.map((section, idx) => (
+        <section
+          key={idx}
+          style={{
+            marginBottom: 28,
+            paddingBottom: 28,
+            borderBottom:
+              idx < sections.length - 1
+                ? "1px solid var(--border-color)"
+                : "none",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              marginBottom: 10,
+            }}
+          >
+            {section.title}
+          </h2>
+
+          {section.content && (
+            <p
+              style={{
+                fontSize: 13,
+                color: "var(--text-secondary)",
+                lineHeight: 1.8,
+              }}
+            >
+              {section.content}
+            </p>
+          )}
+
+          {section.subsections?.map((sub, si) => (
+            <div key={si} style={{ marginBottom: 12 }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  marginBottom: 4,
+                }}
+              >
+                {sub.label}
+              </p>
+              <ul
+                style={{
+                  paddingLeft: 18,
+                  listStyleType: "disc",
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.8,
+                }}
+              >
+                {sub.items.map((item, ii) => (
+                  <li key={ii}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {section.items && (
+            <ul
+              style={{
+                paddingLeft: 18,
+                listStyleType: "disc",
+                fontSize: 13,
+                color: "var(--text-secondary)",
+                lineHeight: 1.8,
+              }}
+            >
+              {section.items.map((item, ii) => (
+                <li key={ii}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </>
+  );
+}
+
+export default function PrivacyPage() {
+  const { lang } = useApp();
+  const isKo = lang === "ko";
+  const sections = isKo ? SECTIONS_KO : SECTIONS_EN;
+
+  return (
+    <>
+      {/* Header */}
       <div
         style={{
           position: "sticky",
@@ -111,8 +294,9 @@ export default function PrivacyPage() {
             alignItems: "center",
             gap: 4,
           }}
+          aria-label={isKo ? "홈으로 이동" : "Go to home"}
         >
-          ← 홈으로
+          {isKo ? "← 홈으로" : "← Home"}
         </Link>
         <span
           style={{
@@ -123,7 +307,7 @@ export default function PrivacyPage() {
             textAlign: "center",
           }}
         >
-          개인정보처리방침
+          {isKo ? "개인정보처리방침" : "Privacy Policy"}
         </span>
         <span style={{ width: 52 }} />
       </div>
@@ -142,90 +326,10 @@ export default function PrivacyPage() {
             marginBottom: 24,
           }}
         >
-          시행일: 2026년 4월 22일
+          {isKo ? "시행일: 2026년 4월 22일" : "Effective: April 22, 2026"}
         </p>
 
-        {SECTIONS.map((section, idx) => (
-          <section
-            key={idx}
-            style={{
-              marginBottom: 28,
-              paddingBottom: 28,
-              borderBottom:
-                idx < SECTIONS.length - 1
-                  ? "1px solid var(--border-color)"
-                  : "none",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                marginBottom: 10,
-              }}
-            >
-              {section.title}
-            </h2>
-
-            {section.content && (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--text-secondary)",
-                  lineHeight: 1.8,
-                }}
-              >
-                {section.content}
-              </p>
-            )}
-
-            {"subsections" in section &&
-              section.subsections?.map((sub, si) => (
-                <div key={si} style={{ marginBottom: 12 }}>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--text-primary)",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {sub.label}
-                  </p>
-                  <ul
-                    style={{
-                      paddingLeft: 18,
-                      listStyleType: "disc",
-                      fontSize: 13,
-                      color: "var(--text-secondary)",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    {sub.items.map((item, ii) => (
-                      <li key={ii}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-
-            {"items" in section && section.items && (
-              <ul
-                style={{
-                  paddingLeft: 18,
-                  listStyleType: "disc",
-                  fontSize: 13,
-                  color: "var(--text-secondary)",
-                  lineHeight: 1.8,
-                }}
-              >
-                {section.items.map((item, ii) => (
-                  <li key={ii}>{item}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
+        <SectionList sections={sections as Section[]} />
 
         <div
           style={{
@@ -237,9 +341,19 @@ export default function PrivacyPage() {
             lineHeight: 1.7,
           }}
         >
-          개인정보 관련 문의: <strong>stayicon@gmail.com</strong>
-          <br />
-          운영자: BenefitBell
+          {isKo ? (
+            <>
+              개인정보 관련 문의: <strong>stayicon@gmail.com</strong>
+              <br />
+              운영자: BenefitBell
+            </>
+          ) : (
+            <>
+              Privacy inquiries: <strong>stayicon@gmail.com</strong>
+              <br />
+              Operator: BenefitBell
+            </>
+          )}
         </div>
       </main>
     </>
