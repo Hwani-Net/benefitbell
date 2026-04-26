@@ -190,8 +190,8 @@ export default function DetailPage({
             });
           }
         }
-      } catch {
-        /* API 실패 — 기본 정보로 표시 */
+      } catch (err) {
+        console.error("[detail] fetch failed:", err);
       }
     }
 

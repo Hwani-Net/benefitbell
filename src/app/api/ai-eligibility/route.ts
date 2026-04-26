@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       profile.hasChildren
         ? `자녀: ${profile.childrenCount ?? 0}명`
         : `자녀: 없음`,
-      profile.specialStatus?.length > 0
+      (profile.specialStatus?.length ?? 0) > 0
         ? `특이사항: ${profile.specialStatus.map(formatSpecial).join(", ")}`
         : null,
     ]
