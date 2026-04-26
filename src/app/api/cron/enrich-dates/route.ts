@@ -83,7 +83,8 @@ async function pLimit<T>(
   return results;
 }
 
-export async function GET(req: Request) {
+// PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
+async function handleCron(req: Request) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -296,3 +297,7 @@ export async function GET(req: Request) {
     );
   }
 }
+
+// PP-005: GET/POST 모두 동일 핸들러로 라우팅 (Bearer 검사 메서드 가드보다 우선)
+export const GET = handleCron;
+export const POST = handleCron;

@@ -1,52 +1,60 @@
-import { NextResponse } from 'next/server'
-import { getAdminMessaging } from '@/lib/firebase-admin'
-import { getSubscriptions, removeSubscription } from '@/lib/push-store'
-import { calculateDDay, fetchAllWelfareSources, transformListItemToBenefit } from '@/lib/welfare-api'
+import { NextResponse } from "next/server";
+import { getAdminMessaging } from "@/lib/firebase-admin";
+import { getSubscriptions, removeSubscription } from "@/lib/push-store";
+import {
+  calculateDDay,
+  fetchAllWelfareSources,
+  transformListItemToBenefit,
+} from "@/lib/welfare-api";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 // Verify cron secret to prevent unauthorized access
 function verifyCron(req: Request): boolean {
-  const authHeader = req.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret) return true // no secret configured = allow
-  return authHeader === `Bearer ${cronSecret}`
+  const authHeader = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return true; // no secret configured = allow
+  return authHeader === `Bearer ${cronSecret}`;
 }
 
-export async function GET(req: Request) {
+// PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
+async function handleCron(req: Request) {
   if (!verifyCron(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const subs = await getSubscriptions()
+  const subs = await getSubscriptions();
 
   // If no subscriptions, skip
   if (subs.length === 0) {
-    return NextResponse.json({ message: 'No subscriptions', sent: 0 })
+    return NextResponse.json({ message: "No subscriptions", sent: 0 });
   }
 
   // VAPID Setup is no longer needed with FCM
 
   // Find urgent benefits (D-Day <= 3) from real API
-  const apiItems = await fetchAllWelfareSources()
-  const allBenefits = apiItems.map((item, i) => transformListItemToBenefit(item, i))
+  const apiItems = await fetchAllWelfareSources();
+  const allBenefits = apiItems.map((item, i) =>
+    transformListItemToBenefit(item, i),
+  );
   const urgentBenefits = allBenefits
-    .map(b => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
-    .filter(b => b.dDay >= 0 && b.dDay <= 3)
-    .sort((a, b) => a.dDay - b.dDay)
+    .map((b) => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
+    .filter((b) => b.dDay >= 0 && b.dDay <= 3)
+    .sort((a, b) => a.dDay - b.dDay);
 
   if (urgentBenefits.length === 0) {
-    return NextResponse.json({ message: 'No urgent benefits today', sent: 0 })
+    return NextResponse.json({ message: "No urgent benefits today", sent: 0 });
   }
 
   // Build notification message
-  const topBenefit = urgentBenefits[0]
-  const dDayText = topBenefit.dDay === 0 ? '오늘 마감!' : `D-${topBenefit.dDay}`
+  const topBenefit = urgentBenefits[0];
+  const dDayText =
+    topBenefit.dDay === 0 ? "오늘 마감!" : `D-${topBenefit.dDay}`;
 
   // Send to all subscribers via FCM
-  const messaging = getAdminMessaging()
+  const messaging = getAdminMessaging();
   const results = await Promise.allSettled(
-    subs.map(async sub => {
+    subs.map(async (sub) => {
       if (sub.fcmToken) {
         return messaging.send({
           token: sub.fcmToken,
@@ -54,33 +62,47 @@ export async function GET(req: Request) {
             title: `🔔 마감 임박! ${urgentBenefits.length}건의 혜택`,
             body: `${topBenefit.title} - ${dDayText}\n${topBenefit.amount}`,
           },
-          data: { url: `/detail/${topBenefit.id}` }
-        })
+          data: { url: `/detail/${topBenefit.id}` },
+        });
       } else {
-        throw { code: 'messaging/registration-token-not-registered' }
+        throw { code: "messaging/registration-token-not-registered" };
       }
-    })
-  )
+    }),
+  );
 
   // Cleanup expired
   results.forEach((r, i) => {
-    if (r.status === 'rejected') {
-      const code = (r.reason as { code?: string })?.code
-      if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
-        removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(() => {})
+    if (r.status === "rejected") {
+      const code = (r.reason as { code?: string })?.code;
+      if (
+        code === "messaging/registration-token-not-registered" ||
+        code === "messaging/invalid-registration-token"
+      ) {
+        removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(
+          () => {},
+        );
       }
     }
-  })
+  });
 
-  const sent = results.filter(r => r.status === 'fulfilled').length
-  const failed = results.filter(r => r.status === 'rejected').length
+  const sent = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
 
-  console.log(`[Cron] Push sent: ${sent}, failed: ${failed}, urgent: ${urgentBenefits.length}`)
+  console.log(
+    `[Cron] Push sent: ${sent}, failed: ${failed}, urgent: ${urgentBenefits.length}`,
+  );
 
   return NextResponse.json({
     sent,
     failed,
-    urgentBenefits: urgentBenefits.map(b => ({ title: b.title, dDay: b.dDay })),
+    urgentBenefits: urgentBenefits.map((b) => ({
+      title: b.title,
+      dDay: b.dDay,
+    })),
     timestamp: new Date().toISOString(),
-  })
+  });
 }
+
+// PP-005: GET/POST 모두 동일 핸들러로 라우팅 (Bearer 검사 메서드 가드보다 우선)
+export const GET = handleCron;
+export const POST = handleCron;
