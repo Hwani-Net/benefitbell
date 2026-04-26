@@ -19,11 +19,15 @@
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 3~4)**:
 - ✅ PP-008 (신규·P2) 혜택 태그 빈 링크(`/search?q=`) — `split(",").filter(t=>t.trim())` 수정 (commit `680b0d6`)
 - ✅ PP-009 (신규·P2) "담당 기관 연락체" 오타 → "연락처" 수정 (commit `680b0d6`)
-- ✅ PP-206 (신규·P2) 홈 인기혜택 섹션 중복 카드 — popular 폴백 시 urgentDisplay 제외 (commit `51d5195`)
+- ✅ PP-206 (신규·P2) 홈 인기혜택 섹션 중복 카드 — popular 폴백 시 urgentDisplay 제외 (commit `51d5195`) → **재발 후 근본 수정** (commit `22b0173`): popular 플래그 있는 경우에도 urgentTop5Ids 항상 제외
 - ✅ PP-207 (신규·P2) 비로그인 북마크 클릭 시 로그인 유도 없음 → loginPrompt 인라인 토스트 추가 (commit `51d5195`)
 - ✅ PP-010 (신규·P0) AI Chat·AI Eligibility 항상 500 — `gpt-4.1-nano` 미존재 모델 → `gpt-4o-mini` 교체 (commit `fb5a52c`)
 - ✅ PP-011 (신규·P1) 캘린더 다음 달 이동 시 언어 EN 전환 — SSR/CSR hydration mismatch 수정, `useEffect` 후 localStorage 복원 (commit `2cf58ef`)
 - ✅ PP-012 (신규·P2) welfare API 일부 실패 시 ai-recommend 전체 500 — `Promise.all` → `Promise.allSettled`로 소스별 격리 (commit `9d4da1d`)
+
+**Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 5~)**:
+- ✅ PP-013 (신규·P1) AI 에러 핸들링 — OpenAI AuthenticationError 401 미매칭 → `err.status === 401` + "Incorrect API key" 체크 추가, 503 반환 (commit `13bdb60`)
+- ⚠️ OPENAI_API_KEY 미해결 — Firebase Secret Manager 키 값 만료/무효 상태, 대표님 직접 교체 필요
 
 **Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
