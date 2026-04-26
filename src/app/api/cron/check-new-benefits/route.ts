@@ -173,7 +173,7 @@ async function handleCron(req: Request) {
                 link: `/detail/${top.id}`,
               },
               notification: {
-                icon: "/icons/icon-192x192.png",
+                icon: "/icons/icon-192.png",
               },
             },
             data: {

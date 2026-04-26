@@ -47,7 +47,7 @@ export default function PushToggle() {
         return;
       }
 
-      const messaging = getFirebaseMessaging();
+      const messaging = await getFirebaseMessaging();
       if (!messaging) {
         throw new Error("Firebase Messaging not initialized");
       }
@@ -83,7 +83,7 @@ export default function PushToggle() {
   const unsubscribe = async () => {
     setLoading(true);
     try {
-      const messaging = getFirebaseMessaging();
+      const messaging = await getFirebaseMessaging();
       if (messaging) {
         await deleteToken(messaging);
       }

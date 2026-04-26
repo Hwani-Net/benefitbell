@@ -165,7 +165,7 @@ export async function GET(request: Request) {
                 link: `/detail/${top.id}`,
               },
               notification: {
-                icon: "/icons/icon-192x192.png",
+                icon: "/icons/icon-192.png",
                 // badge is not fully supported in FCM webpush notification object directly, but we can pass data
               },
             },

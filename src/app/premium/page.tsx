@@ -269,30 +269,55 @@ export default function PremiumPage() {
               {step === "idle" && (
                 <>
                   {kakaoUser ? (
-                    <button
-                      onClick={handlePayClick}
-                      className="btn btn-full btn-lg"
-                      style={{
-                        background: "#FFE812",
-                        color: "#3C1E1E",
-                        fontWeight: 800,
-                        fontSize: 16,
-                        borderRadius: 14,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        padding: "16px 0",
-                        boxShadow: "0 4px 12px rgba(255, 232, 18, 0.35)",
-                        border: "none",
-                        cursor: "pointer",
-                        width: "100%",
-                      }}
-                    >
-                      {isKo
-                        ? "💳 카카오페이로 결제하기"
-                        : "💳 Pay with KakaoPay"}
-                    </button>
+                    <>
+                      <button
+                        onClick={handlePayClick}
+                        className="btn btn-full btn-lg"
+                        disabled={!KAKAOPAY_LINK}
+                        style={{
+                          background: KAKAOPAY_LINK
+                            ? "#FFE812"
+                            : "var(--bg-secondary)",
+                          color: KAKAOPAY_LINK
+                            ? "#3C1E1E"
+                            : "var(--text-tertiary)",
+                          fontWeight: 800,
+                          fontSize: 16,
+                          borderRadius: 14,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          padding: "16px 0",
+                          boxShadow: KAKAOPAY_LINK
+                            ? "0 4px 12px rgba(255, 232, 18, 0.35)"
+                            : "none",
+                          border: KAKAOPAY_LINK
+                            ? "none"
+                            : "1px dashed var(--border-color)",
+                          cursor: KAKAOPAY_LINK ? "pointer" : "not-allowed",
+                          width: "100%",
+                        }}
+                      >
+                        {isKo
+                          ? "💳 카카오페이로 결제하기"
+                          : "💳 Pay with KakaoPay"}
+                      </button>
+                      {!KAKAOPAY_LINK && (
+                        <p
+                          style={{
+                            textAlign: "center",
+                            fontSize: 13,
+                            color: "var(--text-tertiary)",
+                            marginTop: 8,
+                          }}
+                        >
+                          {isKo
+                            ? "현재 결제 서비스를 준비 중입니다."
+                            : "Payment service is currently unavailable."}
+                        </p>
+                      )}
+                    </>
                   ) : (
                     <button
                       className="btn btn-full btn-lg"

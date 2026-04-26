@@ -314,7 +314,9 @@ export default function DetailPage({
   const appPeriodText =
     appStart || appEnd
       ? `${appStart || ""} ~ ${appEnd || "상시"}`
-      : "도움말에서 확인";
+      : lang === "ko"
+        ? "도움말에서 확인"
+        : "See help section";
 
   // Helper: strip HTML tags from text (defense against cached data with HTML)
   const stripHtml = (html: string) =>
