@@ -537,16 +537,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Always start with "ko" on both SSR and CSR to prevent hydration mismatch.
   // localStorage is read in useEffect (client-only) after hydration completes.
   const [lang, setLang] = useState<Lang>("ko");
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "light";
-    return (localStorage.getItem("theme") as "light" | "dark") ?? "light";
-  });
-  const [fontScale, setFontScale] = useState<"normal" | "large">(() => {
-    if (typeof window === "undefined") return "normal";
-    return (
-      (localStorage.getItem("fontScale") as "normal" | "large") ?? "normal"
-    );
-  });
+  // Always start with default values on both SSR and CSR to prevent hydration
+  // mismatch. localStorage is read in useEffect (client-only) after hydration.
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [fontScale, setFontScale] = useState<"normal" | "large">("normal");
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -767,6 +761,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-font-scale", fontScale);
     localStorage.setItem("fontScale", fontScale);
   }, [fontScale]);
+
+  // Restore theme/fontScale from localStorage after hydration (client-only).
+  // Runs once on mount — prevents SSR/CSR hydration mismatch.
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    if (savedTheme) setTheme(savedTheme);
+    const savedFont = localStorage.getItem("fontScale") as
+      | "normal"
+      | "large"
+      | null;
+    if (savedFont) setFontScale(savedFont);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restore lang from localStorage after hydration (client-only).
   // Runs once on mount — prevents SSR/CSR hydration mismatch.
