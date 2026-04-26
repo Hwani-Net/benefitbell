@@ -117,14 +117,21 @@ export default function HomePage() {
     [loading, benefits],
   );
 
-  // 마감 임박 = dDay 있는 것 우선, 없으면 전체에서 상위 5건
+  // 마감 임박 = dDay 있는 것 우선, 없으면 실제 마감일(dDay<365) 항목 우선, 그것도 없으면 전체 상위 10건
   const urgentBenefits = benefits
     .filter(
       (b) => b.dDay >= 0 && b.dDay <= 30 && b.dDay < 365 && b.status === "open",
     )
     .sort((a, b) => a.dDay - b.dDay);
+  const benefitsWithDeadline = benefits
+    .filter((b) => b.dDay >= 0 && b.dDay < 365 && b.status === "open")
+    .sort((a, b) => a.dDay - b.dDay);
   const urgentDisplay =
-    urgentBenefits.length > 0 ? urgentBenefits : benefits.slice(0, 10); // 마감일 데이터 없을 경우 최신 10건 표시
+    urgentBenefits.length > 0
+      ? urgentBenefits
+      : benefitsWithDeadline.length > 0
+        ? benefitsWithDeadline.slice(0, 10) // 마감일 있는 항목 우선 (PP-026)
+        : benefits.slice(0, 10); // 마감일 데이터 없을 경우 최신 10건 표시
 
   // 인기 혜택 = urgentDisplay 상위 5건 항상 제외 후, popular 플래그 우선 5건
   const urgentTop5Ids = new Set(urgentDisplay.slice(0, 5).map((u) => u.id));

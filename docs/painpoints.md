@@ -108,6 +108,8 @@
 | PP-020 (신규) | i18n | EN 모드 상세 페이지 "지원 주기" 레이블 한국어 하드코딩 (lang 분기 없음) | ✅ **해소** — context.tsx `supportCycle` 키 추가 + detail `t.supportCycle` 사용 |
 | PP-021 (신규) | i18n | EN 모드 상세 페이지 CTA 공유 버튼 "카카오톡으로 공유"·"공유됨!"·"🔗 링크 복사"·"✅ 복사됨!" 한국어 하드코딩 | ✅ **해소** — context.tsx `kakaoShareBtn/kakaoSharedBtn/copyLinkBtn/copiedBtn` 추가 + `t.*` 사용 |
 | PP-022 (신규) | a11y | EN 모드 search/detail/홈 `aria-label` 한국어 하드코딩 — "검색어 지우기", "필터 초기화", "카테고리 필터 초기화", "뒤로가기", "북마크"(×4), "공유" 접근성 속성 미번역 | ✅ **해소** — 전 파일 `lang === "ko" ? "한국어" : "English"` 분기 추가 |
+| PP-026 (신규) | 데이터 | `calculateDDay`가 `applicationEnd="2099.12.31"` 더미 날짜를 실제 계산 → `dDay=26913` 이상치 305건 발생. `getDDayColor/Text`에서 `dDay>=365` 분기로 UI는 "상시" 표시되나 데이터 이상 | ✅ **해소** — `welfare-api.ts` `calculateDDay`: `year >= 2099`이면 즉시 365 반환 (commit 아래) |
+| PP-027 (신규) | UX | 홈 "마감 임박 혜택" 섹션 폴백 `benefits.slice(0,10)`이 상시(dDay=365) 항목만 반환 → "추천 혜택" 제목 변경은 됐으나 dDay 31~364 실제 마감일 항목이 우선 표시되지 않음 | ✅ **해소** — `page.tsx` urgentDisplay 폴백 3단계: 급박(0~30) → 실마감일(31~364) → 전체(PP-026 연계 수정, commit 아래) |
 
 ---
 

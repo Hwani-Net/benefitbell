@@ -296,6 +296,9 @@ export function calculateDDay(endDateStr: string | null | undefined): number {
 
   if (isNaN(year) || isNaN(month) || isNaN(day)) return 365;
 
+  // Treat far-future sentinel dates (≥ 2099) as year-round (PP-026)
+  if (year >= 2099) return 365;
+
   const endDate = new Date(year, month, day, 23, 59, 59);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
