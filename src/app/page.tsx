@@ -126,13 +126,15 @@ export default function HomePage() {
   const urgentDisplay =
     urgentBenefits.length > 0 ? urgentBenefits : benefits.slice(0, 10); // 마감일 데이터 없을 경우 최신 10건 표시
 
-  // 인기 혜택 = popular 플래그 있으면 우선, 없으면 urgentDisplay 상위 5건 제외 후 5건
+  // 인기 혜택 = urgentDisplay 상위 5건 항상 제외 후, popular 플래그 우선 5건
+  const urgentTop5Ids = new Set(urgentDisplay.slice(0, 5).map((u) => u.id));
+  const benefitsExcludingUrgent = benefits.filter(
+    (b) => !urgentTop5Ids.has(b.id),
+  );
   const popularBenefits =
-    benefits.filter((b) => b.popular).length > 0
-      ? benefits.filter((b) => b.popular)
-      : benefits
-          .filter((b) => !urgentDisplay.slice(0, 5).some((u) => u.id === b.id))
-          .slice(0, 5);
+    benefitsExcludingUrgent.filter((b) => b.popular).length > 0
+      ? benefitsExcludingUrgent.filter((b) => b.popular).slice(0, 5)
+      : benefitsExcludingUrgent.slice(0, 5);
 
   // 맞춤 혜택 = userProfile 기반으로 추천 점수 매긴 전체 목록
   const allPersonalizedBenefits = kakaoUser
