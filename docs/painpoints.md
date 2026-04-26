@@ -14,7 +14,7 @@
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
 | P1 (High) | 16 | **16** (전체 해소) | 0 | 0 |
 | P2 (Medium) | 22 | **21** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
-| P3 (Low) | 32 | **29** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
+| P3 (Low) | 38 | **32** | 0 | 3 (PP-302/PP-303 Out of Scope) + 3 known low-risk |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -209,6 +209,15 @@
 | PP-AI-001 (신규) | UX | `ai/page.tsx` `window.confirm()` 사용 — iOS Safari PWA에서 동작 안 함, SSR hydration 오류 가능 | ✅ **해소** — commit `0eef5b0` `showConfirm` React state 기반 인라인 confirm UI로 교체 |
 | PP-CAL-001 (신규) | 코드 | `calendar/page.tsx` `handleShare()` clipboard/share 실패 시 `catch (_) {}` 빈 블록 — 운영 오류 감지 불가 | ✅ **해소** — commit `0eef5b0` `console.warn("[calendar] share failed:", err)` 추가 |
 | PP-CRON-CHECK-001 (신규) | i18n | `cron/check-new-benefits/route.ts` 모든 카테고리 알림 메시지 한국어 하드코딩 — 영문 구독자 디바이스에 한국어 푸시 알림 발송 | ✅ **해소** — commit `0addf26` `isEn = sub.lang === "en"` 분기 + 5개 카테고리·기본값 EN 번역 추가 |
+| PP-H01 (신규) | 코드 | `ai-eligibility.ts` `assessSingle` catch 블록 에러 로깅 누락 — 폴백 이유 불투명 | ✅ **해소** — commit `36e461f` `console.warn("[ai-eligibility] assessSingle failed:", err)` 추가 |
+| PP-D01 (신규) | 코드 | `premium/activate` body parse 에러 로깅 누락 | ✅ **해소** — commit `36e461f` `console.error` 추가 |
+| PP-PUSH-002 (신규) | 보안 | `push/send` FCM title/body 255자 초과 시 FCM 거절 가능 + 필수 필드(token) 검증 없음 | ✅ **해소** — commit `36e461f` 255자 트런케이션 + token 필수 검증 추가 |
+| PP-A01 (신규) | 보안 | `auth/kakao` REDIRECT_URI 특수문자 미인코딩 위험 — **low risk**: 카카오 클라이언트 ID는 영숫자 고정 | known, low-risk — 관찰 유지 |
+| PP-A02 (신규) | UX | `auth/kakao` `code` 파라미터 없을 때 `/profile` 침묵 리다이렉트 — 에러 메시지 없음 | known, low-risk — 관찰 유지 |
+| PP-C03 (신규) | i18n | `payments/confirm` 에러 메시지 한국어 하드코딩 — 서버사이드 내부 메시지라 EN 노출 빈도 낮음 | known, low-risk — 관찰 유지 |
+| PP-D02 (신규) | 코드 | `premium/activate` amount `4900` 하드코딩 (결제 로그용) — 가격 변경 시 수동 수정 필요 | known, low-risk — 관찰 유지 |
+| PP-H02 (신규) | 서버리스 | `ai-eligibility.ts` in-memory `cache` Map — 서버리스 인스턴스 간 공유 안 됨 (설계 주의사항) | known, low-risk — 단일 인스턴스 효과만. Firestore TTL 캐시로 전환 고려 |
+| PP-PUSH-001 (신규) | 코드 | `push/send` 만료 구독 삭제 실패 시 에러 무시 — 좀비 토큰 축적 가능 | known, low-risk — 관찰 유지 |
 
 ---
 
