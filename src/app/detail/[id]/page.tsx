@@ -113,7 +113,10 @@ export default function DetailPage({
       try {
         await navigator.share({
           title: document.title,
-          text: `💡 ${benefit?.title ?? ""} — 혜택알리미에서 확인하세요!`,
+          text:
+            lang === "ko"
+              ? `💡 ${benefit?.title ?? ""} — 혜택알리미에서 확인하세요!`
+              : `💡 ${benefit?.title ?? ""} — Check on BenefitBell!`,
           url,
         });
         setShared(true);
