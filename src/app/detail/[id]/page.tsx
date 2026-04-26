@@ -614,9 +614,13 @@ export default function DetailPage({
                   <div className={styles.stepNum}>{i + 1}</div>
                   <div className={styles.stepContent}>
                     <p className={styles.stepTitle}>{method}</p>
-                    {apiDetail!.applicationLinks[i] && (
+                    {resolveWelfareUrl(
+                      apiDetail!.applicationLinks[i] ?? "",
+                    ) && (
                       <a
-                        href={apiDetail!.applicationLinks[i]}
+                        href={resolveWelfareUrl(
+                          apiDetail!.applicationLinks[i] ?? "",
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ fontSize: 13, color: "var(--primary)" }}
@@ -742,19 +746,21 @@ export default function DetailPage({
           <section className="section">
             <h2 className="section-title mb-12">🔗 관련 홈페이지</h2>
             <div className={styles.docList}>
-              {apiDetail.homepages.map((hp, i) => (
-                <div key={i} className={styles.docItem}>
-                  <span className={styles.docIcon}>🌐</span>
-                  <a
-                    href={hp.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "var(--primary)", fontSize: 14 }}
-                  >
-                    {hp.name || hp.url}
-                  </a>
-                </div>
-              ))}
+              {apiDetail.homepages
+                .filter((hp) => resolveWelfareUrl(hp.url))
+                .map((hp, i) => (
+                  <div key={i} className={styles.docItem}>
+                    <span className={styles.docIcon}>🌐</span>
+                    <a
+                      href={resolveWelfareUrl(hp.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--primary)", fontSize: 14 }}
+                    >
+                      {hp.name || hp.url}
+                    </a>
+                  </div>
+                ))}
             </div>
           </section>
         )}
@@ -833,6 +839,16 @@ export default function DetailPage({
 
 // ── Phase 6: 서류 원스톱 체크리스트 컴포넌트 ──────────────
 const GOV24_HOME = "https://www.gov.kr";
+
+const BOKJIRO_ORIGIN = "https://www.bokjiro.go.kr";
+
+/** 복지로 API에서 오는 상대 경로를 절대 URL로 변환. 유효하지 않으면 "" 반환 */
+function resolveWelfareUrl(raw: string): string {
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `${BOKJIRO_ORIGIN}${raw}`;
+  return "";
+}
 
 function DocumentChecklist({
   docs,
