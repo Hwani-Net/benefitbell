@@ -197,7 +197,9 @@ export default function AiEligibilityCheck({
           <div className={styles.inlineHeader}>
             <div className={styles.inlineHeaderLeft}>
               <span>🤖</span>
-              <span className={styles.inlineLabel}>AI 자격 체크</span>
+              <span className={styles.inlineLabel}>
+                {isKo ? "AI 자격 체크" : "AI Eligibility Check"}
+              </span>
             </div>
           </div>
           <div className={styles.inlineBody}>
@@ -232,7 +234,9 @@ export default function AiEligibilityCheck({
           <div className={styles.inlineHeader}>
             <div className={styles.inlineHeaderLeft}>
               <span>🤖</span>
-              <span className={styles.inlineLabel}>AI 자격 체크</span>
+              <span className={styles.inlineLabel}>
+                {isKo ? "AI 자격 체크" : "AI Eligibility Check"}
+              </span>
             </div>
             {!inlineLoading && inlineVerdict && (
               <span className={`${styles.inlineBadge} ${styles[v]}`}>

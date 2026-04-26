@@ -14,7 +14,15 @@
 | P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
 | P2 (Medium) | 8 | **8** (전체 해소) | 0 | 0 |
-| P3 (Low) | 8 | **6** (PP-301, PP-014, PP-015, PP-020, PP-021, PP-022) | 0 | 2 |
+| P3 (Low) | 11 | **9** | 0 | 2 |
+
+**라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
+- ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
+- ✅ EN 모드 홈 — "Closing Soon", "Categories", "Top 5 Popular", "New Benefits" 섹션 타이틀 정상 영어 표시
+- ✅ EN 모드 검색 — 카테고리 필터 영어, 정렬 버튼 Popular/Closing Soon/New 영어, "396 results" 정상
+- ✅ EN 모드 프로필(비로그인) — "Login Required", "Login with Kakao" 등 전 문자열 영어 표시
+- ✅ PP-029 (신규·P3) `AiEligibilityCheck` inline 헤더 "AI 자격 체크" EN 미분기 → isKo 분기 추가 (2곳, commit 아래)
+- ✅ PP-030 (신규·P3) `TopBar` 카카오 프로필 이미지 `alt="프로필"` EN 미분기 → lang 분기 추가 (commit 아래)
 
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 3~4)**:
 - ✅ PP-008 (신규·P2) 혜택 태그 빈 링크(`/search?q=`) — `split(",").filter(t=>t.trim())` 수정 (commit `680b0d6`)
@@ -118,6 +126,8 @@
 | PP-022 (신규) | a11y | EN 모드 search/detail/홈 `aria-label` 한국어 하드코딩 — "검색어 지우기", "필터 초기화", "카테고리 필터 초기화", "뒤로가기", "북마크"(×4), "공유" 접근성 속성 미번역 | ✅ **해소** — 전 파일 `lang === "ko" ? "한국어" : "English"` 분기 추가 |
 | PP-026 (신규) | 데이터 | `calculateDDay`가 `applicationEnd="2099.12.31"` 더미 날짜를 실제 계산 → `dDay=26913` 이상치 305건 발생. `getDDayColor/Text`에서 `dDay>=365` 분기로 UI는 "상시" 표시되나 데이터 이상 | ✅ **해소** — `welfare-api.ts` `calculateDDay`: `year >= 2099`이면 즉시 365 반환 (commit 아래) |
 | PP-027 (신규) | UX | 홈 "마감 임박 혜택" 섹션 폴백 `benefits.slice(0,10)`이 상시(dDay=365) 항목만 반환 → "추천 혜택" 제목 변경은 됐으나 dDay 31~364 실제 마감일 항목이 우선 표시되지 않음 | ✅ **해소** — `page.tsx` urgentDisplay 폴백 3단계: 급박(0~30) → 실마감일(31~364) → 전체(PP-026 연계 수정, commit 아래) |
+| PP-029 (신규) | i18n | `AiEligibilityCheck` inline/modal 헤더 "AI 자격 체크" EN 모드에서 한국어 하드코딩 (isKo 분기 없음, 2곳) | ✅ **해소** — `AiEligibilityCheck.tsx` isKo 분기 추가 → "AI Eligibility Check" |
+| PP-030 (신규) | i18n | `TopBar` 카카오 프로필 이미지 `alt="프로필"` — lang 분기 없이 항상 한국어 | ✅ **해소** — `TopBar.tsx` `lang === 'ko' ? '프로필' : 'Profile'` 분기 추가 |
 
 ---
 
