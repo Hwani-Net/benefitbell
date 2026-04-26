@@ -107,12 +107,17 @@ export async function GET(req: Request) {
 
     const { lastIndex, totalProcessed } = state;
 
-    // 2. Fetch all servIds — only bokjiro source supports the detail API
-    // (bizinfo/kstartup/private have their own date fields in list response;
-    //  fetchWelfareDetail uses NationalWelfaredetailedV001 = bokjiro-only)
+    // 2. Fetch all servIds — only NATIONAL bokjiro detail API is supported
+    // bokjiro source includes 3 endpoints: national (raw servId), local (LG-),
+    // subsidy24 (SUB-). Only national servIds work with NationalWelfaredetailedV001.
+    // Items with LG-/SUB-/BIZ-/KSU-/PW- prefixes have their own date fields in list response.
     const allItems = await fetchAllWelfareSources();
-    const bokjiroItems = allItems.filter((item) => item.source === "bokjiro");
-    const servIds = bokjiroItems.map((item) => item.servId);
+    const detailEligible = allItems.filter(
+      (item) =>
+        item.source === "bokjiro" &&
+        !/^(LG-|SUB-|BIZ-|KSU-|PW-)/.test(item.servId),
+    );
+    const servIds = detailEligible.map((item) => item.servId);
     const total = servIds.length;
 
     if (total === 0) {
