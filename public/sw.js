@@ -1,4 +1,4 @@
-const CACHE_NAME = "hyetack-v1";
+const CACHE_NAME = "hyetack-" + new Date().toISOString().slice(0, 10);
 const STATIC_ASSETS = [
   "/",
   "/search",
