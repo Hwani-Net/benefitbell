@@ -782,7 +782,9 @@ export default function DetailPage({
         {/* Related Laws (API only) */}
         {apiDetail?.relatedLaws && apiDetail.relatedLaws.length > 0 && (
           <section className="section">
-            <h2 className="section-title mb-12">⚖️ 관련 법령</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "⚖️ 관련 법령" : "⚖️ Related Laws"}
+            </h2>
             <div className={styles.docList}>
               {apiDetail.relatedLaws.map((law, i) => (
                 <div key={i} className={styles.docItem}>
@@ -797,7 +799,9 @@ export default function DetailPage({
         {/* Inquiry Contacts (API only) */}
         {apiDetail?.homepages && apiDetail.homepages.length > 0 && (
           <section className="section">
-            <h2 className="section-title mb-12">🔗 관련 홈페이지</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "🔗 관련 홈페이지" : "🔗 Related Websites"}
+            </h2>
             <div className={styles.docList}>
               {apiDetail.homepages
                 .filter((hp) => resolveWelfareUrl(hp.url))
