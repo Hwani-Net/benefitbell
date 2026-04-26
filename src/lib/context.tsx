@@ -795,9 +795,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFontScale((s) => (s === "normal" ? "large" : "normal"));
 
   const toggleBookmark = (id: string) => {
-    setBookmarks((prev) =>
-      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id],
-    );
+    setBookmarks((prev) => {
+      const isAdding = !prev.includes(id);
+      if (
+        typeof window !== "undefined" &&
+        typeof (window as Window & { gtag?: (...args: unknown[]) => void })
+          .gtag === "function"
+      ) {
+        (window as Window & { gtag?: (...args: unknown[]) => void }).gtag!(
+          "event",
+          isAdding ? "bookmark_add" : "bookmark_remove",
+          { benefit_id: id },
+        );
+      }
+      return isAdding ? [...prev, id] : prev.filter((b) => b !== id);
+    });
   };
 
   const isBookmarked = (id: string) => bookmarks.includes(id);

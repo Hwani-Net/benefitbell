@@ -954,6 +954,17 @@ export default function ProfilePage() {
     }
 
     setSaving(false);
+    // GA4: profile_save
+    if (
+      typeof window !== "undefined" &&
+      typeof (window as Window & { gtag?: (...args: unknown[]) => void })
+        .gtag === "function"
+    ) {
+      (window as Window & { gtag?: (...args: unknown[]) => void }).gtag!(
+        "event",
+        "profile_save",
+      );
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

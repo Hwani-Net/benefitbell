@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useApp } from "@/lib/context";
 import { getDDayColor, getDDayText, bText } from "@/data/benefits";
 import TopBar from "@/components/layout/TopBar";
@@ -17,6 +17,20 @@ export default function CalendarPage() {
     benefitsLoading: loading,
   } = useApp();
   const now = new Date();
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      typeof (window as Window & { gtag?: (...args: unknown[]) => void })
+        .gtag === "function"
+    ) {
+      (window as Window & { gtag?: (...args: unknown[]) => void }).gtag!(
+        "event",
+        "calendar_view",
+      );
+    }
+  }, []);
+
   const [currentDate, setCurrentDate] = useState(
     new Date(now.getFullYear(), now.getMonth(), 1),
   );

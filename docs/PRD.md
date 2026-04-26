@@ -373,3 +373,170 @@ PRD §1~§5 구조는 견고함. 다만 **3건의 P0/P1 신규 발견**으로 de
 §5 표 첫 행 "Next.js 15"는 "Next.js 16.1.6"으로 확정 수정. §1-2 카카오 row는 "302" → "307"로 수정. §4 TV-4 기대값에 "POST body 필수" 주석 추가. §4 TV-5 기대값 "302" → "302 또는 307"로 변경.
 
 dev는 Task #3에서 위 P0 1건 + P1 1건 + Quick Win 3건을 우선순위대로 구현. `painpoints.md`에는 §3 + §6-3 + §6-4 통합 반영.
+
+---
+
+## Round 2 — 2026-04-26
+
+> **작성자**: planner-a
+> **근거**: Round 1 교차검증(§6) 결과 + 소스코드 직접 분석 (notify/route.ts, check-new-benefits/route.ts, push/send/route.ts, calendar/page.tsx, page.module.css)
+
+### R2-1. P1-5: notify fail-open → fail-closed
+
+#### 문제 (코드 증거)
+
+`src/app/api/cron/notify/route.ts` L13–18:
+
+```ts
+function verifyCron(req: Request): boolean {
+  const authHeader = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return true; // ← fail-open: 시크릿 미설정 시 모든 요청 통과
+  return authHeader === `Bearer ${cronSecret}`;
+}
+```
+
+`CRON_SECRET` 환경변수가 설정되지 않으면 production에서도 인증 없이 통과. 동일 파일 내 `x-cron-secret` 헤더 검사도 없음.
+
+비교: `cleanup-welfare-dates`, `enrich-dates`, `push/send` 세 파일은 이미 아래 패턴으로 fail-closed 완료:
+
+```ts
+if (!cronSecret) {
+  if (process.env.NODE_ENV === "development") return true;
+  return false; // ← production fail-closed
+}
+```
+
+#### 목표
+
+`notify/route.ts`의 `verifyCron`을 fail-closed 패턴으로 교체.
+
+#### Acceptance Criteria
+
+- AC-1: `CRON_SECRET` 미설정 + `NODE_ENV !== "development"` → `verifyCron` 반환값 `false` → 호출자가 401 반환
+- AC-2: `CRON_SECRET` 미설정 + `NODE_ENV === "development"` → `verifyCron` 반환값 `true` (기존 개발 편의 유지)
+- AC-3: `CRON_SECRET` 설정 + 올바른 `Bearer {secret}` 헤더 → `true`
+- AC-4: `CRON_SECRET` 설정 + 틀린 헤더 또는 헤더 없음 → `false` → 401
+- AC-5: `x-cron-secret` 헤더도 fallback 인증 수단으로 허용 (cleanup/enrich/send와 동일 인터페이스 통일)
+
+---
+
+### R2-2. P1-6: verifyCron 5곳 공통 모듈화
+
+#### 문제 (코드 증거)
+
+현재 `verifyCron` 인라인 구현 현황:
+
+| 파일 | 구현 방식 | fail-closed? |
+|---|---|---|
+| `notify/route.ts` | `if (!cronSecret) return true` | ❌ fail-open |
+| `check-new-benefits/route.ts` | `const CRON_SECRET = process.env.CRON_SECRET; if (CRON_SECRET) { ... }` | ❌ fail-open |
+| `cleanup-welfare-dates/route.ts` | dev 분기 + x-cron-secret | ✅ |
+| `enrich-dates/route.ts` | dev 분기 + x-cron-secret | ✅ |
+| `push/send/route.ts` | dev 분기 + x-cron-secret | ✅ |
+
+5개 파일에 각각 다른 구현이 산재. `check-new-benefits`도 fail-open 패턴으로 P1-5와 동일 위험.
+
+#### 목표
+
+`src/lib/cron-auth.ts` 공통 모듈 신설, 5개 파일 모두 import로 교체.
+
+#### Acceptance Criteria
+
+- AC-1: `src/lib/cron-auth.ts` 파일 생성
+- AC-2: `export function verifyCron(req: Request): Response | null` 시그니처
+  - 인증 통과 시 `null` 반환 (호출부에서 진행)
+  - 인증 실패 시 `NextResponse.json({ error: "Unauthorized" }, { status: 401 })` 반환
+- AC-3: 내부 로직 = fail-closed 패턴 (dev 분기 포함, x-cron-secret 헤더 fallback 포함)
+- AC-4: 5개 파일 모두 `verifyCron` 인라인 제거 → `import { verifyCron } from "@/lib/cron-auth"` 교체
+- AC-5: 각 파일 핸들러 최상단: `const authErr = verifyCron(req); if (authErr) return authErr;` 패턴으로 통일
+- AC-6: `npx tsc --noEmit` 타입 에러 0건
+
+#### 구현 스펙 (`src/lib/cron-auth.ts`)
+
+```ts
+import { NextResponse } from "next/server";
+
+/**
+ * Verifies CRON_SECRET from Authorization or x-cron-secret header.
+ * Returns null on success (caller proceeds), or a 401 Response on failure.
+ *
+ * Fail-closed: production without CRON_SECRET always returns 401.
+ * Dev-open: development without CRON_SECRET returns null (allow).
+ */
+export function verifyCron(req: Request): NextResponse | null {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "development") return null;
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader === `Bearer ${cronSecret}`) return null;
+  const xSecret = req.headers.get("x-cron-secret");
+  if (xSecret === cronSecret) return null;
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+```
+
+---
+
+### R2-3. Quick Win: 캘린더 마감 임박 색상 분기
+
+#### 현황 분석 (코드 증거)
+
+`src/app/calendar/page.tsx` L148–158 및 `page.module.css` L212–226 확인 결과, **이미 구현 완료**:
+
+```ts
+// page.tsx
+const isUrgent = minDDay !== null && minDDay <= 3   // D-3 이하
+const isSoon   = minDDay !== null && minDDay > 3 && minDDay <= 7  // D-4~7
+```
+
+```css
+/* page.module.css */
+.urgentDay { background: rgba(239,68,68,0.1); color: #dc2626; }  /* red */
+.soonDay   { background: rgba(251,146,60,0.1); color: #ea580c; } /* orange */
+```
+
+두 클래스 모두 캘린더 날짜 셀에 적용 완료. 기능적으로 AC를 이미 충족.
+
+#### PRD AC (실측 기반 재정의)
+
+- AC-1: `daysUntilEnd(= minDDay) <= 3` → `.urgentDay` CSS Module 클래스 적용 (`color: #dc2626`, red)
+- AC-2: `daysUntilEnd > 3 && daysUntilEnd <= 7` → `.soonDay` CSS Module 클래스 적용 (`color: #ea580c`, orange)
+- AC-3: `daysUntilEnd > 7` → 기본 `.dayCell` 색상 (빨강/주황 미적용)
+- AC-4: `isSelected` 상태에서는 urgentDay/soonDay 클래스 오버라이드 없음 (`!isSelected` 조건 유지)
+
+#### 구현 상태
+
+**현재 코드가 AC 전부 충족.** dev는 이 Quick Win에 대해 추가 구현 불필요. 시각적 검증(스크린샷 확인)만 수행.
+
+---
+
+### R2-4. 테스트 벡터 (TV)
+
+| ID | 검증 대상 | 입력 | 기대 결과 |
+|---|---|---|---|
+| TV-R2-1 | `verifyCron` 정상 인증 | `Authorization: Bearer {valid_secret}` | `null` 반환 (통과) |
+| TV-R2-2 | `verifyCron` production fail-closed | `CRON_SECRET=""`, `NODE_ENV=production`, 헤더 없음 | `Response(401)` 반환 |
+| TV-R2-3 | notify endpoint 미인증 POST | production, Authorization 헤더 없음 | HTTP 401 |
+| TV-R2-4 | 캘린더 D-2 셀 | `minDDay=2` | `.urgentDay` 클래스 적용 (`#dc2626` 적용) |
+| TV-R2-5 | 캘린더 D-5 셀 | `minDDay=5` | `.soonDay` 클래스 적용 (`#ea580c` 적용) |
+| TV-R2-6 | 캘린더 D-10 셀 | `minDDay=10` | `.urgentDay`/`.soonDay` 미적용 (기본 색상) |
+
+---
+
+### R2-5. 작업 범위 요약
+
+| 항목 | 파일 | 작업 | 우선순위 |
+|---|---|---|---|
+| P1-5 notify fail-closed | `src/app/api/cron/notify/route.ts` | `verifyCron` 함수 교체 | P1 |
+| P1-6 공통 모듈 신설 | `src/lib/cron-auth.ts` (신규) | 공통 `verifyCron` 구현 | P1 |
+| P1-6 check-new-benefits | `src/app/api/cron/check-new-benefits/route.ts` | 인라인 → import 교체 | P1 |
+| P1-6 notify | `src/app/api/cron/notify/route.ts` | 인라인 → import 교체 (P1-5와 동시 적용) | P1 |
+| P1-6 cleanup-welfare-dates | `src/app/api/cron/cleanup-welfare-dates/route.ts` | 인라인 → import 교체 | P1 |
+| P1-6 enrich-dates | `src/app/api/cron/enrich-dates/route.ts` | 인라인 → import 교체 | P1 |
+| P1-6 push/send | `src/app/api/push/send/route.ts` | 인라인 → import 교체 | P1 |
+| Quick Win 캘린더 색상 | `src/app/calendar/page.tsx` + `page.module.css` | **이미 구현 완료** — 시각 검증만 | 완료 |
+
+> **구현 순서**: cron-auth.ts 신설 → notify 교체 → check-new-benefits 교체 → 나머지 3개 교체 → `npx tsc --noEmit` 확인
