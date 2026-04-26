@@ -12,9 +12,9 @@
 | 우선순위 | 총 항목 | 해소 | 진행 중 | 미착수 |
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **6** | 0 | 1 (PP-002 Out of Scope) |
-| P1 (High) | 8 | **8** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 14 | **13** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
-| P3 (Low) | 29 | **26** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
+| P1 (High) | 10 | **10** (전체 해소) | 0 | 0 |
+| P2 (Medium) | 19 | **18** | 0 | 1 (PP-201 데이터 파이프라인 Out of Scope) |
+| P3 (Low) | 32 | **29** | 0 | 3 (PP-301 실측완료, PP-302/PP-303 Out of Scope) |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -130,6 +130,9 @@
 | PP-104 | 검색 | `/search` 결과가 비어있을 때 빈 상태 메시지 부재 | UX | ✅ **해소** — `filtered.length === 0 → emptyState` 기구현 (search/page.tsx:629) |
 | PP-105 | 푸시 | FCM 권한 거부 후 재요청 흐름 부재 | 푸시 활성률 | ✅ **해소** — denied 안내 문구 개선 + 인라인 설정 가이드 토글 추가 (PushToggle.tsx, 이번 커밋) |
 
+| PP-CON-004 (신규) | 보안 | `consent/page.tsx` `?redirect=https://evil.com` 파라미터로 인증 후 외부 도메인 리다이렉트 가능 (Open Redirect). `redirectTo` 검증 없음 | ✅ **해소** — commit `d51e0db` `rawRedirect.startsWith("/") ? rawRedirect : "/"` 가드 추가 |
+| PP-AIELIG-001 (신규) | 보안 | `ai-eligibility/route.ts` `makeCacheKey()` 문자열 200자 슬라이스 → 200자 이후 다른 프로필이 동일 캐시 키 공유 (Cache Poisoning) | ✅ **해소** — commit `d51e0db` `crypto.createHash("sha256")` SHA-256 해시로 교체 |
+
 ### Quick Win 다음 라운드 (reviewer 미반영 항목)
 - **#1 AI 자연어 설명** — 자격 판정 결과에 GPT 요약 1줄 추가
 - **#2 D-3/D-1 캘린더 색상 강조** — 마감 임박 시 빨간색
@@ -153,6 +156,11 @@
 | PP-AIC-002 (신규) | 코드 | `AiEligibilityCheck` `renderDetailBody()` 함수가 return문 이후 선언 — 호이스팅으로 동작하나 가독성 저하 | ✅ **해소** — commit `b0ffb07` 함수 선언을 return문 앞으로 이동 |
 | PP-AIC-003 (신규) | UX | `AiEligibilityCheck` `detailError` 표시 시 원시 API 에러 문자열 직접 노출 — 언어 혼재(한·영 혼용) 가능 | ✅ **해소** — commit `b0ffb07` 에러 유형별 isKo 친화적 메시지로 교체 |
 | PP-CAL-002 (신규) | 데이터 | calendar `b.applicationEnd === "상시"` 한국어 리터럴 데이터 비교 — 영어 데이터셋 전환 시 매칭 실패 가능 (데이터 레이어 이슈) | ✅ **해소** — commit `b0ffb07` `\|\| "always"` 폴백 추가 |
+| PP-AI-002 (신규) | 보안 | `ai/page.tsx` `handleChatSubmit()` 연속 클릭 시 stale closure로 `usageCount` React state가 최신 localStorage 미반영 → 하루 10회 제한 우회 가능 | ✅ **해소** — commit `22fffb5` 제출 직전 localStorage 직접 읽기 이중 확인 추가 |
+| PP-CON-001/002 (신규) | i18n | `consent/page.tsx` 개인정보 수집 항목 테이블 — 영문 사용자에게 "수집 항목"·"목적" 등 한국어 셀 노출 | ✅ **해소** — commit `22fffb5` `isKo` 분기 추가, EN 번역 적용 |
+| PP-SRC-001 (신규) | UX | `search/page.tsx` "전체 지우기" 클릭 시 state만 초기화, localStorage는 잔존 → 새로고침 시 검색어 부활 | ✅ **해소** — commit `e111d5b` `localStorage.removeItem("recentSearches")` 추가 |
+| PP-BID-001 (신규) | 코드 | `api/benefits/[id]/route.ts` Firestore 캐시 조회 `catch {}` 빈 블록 — Firestore 오류 감지 불가 | ✅ **해소** — commit `e111d5b` `console.warn("[benefits/id] Firestore cache miss:", err)` 추가 |
+| PP-ENRICH-001 (신규) | 코드 | `cron/enrich-dates/route.ts` pLimit 비동기 작업 중 sparse array → `r.status` TypeError 위험 | ✅ **해소** — commit `22fffb5` `results.filter(Boolean)` 방어 레이어 추가 |
 
 ---
 
@@ -189,6 +197,9 @@
 | PP-R01 (신규) | i18n | refund-policy 페이지 EN i18n 미지원 → isKo 분기 추가 | ✅ **해소** |
 | PP-G01 (신규) | a11y | 다크모드 WCAG AA 대비율 미달 3개 변수 (coral-dark/blue/purple) → 수정 | ✅ **해소** |
 | PP-050 (신규) | i18n | detail 페이지 비로그인 북마크 토스트 "로그인 후 북마크를 사용할 수 있습니다" EN 분기 없음 | ✅ **해소** — lang 분기 추가 |
+| PP-AI-001 (신규) | UX | `ai/page.tsx` `window.confirm()` 사용 — iOS Safari PWA에서 동작 안 함, SSR hydration 오류 가능 | ✅ **해소** — commit `0eef5b0` `showConfirm` React state 기반 인라인 confirm UI로 교체 |
+| PP-CAL-001 (신규) | 코드 | `calendar/page.tsx` `handleShare()` clipboard/share 실패 시 `catch (_) {}` 빈 블록 — 운영 오류 감지 불가 | ✅ **해소** — commit `0eef5b0` `console.warn("[calendar] share failed:", err)` 추가 |
+| PP-CRON-CHECK-001 (신규) | i18n | `cron/check-new-benefits/route.ts` 모든 카테고리 알림 메시지 한국어 하드코딩 — 영문 구독자 디바이스에 한국어 푸시 알림 발송 | ✅ **해소** — commit `0addf26` `isEn = sub.lang === "en"` 분기 + 5개 카테고리·기본값 EN 번역 추가 |
 
 ---
 
