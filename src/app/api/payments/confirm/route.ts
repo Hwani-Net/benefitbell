@@ -90,10 +90,11 @@ export async function POST(req: Request) {
         console.error("Firestore Update Error:", dbErr);
         return NextResponse.json(
           {
-            message: "결제는 성공했으나 DB 업데이트에 실패했습니다.",
+            success: false,
+            error: "결제는 성공했으나 DB 업데이트에 실패했습니다. 고객센터에 문의해주세요.",
             details: body,
           },
-          { status: 200 },
+          { status: 500 },
         );
       }
     }

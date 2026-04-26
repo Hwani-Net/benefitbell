@@ -26,9 +26,6 @@ const DDAY_THRESHOLDS_PREMIUM = [1, 3, 7, 14];
 
 interface PushSubscription {
   fcmToken?: string;
-  endpoint?: string; // Legacy VAPID
-  p256dh?: string;
-  auth?: string;
   categories?: string[];
   age_group?: string; // 'youth' | 'middle-aged' | 'senior'
   region?: string;
@@ -58,8 +55,8 @@ export async function GET(request: Request) {
   const subscriptions: (PushSubscription & { docId: string })[] = [];
   subsSnapshot.forEach((doc) => {
     const d = doc.data() as PushSubscription;
-    // FCM 토큰이 있거나 기존 endpoint가 있는 경우 수집
-    if (d.fcmToken || d.endpoint) {
+    // FCM 토큰이 있는 경우만 수집 (legacy VAPID endpoint 제외)
+    if (d.fcmToken) {
       subscriptions.push({ ...d, docId: doc.id });
     }
   });
@@ -177,12 +174,6 @@ export async function GET(request: Request) {
             },
           };
           await messaging.send(message);
-        } else {
-          // Legacy VAPID 토큰인 경우 무시하고 삭제 대상으로 지정 (FCM으로 강제 전환)
-          throw {
-            code: "messaging/registration-token-not-registered",
-            legacy: true,
-          };
         }
 
         // 중복 방지: 발송된 혜택들 모두 기록
