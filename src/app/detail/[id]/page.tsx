@@ -613,7 +613,9 @@ export default function DetailPage({
                 <div key={i} className={styles.stepItem}>
                   <div className={styles.stepNum}>{i + 1}</div>
                   <div className={styles.stepContent}>
-                    <p className={styles.stepTitle}>{method}</p>
+                    <p className={styles.stepTitle}>
+                      {normalizeApplyMethod(method)}
+                    </p>
                     {resolveWelfareUrl(
                       apiDetail!.applicationLinks[i] ?? "",
                     ) && (
@@ -841,6 +843,19 @@ export default function DetailPage({
 const GOV24_HOME = "https://www.gov.kr";
 
 const BOKJIRO_ORIGIN = "https://www.bokjiro.go.kr";
+
+/** 복지로 API applmetList servSeDetailNm이 DB 컬럼명을 그대로 반환하는 경우 사용자 친화적 레이블로 변환 */
+const APPLY_METHOD_LABEL_MAP: Record<string, string> = {
+  신청기관연락처목록: "신청기관에 서비스 신청",
+  조사기관연락처목록: "담당 기관 조사·심사",
+  결정기관연락처목록: "지원 여부 결정",
+  지급기관연락처목록: "서비스·지원금 지급",
+  사후관리기관목록: "서비스 제공 후 사후 관리",
+};
+
+function normalizeApplyMethod(raw: string): string {
+  return APPLY_METHOD_LABEL_MAP[raw.trim()] ?? raw;
+}
 
 /** 복지로 API에서 오는 상대 경로를 절대 URL로 변환. 유효하지 않으면 "" 반환 */
 function resolveWelfareUrl(raw: string): string {
