@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminMessaging } from "@/lib/firebase-admin";
-import { getSubscriptions, removeSubscription } from "@/lib/push-store";
+import { getAdminFirestore, getAdminMessaging } from "@/lib/firebase-admin";
 import {
   calculateDDay,
   fetchAllWelfareSources,
@@ -15,14 +14,18 @@ async function handleCron(req: Request) {
   const authError = verifyCron(req);
   if (authError) return authError;
 
-  const subs = await getSubscriptions();
+  // Firestore 기반 구독자 조회 (in-memory push-store는 cold start 시 항상 비어있어 사용 불가)
+  const db = getAdminFirestore();
+  const snapshot = await db.collection("push_subscriptions").get();
+  const subs: { fcmToken?: string; docId: string }[] = [];
+  snapshot.docs.forEach((d) => {
+    const data = d.data();
+    if (data.fcmToken) subs.push({ fcmToken: data.fcmToken, docId: d.id });
+  });
 
-  // If no subscriptions, skip
   if (subs.length === 0) {
     return NextResponse.json({ message: "No subscriptions", sent: 0 });
   }
-
-  // VAPID Setup is no longer needed with FCM
 
   // Find urgent benefits (D-Day <= 3) from real API
   const apiItems = await fetchAllWelfareSources();
@@ -38,31 +41,32 @@ async function handleCron(req: Request) {
     return NextResponse.json({ message: "No urgent benefits today", sent: 0 });
   }
 
-  // Build notification message
   const topBenefit = urgentBenefits[0];
   const dDayText =
     topBenefit.dDay === 0 ? "오늘 마감!" : `D-${topBenefit.dDay}`;
+  const amountText = topBenefit.amount ? ` — ${topBenefit.amount}` : "";
 
-  // Send to all subscribers via FCM
   const messaging = getAdminMessaging();
+  const toDelete: string[] = [];
+
   const results = await Promise.allSettled(
     subs.map(async (sub) => {
-      if (sub.fcmToken) {
-        return messaging.send({
-          token: sub.fcmToken,
-          notification: {
-            title: `🔔 마감 임박! ${urgentBenefits.length}건의 혜택`,
-            body: `${topBenefit.title} - ${dDayText}\n${topBenefit.amount}`,
-          },
-          data: { url: `/detail/${topBenefit.id}` },
-        });
-      } else {
-        throw { code: "messaging/registration-token-not-registered" };
-      }
+      return messaging.send({
+        token: sub.fcmToken!,
+        notification: {
+          title: `🔔 마감 임박! ${urgentBenefits.length}건의 혜택`,
+          body: `${topBenefit.title} - ${dDayText}${amountText}`,
+        },
+        webpush: {
+          fcmOptions: { link: `/detail/${topBenefit.id}` },
+          notification: { icon: "/icons/icon-192.png" },
+        },
+        data: { url: `/detail/${topBenefit.id}` },
+      });
     }),
   );
 
-  // Cleanup expired
+  // Cleanup expired tokens
   results.forEach((r, i) => {
     if (r.status === "rejected") {
       const code = (r.reason as { code?: string })?.code;
@@ -70,18 +74,24 @@ async function handleCron(req: Request) {
         code === "messaging/registration-token-not-registered" ||
         code === "messaging/invalid-registration-token"
       ) {
-        removeSubscription(subs[i].fcmToken || subs[i].endpoint).catch(
-          () => {},
-        );
+        toDelete.push(subs[i].docId);
       }
     }
   });
+
+  if (toDelete.length > 0) {
+    await Promise.allSettled(
+      toDelete.map((docId) =>
+        db.collection("push_subscriptions").doc(docId).delete(),
+      ),
+    );
+  }
 
   const sent = results.filter((r) => r.status === "fulfilled").length;
   const failed = results.filter((r) => r.status === "rejected").length;
 
   console.log(
-    `[Cron] Push sent: ${sent}, failed: ${failed}, urgent: ${urgentBenefits.length}`,
+    `[cron/notify] sent: ${sent}, failed: ${failed}, urgent: ${urgentBenefits.length}, expired-cleaned: ${toDelete.length}`,
   );
 
   return NextResponse.json({
