@@ -14,7 +14,7 @@
 | P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
 | P2 (Medium) | 8 | **8** (전체 해소) | 0 | 0 |
-| P3 (Low) | 3 | **1** (PP-301 WebVitals) | 0 | 2 |
+| P3 (Low) | 4 | **2** (PP-301 WebVitals, PP-014 카테고리번역) | 0 | 2 |
 
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 3~4)**:
 - ✅ PP-008 (신규·P2) 혜택 태그 빈 링크(`/search?q=`) — `split(",").filter(t=>t.trim())` 수정 (commit `680b0d6`)
@@ -28,6 +28,14 @@
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 5~)**:
 - ✅ PP-013 (신규·P1) AI 에러 핸들링 — OpenAI AuthenticationError 401 미매칭 → `err.status === 401` + "Incorrect API key" 체크 추가, 503 반환 (commit `13bdb60`)
 - ⚠️ OPENAI_API_KEY 미해결 — Firebase Secret Manager 키 값 만료/무효 상태, 대표님 직접 교체 필요
+
+**Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 6~)**:
+- ✅ PP-011 (신규·P1) 재확인 — 캘린더 5월 이동 후 `lang: "en"` 유지 확인 ✅
+- ✅ PP-207 (신규·P2) 재확인 — 비로그인 북마크 클릭 → 로그인 토스트 정상 ✅
+- ✅ PP-104 (P1) 재확인 — 검색 0건 시 "🔍No results found" 표시 ✅
+- ✅ PP-014 (신규·P3) EN 모드 프로필 Settings "Benefit Categories for Alerts" 카테고리 버튼 한국어 하드코딩 → `en` 필드 추가 + `lang === "en"` 분기 수정 (commit `b0134c9`)
+- ⚠️ PP-206 라이브 재현 중 — commit `22b0173` Firebase 배포 대기 (pushed 01:05, build 예상 완료 01:15 이후)
+- ⚠️ PP-013 라이브 500 반환 중 — commit `13bdb60` 배포 대기 + OPENAI_API_KEY 교체 필요
 
 **Task #4 dev 결과 (2026-04-26 세션)**:
 - ✅ PP-004 코드 수정 완료 (commit `481d395`) — 라이브 404 확인
@@ -88,6 +96,7 @@
 | PP-301 | 성능 | 첫 로드 LCP 측정 미실시 | **미착수** |
 | PP-302 | 운영 | Sentry 등 에러 트래킹 부재 | **미착수** — Out of Scope |
 | PP-303 | 마케팅 | TWA AAB 외 직접 다운로드 경로 없음 | **미착수** |
+| PP-014 (신규) | i18n | EN 모드 프로필 설정 카테고리 알림 버튼 한국어 하드코딩 | ✅ **해소** — commit `b0134c9` `lang==="en"` 분기 추가 |
 
 ---
 

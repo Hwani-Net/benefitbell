@@ -488,7 +488,9 @@ export default function DetailPage({
         {/* API Detailed Content Sections */}
         {apiDetail?.overview && (
           <section className="section">
-            <h2 className="section-title mb-12">📋 서비스 개요</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "📋 서비스 개요" : "📋 Overview"}
+            </h2>
             <div className={styles.textBlock}>
               {renderText(apiDetail.overview)}
             </div>
@@ -497,7 +499,9 @@ export default function DetailPage({
 
         {apiDetail?.targetDetail && (
           <section className="section">
-            <h2 className="section-title mb-12">👤 지원 대상</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "👤 지원 대상" : "👤 Eligibility"}
+            </h2>
             <div className={styles.textBlock}>
               {renderText(apiDetail.targetDetail)}
             </div>
@@ -506,7 +510,9 @@ export default function DetailPage({
 
         {apiDetail?.selectionCriteria && (
           <section className="section">
-            <h2 className="section-title mb-12">📊 선정 기준</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "📊 선정 기준" : "📊 Selection Criteria"}
+            </h2>
             <div className={styles.textBlock}>
               {renderText(apiDetail.selectionCriteria)}
             </div>
@@ -515,7 +521,9 @@ export default function DetailPage({
 
         {apiDetail?.supportContent && (
           <section className="section">
-            <h2 className="section-title mb-12">💰 지원 내용</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "💰 지원 내용" : "💰 Benefits"}
+            </h2>
             <div className={styles.textBlock}>
               {renderText(apiDetail.supportContent)}
             </div>
@@ -644,7 +652,9 @@ export default function DetailPage({
         {/* Application Methods (from API) */}
         {hasApiMethods ? (
           <section className="section">
-            <h2 className="section-title mb-12">📝 신청 방법</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "📝 신청 방법" : "📝 How to Apply"}
+            </h2>
             <div className={styles.stepList}>
               {apiDetail!.applicationMethods.map((method, i) => (
                 <div key={i} className={styles.stepItem}>
@@ -706,7 +716,9 @@ export default function DetailPage({
                   marginBottom: 12,
                 }}
               >
-                신청 방법 상세 정보는 복지로에서 확인하세요
+                {lang === "ko"
+                  ? "신청 방법 상세 정보는 복지로에서 확인하세요"
+                  : "Check how to apply on Bokjiro"}
               </p>
               <a
                 href={benefit.applyUrl || "https://www.bokjiro.go.kr"}
@@ -723,13 +735,15 @@ export default function DetailPage({
 
         {/* Required Documents — Phase 6: 서류 원스톱 체크리스트 */}
         {docs.length > 0 && (
-          <DocumentChecklist docs={docs} benefitId={benefit.id} />
+          <DocumentChecklist docs={docs} benefitId={benefit.id} lang={lang} />
         )}
 
         {/* 담당 기관 연락처 */}
         {apiDetail?.contacts && apiDetail.contacts.length > 0 && (
           <section className="section">
-            <h2 className="section-title mb-12">📞 담당 기관 연락처</h2>
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "📞 담당 기관 연락처" : "📞 Contact"}
+            </h2>
             <div className={styles.docList}>
               {apiDetail.contacts.map((contact, i) => (
                 <div key={i} className={styles.docItem}>
@@ -905,9 +919,11 @@ function resolveWelfareUrl(raw: string): string {
 function DocumentChecklist({
   docs,
   benefitId,
+  lang,
 }: {
   docs: Array<string | { name: string; link: string }>;
   benefitId: string;
+  lang: "ko" | "en";
 }) {
   // Normalize docs to { name, link } format (backward compat with string[])
   const normalizedDocs = docs.map((d) =>
@@ -965,7 +981,7 @@ function DocumentChecklist({
     <section className="section">
       <div style={{ marginBottom: 12 }}>
         <h2 className="section-title" style={{ marginBottom: 4 }}>
-          📋 필요 서류
+          {lang === "ko" ? "📋 필요 서류" : "📋 Required Documents"}
         </h2>
         <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>
           정부24에서 바로 발급받으세요
