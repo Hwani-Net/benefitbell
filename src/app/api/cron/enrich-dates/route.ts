@@ -107,9 +107,12 @@ export async function GET(req: Request) {
 
     const { lastIndex, totalProcessed } = state;
 
-    // 2. Fetch all servIds from all welfare sources
+    // 2. Fetch all servIds — only bokjiro source supports the detail API
+    // (bizinfo/kstartup/private have their own date fields in list response;
+    //  fetchWelfareDetail uses NationalWelfaredetailedV001 = bokjiro-only)
     const allItems = await fetchAllWelfareSources();
-    const servIds = allItems.map((item) => item.servId);
+    const bokjiroItems = allItems.filter((item) => item.source === "bokjiro");
+    const servIds = bokjiroItems.map((item) => item.servId);
     const total = servIds.length;
 
     if (total === 0) {

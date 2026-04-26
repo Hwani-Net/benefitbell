@@ -23,6 +23,7 @@ export interface WelfareListItem {
   lastModYmd: string; // 최종수정일
   applicationEndDate?: string; // 신청 종료일 (소스마다 다른 형식)
   applicationStartDate?: string; // 신청 시작일 (소스마다 다른 형식)
+  source?: "bokjiro" | "bizinfo" | "kstartup" | "private"; // 데이터 소스 (cron 필터링용)
 }
 
 export interface WelfareDetailItem {
@@ -1086,13 +1087,19 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   const seen = new Set<string>();
   const merged: WelfareListItem[] = [];
 
+  // Tag each item with its source for downstream filtering (e.g., enrich-dates cron)
+  const tagSource = (
+    items: WelfareListItem[],
+    source: WelfareListItem["source"],
+  ): WelfareListItem[] => items.map((item) => ({ ...item, source }));
+
   for (const item of [
-    ...national,
-    ...local,
-    ...subsidy,
-    ...bizinfo,
-    ...kstartup,
-    ...privateWelfare,
+    ...tagSource(national, "bokjiro"),
+    ...tagSource(local, "bokjiro"),
+    ...tagSource(subsidy, "bokjiro"),
+    ...tagSource(bizinfo, "bizinfo"),
+    ...tagSource(kstartup, "kstartup"),
+    ...tagSource(privateWelfare, "private"),
   ]) {
     // Normalize ID for dedup (strip source prefix)
     const rawId = item.servId.replace(/^(LG-|SUB-|BIZ-|KSU-|PW-)/, "");
