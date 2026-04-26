@@ -105,7 +105,8 @@ export async function assessSingle(
     const [result] = await callAIEligibility(profile, [benefit]);
     cache.set(key, result);
     return result;
-  } catch {
+  } catch (err) {
+    console.warn("[ai-eligibility] assessSingle failed:", err);
     const fallback = keywordFallback(profile, benefit);
     cache.set(key, fallback);
     return fallback;

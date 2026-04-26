@@ -19,6 +19,16 @@ export async function POST(req: Request) {
 
   try {
     const { title, body, url } = await req.json();
+
+    if (!title || !body) {
+      return NextResponse.json(
+        { error: "title and body required" },
+        { status: 400 },
+      );
+    }
+    const safeTitle = String(title).slice(0, 255);
+    const safeBody = String(body).slice(0, 255);
+
     const subs = await getSubscriptions();
 
     const messaging = getAdminMessaging();
@@ -28,8 +38,8 @@ export async function POST(req: Request) {
           return messaging.send({
             token: sub.fcmToken,
             notification: {
-              title: title || "혜택알리미 🔔",
-              body: body || "마감 임박 혜택이 있습니다!",
+              title: safeTitle || "혜택알리미 🔔",
+              body: safeBody || "마감 임박 혜택이 있습니다!",
             },
             data: { url: url || "/" },
           });
