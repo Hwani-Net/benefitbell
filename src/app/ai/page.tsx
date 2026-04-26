@@ -127,6 +127,30 @@ export default function AiPage() {
   async function handleChatSubmit() {
     if (!input.trim() || chatLoading) return;
 
+    // PP-AI-002: Re-read localStorage at submit time to prevent stale-closure
+    // race condition where rapid clicks bypass the daily usage limit.
+    if (!userProfile?.isPremium) {
+      const today = new Date().toDateString();
+      const latestUsageStr = localStorage.getItem("ai_usage_limit");
+      const latestUsage = latestUsageStr
+        ? JSON.parse(latestUsageStr)
+        : { date: today, count: 0 };
+      const latestCount =
+        latestUsage.date === today ? (latestUsage.count as number) : 0;
+      if (latestCount >= 10) {
+        if (
+          confirm(
+            isKo
+              ? "무료 제공량(일 10회)을 모두 소진했습니다.\n무제한 분석을 위해 프리미엄으로 업그레이드하시겠습니까?"
+              : "You have exhausted your free daily limit (10 times).\nWould you like to upgrade to Premium for unlimited analysis?",
+          )
+        ) {
+          window.location.href = "/premium";
+        }
+        return;
+      }
+    }
+
     if (!userProfile?.isPremium) {
       const today = new Date().toDateString();
       const usageStr = localStorage.getItem("ai_usage_limit");

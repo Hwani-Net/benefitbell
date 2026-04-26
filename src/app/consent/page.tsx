@@ -293,8 +293,9 @@ function ConsentContent() {
                       {isKo ? "수집 항목" : "Data Collected"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
-                      카카오 ID, 이름, 거주 지역, 소득분위, 고용상태, 주거형태,
-                      가구원 수
+                      {isKo
+                        ? "카카오 ID, 이름, 거주 지역, 소득분위, 고용상태, 주거형태, 가구원 수"
+                        : "Kakao ID, name, region, income level, employment status, housing type, household size"}
                     </td>
                   </tr>
                   <tr>
@@ -309,7 +310,9 @@ function ConsentContent() {
                       {isKo ? "목적" : "Purpose"}
                     </td>
                     <td style={{ paddingBottom: 4 }}>
-                      맞춤 혜택 추천 및 알림 발송
+                      {isKo
+                        ? "맞춤 혜택 추천 및 알림 발송"
+                        : "Personalized benefit recommendations and notifications"}
                     </td>
                   </tr>
                   <tr>
