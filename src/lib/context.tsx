@@ -31,6 +31,7 @@ export const translations = {
     guestGreeting: "혜택을 찾아드릴게요! 👋",
     urgentSubtitle: (count: number) => `맞춤 혜택 ${count}건이 곧 마감됩니다!`,
     urgentBenefits: "마감 임박 혜택",
+    featuredBenefits: "추천 혜택",
     viewAll: "전체보기",
     categories: "카테고리",
     popularBenefits: "🔥 인기 혜택 TOP 5",
@@ -226,6 +227,7 @@ export const translations = {
     urgentSubtitle: (count: number) =>
       `${count} of your benefits are closing soon!`,
     urgentBenefits: "Closing Soon",
+    featuredBenefits: "Featured Benefits",
     viewAll: "See All",
     categories: "Categories",
     popularBenefits: "🔥 Top 5 Popular",

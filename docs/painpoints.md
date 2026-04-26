@@ -29,6 +29,11 @@
 - ✅ PP-013 (신규·P1) AI 에러 핸들링 — OpenAI AuthenticationError 401 미매칭 → `err.status === 401` + "Incorrect API key" 체크 추가, 503 반환 (commit `13bdb60`)
 - ⚠️ OPENAI_API_KEY 미해결 — Firebase Secret Manager 키 값 만료/무효 상태, 대표님 직접 교체 필요
 
+**Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 7~)**:
+- ✅ PP-206 라이브 최종 확인 — popular 섹션 WLF00003274 등 urgent와 다른 5건 표시 ✅
+- ✅ PP-013 라이브 확인 — `/api/ai-recommend` 503 + `AI_KEY_INVALID` 반환 ✅
+- ✅ PP-016 (신규·P3) EN 모드 상세 "관련 법령"·"관련 홈페이지" 미번역 → commit `7df1f7c`
+
 **Ralph Loop 검수 결과 (2026-04-27 세션 Iteration 6~)**:
 - ✅ PP-011 (신규·P1) 재확인 — 캘린더 5월 이동 후 `lang: "en"` 유지 확인 ✅
 - ✅ PP-207 (신규·P2) 재확인 — 비로그인 북마크 클릭 → 로그인 토스트 정상 ✅
@@ -99,6 +104,7 @@
 | PP-303 | 마케팅 | TWA AAB 외 직접 다운로드 경로 없음 | **미착수** |
 | PP-014 (신규) | i18n | EN 모드 프로필 설정 카테고리 알림 버튼 한국어 하드코딩 | ✅ **해소** — commit `b0134c9` `lang==="en"` 분기 추가 |
 | PP-015 (신규) | i18n | EN 모드 혜택 상세 페이지 섹션 헤딩 8개 한국어 하드코딩 | ✅ **해소** — commit `2a8b74e` lang 분기 + DocumentChecklist lang prop |
+| PP-016 (신규) | i18n | EN 모드 상세 페이지 "관련 법령"·"관련 홈페이지" 헤딩 한국어 잔존 | ✅ **해소** — commit `7df1f7c` → Related Laws / Related Websites |
 
 ---
 

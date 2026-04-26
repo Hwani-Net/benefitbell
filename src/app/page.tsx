@@ -229,7 +229,11 @@ export default function HomePage() {
         {/* 마감 임박 혜택 */}
         <section>
           <div className={`section-header section`}>
-            <h2 className="section-title">{t.urgentBenefits}</h2>
+            <h2 className="section-title">
+              {urgentBenefits.length > 0
+                ? t.urgentBenefits
+                : t.featuredBenefits}
+            </h2>
             <Link href="/search" className="section-link">
               {t.viewAll}
             </Link>

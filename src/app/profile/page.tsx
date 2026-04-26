@@ -1387,7 +1387,9 @@ export default function ProfilePage() {
                       }
                     >
                       {profile.birthYear === 0 && (
-                        <option value={0}>선택하세요</option>
+                        <option value={0}>
+                          {lang === "ko" ? "선택하세요" : "Select"}
+                        </option>
                       )}
                       {Array.from(
                         { length: new Date().getFullYear() - 1924 },
@@ -1395,7 +1397,7 @@ export default function ProfilePage() {
                           const year = new Date().getFullYear() - i;
                           return (
                             <option key={year} value={year}>
-                              {year}년
+                              {lang === "ko" ? `${year}년` : `${year}`}
                             </option>
                           );
                         },
