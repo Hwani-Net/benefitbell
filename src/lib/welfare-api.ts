@@ -1062,14 +1062,39 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   // Source 6: 정적 데이터 (동기)
   const privateWelfare = getPrivateWelfareList();
 
-  // Fetch all API sources in parallel
-  const [national, local, subsidy, bizinfo, kstartup] = await Promise.all([
+  // Fetch all API sources in parallel — allSettled so one failure doesn't kill the rest
+  const [natR, locR, subR, bizR, ksuR] = await Promise.allSettled([
     fetchAllWelfareList(),
     fetchLocalGovWelfareList(),
     fetchSubsidy24List(),
     fetchBizinfoList(),
     fetchKStartupList(),
   ]);
+  const national =
+    natR.status === "fulfilled"
+      ? natR.value
+      : (console.warn("[welfare-api] national failed:", natR.reason),
+        [] as WelfareListItem[]);
+  const local =
+    locR.status === "fulfilled"
+      ? locR.value
+      : (console.warn("[welfare-api] local failed:", locR.reason),
+        [] as WelfareListItem[]);
+  const subsidy =
+    subR.status === "fulfilled"
+      ? subR.value
+      : (console.warn("[welfare-api] subsidy failed:", subR.reason),
+        [] as WelfareListItem[]);
+  const bizinfo =
+    bizR.status === "fulfilled"
+      ? bizR.value
+      : (console.warn("[welfare-api] bizinfo failed:", bizR.reason),
+        [] as WelfareListItem[]);
+  const kstartup =
+    ksuR.status === "fulfilled"
+      ? ksuR.value
+      : (console.warn("[welfare-api] kstartup failed:", ksuR.reason),
+        [] as WelfareListItem[]);
 
   // Stats logging
   const stats = {
