@@ -397,7 +397,9 @@ export default function DetailPage({
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
           >
-            로그인 후 북마크를 사용할 수 있습니다
+            {lang === "ko"
+              ? "로그인 후 북마크를 사용할 수 있습니다"
+              : "Please log in to use bookmarks"}
           </div>
         )}
 
@@ -861,14 +863,25 @@ export default function DetailPage({
           >
             {shared ? t.copiedBtn : t.copyLinkBtn}
           </button>
-          <a
-            href={benefit.applyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`btn btn-primary ${styles.applyBtn}`}
-          >
-            {t.applyNow} →
-          </a>
+          {benefit.applyUrl ? (
+            <a
+              href={benefit.applyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`btn btn-primary ${styles.applyBtn}`}
+            >
+              {t.applyNow} →
+            </a>
+          ) : (
+            <a
+              href="https://www.bokjiro.go.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`btn btn-primary ${styles.applyBtn}`}
+            >
+              {lang === "ko" ? "복지로에서 신청 →" : "Apply on Bokjiro →"}
+            </a>
+          )}
         </div>
       </main>
 
@@ -888,7 +901,7 @@ export default function DetailPage({
           📤
         </button>
         <a
-          href={benefit.applyUrl}
+          href={benefit.applyUrl || "https://www.bokjiro.go.kr"}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.floatingApplyBtn}

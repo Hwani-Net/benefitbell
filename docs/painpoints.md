@@ -13,8 +13,8 @@
 |---|---|---|---|---|
 | P0 (Critical) | 7 | **7** (전체 해소) | 0 | 0 |
 | P1 (High) | 6 | **6** (전체 해소) | 0 | 0 |
-| P2 (Medium) | 10 | **10** (전체 해소) | 0 | 0 |
-| P3 (Low) | 13 | **11** | 0 | 2 |
+| P2 (Medium) | 11 | **11** (전체 해소) | 0 | 0 |
+| P3 (Low) | 21 | **17** | 0 | 4 |
 
 **라이브 회귀 테스트 (2026-04-27 세션 Iteration 8+)**:
 - ✅ cron 엔드포인트 4종 무인증 접근 시 401 반환 확인 (check-new-benefits / cleanup-welfare-dates / enrich-dates / notify)
@@ -142,6 +142,7 @@
 | PP-031 (신규) | a11y | WCAG 2.4.1 skip navigation 미지원 — 키보드/스크린리더 반복 탐색 강요 | 접근성 P2 | ✅ **해소** — layout.tsx skip-link + `#main-content` + globals.css `.skip-link` 스타일 추가 |
 | PP-032 (신규) | a11y | SVG 접근성 이름 누락(BellIcon/SunIcon/MoonIcon) + lang·theme 버튼 aria-label 한국어 고정 | 접근성 P2 | ✅ **해소** — TopBar.tsx `aria-hidden="true" focusable="false"` + aria-label i18n 분기 |
 | PP-033 (신규) | a11y | WCAG 1.4.3 색상 대비 위반 — section-link coral(2.82:1) + 전역 focus indicator 없음(56 노드) | 접근성 P2 | ✅ **해소** — globals.css `:focus-visible` 3px ring 추가, `.section-link` → `color-coral-dark`(4.96:1) |
+| PP-049 (신규) | UX | detail 페이지 `benefit.applyUrl` 빈 문자열일 때 `href=""` → 현재 페이지가 새탭으로 열림. inline CTA + floating CTA 버튼 2곳 모두 영향 | ✅ **해소** — `applyUrl || "https://www.bokjiro.go.kr"` 폴백 처리 (commit 아래) |
 
 ---
 
@@ -150,6 +151,10 @@
 | ID | 분류 | 증상 | 상태 |
 |---|---|---|---|
 | PP-301 | 성능 | 첫 로드 LCP 측정 미실시 | **미착수** |
+| PP-045 (신규) | UX | `/premium`, `/refund-policy`, `/consent`, `/terms`, `/privacy` 경로 진입 시 BottomNav 5탭 중 어느 탭도 active 아님 — 사용자가 자신이 어느 위치에 있는지 컨텍스트 손실 | **미착수** — profile 탭을 `/profile`로 시작하는 경로에서도 active 처리 권장 |
+| PP-046 (신규) | i18n | BottomNav `aria-label` badge 문구 `"개 알림"` 한국어 하드코딩 — EN 모드에서 "2개 알림" 노출 | **미착수** |
+| PP-047 (신규) | i18n | `profile/page.tsx` L1001 `<img alt="프로필">` 한국어 하드코딩 — TopBar 동일 이슈(PP-030) 수정됐으나 profile 페이지 자체 avatar img는 미수정 | **미착수** |
+| PP-048 (신규) | i18n | `profile/page.tsx` 카카오 채널 섹션 ("💬 카카오톡 채널 추가하기", "채널을 추가하면..." 등) EN i18n 미적용 | **미착수** |
 | PP-302 | 운영 | Sentry 등 에러 트래킹 부재 | **미착수** — Out of Scope |
 | PP-303 | 마케팅 | TWA AAB 외 직접 다운로드 경로 없음 | **미착수** |
 | PP-014 (신규) | i18n | EN 모드 프로필 설정 카테고리 알림 버튼 한국어 하드코딩 | ✅ **해소** — commit `b0134c9` `lang==="en"` 분기 추가 |
@@ -163,6 +168,18 @@
 | PP-029 (신규) | i18n | `AiEligibilityCheck` inline/modal 헤더 "AI 자격 체크" EN 모드에서 한국어 하드코딩 (isKo 분기 없음, 2곳) | ✅ **해소** — `AiEligibilityCheck.tsx` isKo 분기 추가 → "AI Eligibility Check" |
 | PP-030 (신규) | i18n | `TopBar` 카카오 프로필 이미지 `alt="프로필"` — lang 분기 없이 항상 한국어 | ✅ **해소** — `TopBar.tsx` `lang === 'ko' ? '프로필' : 'Profile'` 분기 추가 |
 | PP-034 (신규) | a11y | BottomNav `<Link>` 내부 badge `<span>` → "link role has multiple tabbable elements" WCAG 4.1.2 위반 | ✅ **해소** — badge span `aria-hidden="true"`, Link에 `aria-label` 통합(badge count 포함) |
+| PP-037 (신규) | i18n | consent 페이지 EN i18n 완전 미지원 → 28개 문자열 isKo 분기 추가 | ✅ **해소** |
+| PP-038 (신규) | UX | search clearAll 버튼 onClick 핸들러 없음 — dead button → recentCleared state 추가 | ✅ **해소** |
+| PP-039 (신규) | a11y | search 북마크 버튼 aria-label 누락 → lang 분기 aria-label 추가 | ✅ **해소** |
+| PP-040 (신규) | a11y | AiEligibilityCheck 모달 닫기 버튼 aria-label 누락 → 2곳 추가 | ✅ **해소** |
+| PP-041 (신규) | a11y | consent checkbox aria-label EN 분기 누락 → isKo 분기 추가 | ✅ **해소** |
+| PP-042 (신규) | 코드 | calendar `_monthNames` 미사용 데드코드 → 삭제 | ✅ **해소** |
+| PP-043 (신규) | i18n | terms 페이지 EN i18n 미지원 → isKo 분기 전체 추가 | ✅ **해소** |
+| PP-044 (신규) | i18n | privacy 페이지 EN i18n 미지원 → SECTIONS_KO/EN 분리 + isKo | ✅ **해소** |
+| PP-F03 (신규) | i18n | premium/fail 페이지 EN i18n 미지원 → isKo 분기 추가 | ✅ **해소** |
+| PP-R01 (신규) | i18n | refund-policy 페이지 EN i18n 미지원 → isKo 분기 추가 | ✅ **해소** |
+| PP-G01 (신규) | a11y | 다크모드 WCAG AA 대비율 미달 3개 변수 (coral-dark/blue/purple) → 수정 | ✅ **해소** |
+| PP-050 (신규) | i18n | detail 페이지 비로그인 북마크 토스트 "로그인 후 북마크를 사용할 수 있습니다" EN 분기 없음 | ✅ **해소** — lang 분기 추가 |
 
 ---
 
