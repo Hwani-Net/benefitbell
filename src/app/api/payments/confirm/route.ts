@@ -4,7 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: Request) {
   try {
-    const { paymentKey, orderId, amount, kakaoId } = await req.json();
+    const { paymentKey, orderId, amount } = await req.json();
 
     if (!paymentKey || !orderId || !amount) {
       return NextResponse.json(
@@ -13,9 +13,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // PP-C01: kakaoId 없으면 결제 시도 전 차단 (프리미엄 부여 불가 방지)
+    // PP-C01: kakaoId는 서버에서 orderId 파싱 (클라이언트 body 신뢰 금지)
+    // orderId 형식: {prefix}_{timestamp}_{kakaoId}
+    const orderParts = String(orderId).split("_");
+    const kakaoId =
+      orderParts.length >= 3 ? orderParts[orderParts.length - 1] : null;
     if (!kakaoId) {
-      return NextResponse.json({ error: "kakaoId required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "kakaoId could not be resolved from orderId" },
+        { status: 400 },
+      );
     }
 
     // PP-C02: 서버 측 결제 금액 검증 (클라이언트 조작 방지)
@@ -91,7 +98,8 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: "결제는 성공했으나 DB 업데이트에 실패했습니다. 고객센터에 문의해주세요.",
+            error:
+              "결제는 성공했으나 DB 업데이트에 실패했습니다. 고객센터에 문의해주세요.",
             details: body,
           },
           { status: 500 },

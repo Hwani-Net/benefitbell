@@ -23,8 +23,6 @@ function SuccessContent() {
     const paymentKey = searchParams.get("paymentKey");
     const orderId = searchParams.get("orderId");
     const amount = searchParams.get("amount");
-    const kakaoIdStr = orderId?.split("_")[2];
-
     if (!paymentKey || !orderId || !amount) {
       window.location.href = "/premium/fail?message=invalid_request";
       return;
@@ -36,12 +34,7 @@ function SuccessContent() {
         const res = await fetch("/api/payments/confirm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentKey,
-            orderId,
-            amount,
-            kakaoId: kakaoIdStr,
-          }),
+          body: JSON.stringify({ paymentKey, orderId, amount }),
         });
 
         const data = await res.json();
