@@ -10,7 +10,10 @@ function ConsentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "/";
-  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/";
+  const redirectTo =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/";
   const { lang } = useApp();
   const isKo = lang === "ko";
 

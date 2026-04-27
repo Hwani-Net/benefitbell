@@ -121,9 +121,9 @@ function useUnreadBadge(pathname: string) {
     return () => window.removeEventListener("push_unread_changed", syncUnread);
   }, []);
 
-  // Clear badge when visiting home or profile
+  // Clear badge when visiting home, profile, or ai
   useEffect(() => {
-    if (pathname === "/" || pathname === "/profile") {
+    if (pathname === "/" || pathname === "/profile" || pathname === "/ai") {
       try {
         localStorage.setItem("push_unread_count", "0");
       } catch {

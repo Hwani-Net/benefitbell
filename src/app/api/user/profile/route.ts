@@ -131,6 +131,10 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prevent privilege escalation — premium status is managed server-side only
+    delete (body as Record<string, unknown>).isPremium;
+    delete (body as Record<string, unknown>).is_premium;
+
     const db = getAdminFirestore();
 
     // 저장할 데이터 구성 (undefined 필드는 제외)

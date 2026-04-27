@@ -554,7 +554,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return defaultProfile;
     try {
       const saved = localStorage.getItem("userProfile");
-      return saved ? JSON.parse(saved) : defaultProfile;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...parsed, isPremium: false }; // server-verified on mount
+      }
+      return defaultProfile;
     } catch {
       return defaultProfile;
     }
@@ -810,7 +814,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }, 1000); // 1초 디바운스
       return () => clearTimeout(timer);
     }
-  }, [bookmarks, kakaoUser]);
+  }, [bookmarks, kakaoUser?.id]);
 
   useEffect(() => {
     localStorage.setItem("userProfile", JSON.stringify(userProfile));
