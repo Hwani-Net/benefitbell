@@ -16,6 +16,7 @@ let cachedContext: string | null = null;
 let cacheTimestamp = 0;
 let fetching = false; // single-flight: stampede 방지
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const EMPTY_CACHE_TTL = 5 * 60 * 1000; // 빈 결과 캐시 TTL (5분) — 반복 API 호출 방지
 
 // =====================
 // Rate Limiting (free: 20 req/day, premium: unlimited) — Firestore 기반
@@ -117,7 +118,12 @@ async function buildBenefitsContext(): Promise<string> {
   fetching = true;
   try {
     const items = await fetchAllWelfareSources();
-    if (items.length === 0) return "(혜택 데이터를 불러오지 못했습니다)";
+    if (items.length === 0) {
+      // 빈 결과도 캐싱 — 반복 API 호출 방지 (EMPTY_CACHE_TTL 후 자연 만료)
+      cachedContext = "";
+      cacheTimestamp = Date.now() - (CACHE_TTL - EMPTY_CACHE_TTL);
+      return "(혜택 데이터를 불러오지 못했습니다)";
+    }
     // Use first 100 items for context window (too many items = too many tokens)
     const context = items
       .slice(0, 100)
