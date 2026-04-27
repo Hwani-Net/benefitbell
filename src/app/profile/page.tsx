@@ -1167,11 +1167,8 @@ export default function ProfilePage() {
                         </span>
                         {b.dDay >= 0 && b.dDay <= 14 && (
                           <span
-                            className="badge"
-                            style={{
-                              fontSize: 11,
-                              color: getDDayColor(b.dDay),
-                            }}
+                            className={`badge ${getDDayColor(b.dDay)}`}
+                            style={{ fontSize: 11 }}
                           >
                             {getDDayText(b.dDay, lang === "ko" ? "ko" : "en")}
                           </span>

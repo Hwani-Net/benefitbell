@@ -10,10 +10,17 @@ function ConsentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "/";
-  const redirectTo =
-    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-      ? rawRedirect
-      : "/";
+  const ALLOWED_REDIRECTS = [
+    "/",
+    "/profile",
+    "/search",
+    "/calendar",
+    "/premium",
+    "/ai",
+  ];
+  const redirectTo = ALLOWED_REDIRECTS.includes(rawRedirect)
+    ? rawRedirect
+    : "/";
   const { lang } = useApp();
   const isKo = lang === "ko";
 
