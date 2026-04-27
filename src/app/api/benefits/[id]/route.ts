@@ -351,7 +351,10 @@ export async function GET(
     `[/api/benefits/${servId}] All 3 attempts failed. Last: ${lastError}. URL: ${maskedUrl}`,
   );
   return NextResponse.json(
-    { success: false, error: `Failed after 3 attempts: ${lastError}` },
+    {
+      success: false,
+      error: "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+    },
     { status: 502 },
   );
 }

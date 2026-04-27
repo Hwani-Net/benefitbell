@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
               "connect-src 'self' https://firestore.googleapis.com https://fcm.googleapis.com https://www.google-analytics.com https://kapi.kakao.com https://kauth.kakao.com wss://*.firebaseio.com",
               "font-src 'self'",
               "frame-src 'self' https://js.tosspayments.com https://pay.kakaopay.com",
+              "frame-ancestors 'self'",
             ].join("; "),
           },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
