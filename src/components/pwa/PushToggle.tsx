@@ -62,11 +62,12 @@ export default function PushToggle() {
 
       if (currentToken) {
         // 백엔드 API 포맷 변경: { fcmToken: "ey..." } 형태로 전송
-        await fetch("/api/push/subscribe", {
+        const res = await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fcmToken: currentToken, lang }),
         });
+        if (!res.ok) throw new Error(`subscribe failed: ${res.status}`);
         // profile 페이지의 category 업데이트가 fcmToken을 읽을 수 있도록 저장
         try {
           localStorage.setItem("fcm_token", currentToken);
@@ -104,7 +105,11 @@ export default function PushToggle() {
       if (sub) await sub.unsubscribe();
 
       // fcm_token localStorage 정리 (profile 페이지의 카테고리 업데이트에서 참조)
-      try { localStorage.removeItem("fcm_token"); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem("fcm_token");
+      } catch {
+        /* ignore */
+      }
       // 서버에도 알림 (선택적) - 현재는 서버 API가 없으므로 생략
       setStatus("unsubscribed");
     } catch (err) {

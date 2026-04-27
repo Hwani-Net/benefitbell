@@ -10,6 +10,23 @@ let cachedContext: string | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// IP-based rate limiting (anonymous users)
+const IP_RATE_LIMIT = 10; // max requests per window
+const IP_RATE_WINDOW = 60 * 1000; // 1 minute
+const ipCounters = new Map<string, { count: number; windowStart: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipCounters.get(ip);
+  if (!entry || now - entry.windowStart > IP_RATE_WINDOW) {
+    ipCounters.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= IP_RATE_LIMIT) return false;
+  entry.count += 1;
+  return true;
+}
+
 // Build a compact summary of all benefits for RAG context (from real API)
 async function buildBenefitsContext(): Promise<string> {
   const now = Date.now();
@@ -41,6 +58,18 @@ async function buildBenefitsContext(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  // IP-based rate limiting to prevent anonymous abuse
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 },
+    );
+  }
+
   try {
     const { userMessage, lang = "ko" } = await req.json();
 
