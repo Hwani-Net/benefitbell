@@ -7,6 +7,8 @@
 import { NextResponse } from "next/server";
 import { verifyCron } from "@/lib/cron-auth";
 
+export const dynamic = "force-dynamic";
+
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
 

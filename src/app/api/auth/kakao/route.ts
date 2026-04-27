@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   // Firebase App Hosting runs behind a reverse proxy — request.url returns

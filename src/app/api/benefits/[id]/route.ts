@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import { isInstitutionalProgram } from "@/lib/welfare-api";
+
+export const dynamic = "force-dynamic";
 // FieldValue available via firebase-admin/firestore if needed for background save
 
 const API_BASE =
