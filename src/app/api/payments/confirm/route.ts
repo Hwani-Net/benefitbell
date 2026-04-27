@@ -79,6 +79,21 @@ export async function POST(req: Request) {
     {
       const db = getAdminFirestore();
       try {
+        // PP-C03: orderId 기반 멱등성 — 동일 orderId로 재호출 시 payment_logs 중복 방지
+        const existingLog = await db
+          .collection("payment_logs")
+          .where("order_id", "==", String(orderId))
+          .where("status", "==", "confirmed")
+          .limit(1)
+          .get();
+        if (!existingLog.empty) {
+          // 이미 처리된 주문 — is_premium은 이미 true이므로 200 반환
+          return NextResponse.json(
+            { success: true, payment: body, idempotent: true },
+            { status: 200 },
+          );
+        }
+
         await db
           .collection("users")
           .doc(String(kakaoId))
