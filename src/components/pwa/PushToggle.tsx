@@ -16,10 +16,7 @@ export default function PushToggle() {
   const [loading, setLoading] = useState(false);
   const [showDeniedGuide, setShowDeniedGuide] = useState(false);
 
-  // FCM용 VAPID Key: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > Web 영역
-  const vapidKey =
-    process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ||
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -53,6 +50,8 @@ export default function PushToggle() {
       }
 
       const reg = await navigator.serviceWorker.ready;
+
+      if (!vapidKey) throw new Error("VAPID key not configured");
 
       // Get FCM token
       const currentToken = await getToken(messaging, {
