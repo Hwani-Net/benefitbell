@@ -13,6 +13,19 @@ export async function POST(req: Request) {
       );
     }
 
+    // PP-S01: FCM token basic validation — FCM tokens are 100-200 chars, alphanumeric+:-_
+    if (
+      typeof fcmToken !== "string" ||
+      fcmToken.length < 50 ||
+      fcmToken.length > 500 ||
+      !/^[A-Za-z0-9:_\-]+$/.test(fcmToken)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid fcmToken format" },
+        { status: 400 },
+      );
+    }
+
     const db = getAdminFirestore();
     // 토큰이 길거나 특수문자가 있을 수 있으므로 base64 인코딩하여 docId로 사용
     const docId = Buffer.from(fcmToken)

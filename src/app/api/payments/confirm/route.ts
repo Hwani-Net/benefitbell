@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     const orderParts = String(orderId).split("_");
     const kakaoId =
       orderParts.length >= 3 ? orderParts[orderParts.length - 1] : null;
-    if (!kakaoId) {
+    // PP-C01-b: guard against empty string after split (e.g. "prefix__")
+    if (!kakaoId || kakaoId.trim() === "") {
       return NextResponse.json(
         { error: "kakaoId could not be resolved from orderId" },
         { status: 400 },

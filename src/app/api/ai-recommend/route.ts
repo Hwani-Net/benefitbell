@@ -80,6 +80,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // PP-R01: limit userMessage length to prevent token abuse / prompt injection
+    if (userMessage.length > 500) {
+      return NextResponse.json(
+        { error: "userMessage too long (max 500 chars)" },
+        { status: 400 },
+      );
+    }
+
     const client = createAIClient();
 
     const benefitsContext = await buildBenefitsContext();
