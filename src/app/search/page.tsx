@@ -1,5 +1,12 @@
 "use client";
-import { useState, useEffect, Suspense, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import Fuse from "fuse.js";
 import { useApp } from "@/lib/context";
 import {
@@ -56,6 +63,7 @@ function SearchContent() {
 
   const [inputValue, setInputValue] = useState(query);
   const [sharedId, setSharedId] = useState<string | null>(null);
+  const justSubmittedRef = useRef(false);
   const [recentCleared, setRecentCleared] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -203,7 +211,10 @@ function SearchContent() {
   );
 
   const handleInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") applyQuery(inputValue);
+    if (e.key === "Enter") {
+      justSubmittedRef.current = true;
+      applyQuery(inputValue);
+    }
   };
 
   // PP-Quick Win 1: Fuse.js fuzzy 검색 — 오타·띄어쓰기 보정
@@ -258,6 +269,10 @@ function SearchContent() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleInputSubmit}
               onBlur={() => {
+                if (justSubmittedRef.current) {
+                  justSubmittedRef.current = false;
+                  return;
+                }
                 if (inputValue !== query) applyQuery(inputValue);
               }}
             />
