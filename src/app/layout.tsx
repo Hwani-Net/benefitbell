@@ -82,7 +82,6 @@ export default function RootLayout({
   return (
     <html lang="ko" data-theme="light" suppressHydrationWarning>
       <head>
-        <meta name="google-adsense-account" content="ca-pub-9200560771587224" />
         {/* Prevent FOUC: apply saved theme before first paint */}
         <script
           dangerouslySetInnerHTML={{

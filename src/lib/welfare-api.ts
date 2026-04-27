@@ -524,7 +524,7 @@ export async function fetchWelfareDetail(
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
   if (!serviceKey) return null;
 
-  const url = `${BASE_URL}/NationalWelfaredetailedV001?serviceKey=${serviceKey}&callTp=D&servId=${servId}&_type=json`;
+  const url = `${BASE_URL}/NationalWelfaredetailedV001?serviceKey=${serviceKey}&callTp=D&servId=${encodeURIComponent(servId)}&_type=json`;
 
   try {
     const res = await fetch(url, FETCH_OPTS);
