@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useApp } from "@/lib/context";
 import { getDDayColor, getDDayText, bText } from "@/data/benefits";
+import { shareUrl } from "@/lib/share-utils";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/layout/BottomNav";
 import Link from "next/link";
@@ -45,73 +46,10 @@ export default function CalendarPage() {
         lang === "ko"
           ? `💡 ${title} — 혜택알리미에서 확인하세요!`
           : `💡 ${title} — Check on BenefitBell!`;
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        } catch (err) {
-          if ((err as { name?: string })?.name !== "AbortError") {
-            let copied = false;
-            if (navigator.clipboard) {
-              try {
-                await navigator.clipboard.writeText(url);
-                copied = true;
-              } catch (clipErr) {
-                console.error(
-                  "[calendar] clipboard.writeText failed:",
-                  clipErr,
-                );
-              }
-            }
-            if (!copied) {
-              const el = document.createElement("textarea");
-              el.value = url;
-              el.style.position = "fixed";
-              el.style.opacity = "0";
-              document.body.appendChild(el);
-              el.select();
-              try {
-                copied = document.execCommand("copy");
-              } catch (execErr) {
-                console.error("[calendar] execCommand copy failed:", execErr);
-              }
-              document.body.removeChild(el);
-            }
-            if (copied) {
-              setSharedId(benefitId);
-              setTimeout(() => setSharedId(null), 2500);
-            }
-          }
-        }
-      } else {
-        let copied = false;
-        if (navigator.clipboard) {
-          try {
-            await navigator.clipboard.writeText(url);
-            copied = true;
-          } catch (clipErr) {
-            console.error("[calendar] clipboard.writeText failed:", clipErr);
-          }
-        }
-        if (!copied) {
-          const el = document.createElement("textarea");
-          el.value = url;
-          el.style.position = "fixed";
-          el.style.opacity = "0";
-          document.body.appendChild(el);
-          el.select();
-          try {
-            copied = document.execCommand("copy");
-          } catch (execErr) {
-            console.error("[calendar] execCommand copy failed:", execErr);
-          }
-          document.body.removeChild(el);
-        }
-        if (copied) {
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        }
+      const ok = await shareUrl({ title, text, url });
+      if (ok) {
+        setSharedId(benefitId);
+        setTimeout(() => setSharedId(null), 2500);
       }
     },
     [lang],
