@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import AdBanner from "@/components/ads/AdBanner";
+import { shareUrl } from "@/lib/share-utils";
 
 type SortType = "popular" | "deadline" | "new";
 
@@ -76,7 +77,7 @@ function SearchContent() {
     }
   });
 
-  // Web Share API (web-share 스킬 준수)
+  // Web Share API — delegates to share-utils (navigator.share → clipboard → execCommand)
   const handleShare = useCallback(
     async (benefitId: string, title: string) => {
       const url = `${window.location.origin}/detail/${benefitId}`;
@@ -84,62 +85,11 @@ function SearchContent() {
         lang === "ko"
           ? `💡 ${title} — 혜택알리미에서 확인하세요!`
           : `💡 ${title} — Check on BenefitBell!`;
-      const copyToClipboard = async (): Promise<boolean> => {
-        let copied = false;
-        if (navigator.clipboard) {
-          try {
-            await navigator.clipboard.writeText(url);
-            copied = true;
-          } catch (clipErr) {
-            // Clipboard API 권한 거부 또는 비보안 컨텍스트 — execCommand fallback으로 진행
-            console.error(
-              "[share] clipboard.writeText failed, trying execCommand:",
-              clipErr,
-            );
-          }
-        }
-        if (!copied) {
-          const el = document.createElement("textarea");
-          el.value = url;
-          el.style.position = "fixed";
-          el.style.opacity = "0";
-          document.body.appendChild(el);
-          el.select();
-          try {
-            copied = document.execCommand("copy");
-          } catch (execErr) {
-            // execCommand도 미지원 환경 (Firefox 최신, iOS Safari 등) — 복사 불가로 처리
-            console.error("[share] execCommand copy failed:", execErr);
-          }
-          document.body.removeChild(el);
-        }
-        return copied;
-      };
 
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        } catch (err) {
-          // AbortError는 사용자가 공유 다이얼로그를 닫은 정상 케이스 — 무시
-          // 그 외 에러는 clipboard fallback + 콘솔 기록 (silent fail 금지)
-          const errName = (err as { name?: string })?.name;
-          if (errName !== "AbortError") {
-            console.error("[share] navigator.share failed:", err);
-            const copied = await copyToClipboard();
-            if (copied) {
-              setSharedId(benefitId);
-              setTimeout(() => setSharedId(null), 2500);
-            }
-          }
-        }
-      } else {
-        const copied = await copyToClipboard();
-        if (copied) {
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        }
+      const shared = await shareUrl({ title, text, url });
+      if (shared) {
+        setSharedId(benefitId);
+        setTimeout(() => setSharedId(null), 2500);
       }
     },
     [lang],
