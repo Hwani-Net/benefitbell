@@ -53,7 +53,8 @@ export async function GET() {
     const db = getAdminFirestore();
     const snapshot = await db.collection("push_subscriptions").count().get();
     return NextResponse.json({ count: snapshot.data().count });
-  } catch {
+  } catch (err) {
+    console.error("[push/subscribe] GET count failed:", err);
     return NextResponse.json({ count: 0 });
   }
 }
@@ -71,7 +72,8 @@ export async function DELETE(req: Request) {
       .slice(0, 150);
     await db.collection("push_subscriptions").doc(docId).delete();
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("[push/subscribe] DELETE failed:", err);
     return NextResponse.json(
       { error: "Failed to remove subscription" },
       { status: 500 },
