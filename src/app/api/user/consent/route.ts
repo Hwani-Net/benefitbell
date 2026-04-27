@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/user/consent
 // Body: { kakaoId: string }
 // Header: Authorization: Bearer <firebase_id_token>

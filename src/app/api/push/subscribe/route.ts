@@ -80,6 +80,18 @@ export async function DELETE(req: Request) {
     if (!fcmToken) {
       return NextResponse.json({ error: "fcmToken required" }, { status: 400 });
     }
+    // PP-S01: FCM token format validation (same as POST)
+    if (
+      typeof fcmToken !== "string" ||
+      fcmToken.length < 50 ||
+      fcmToken.length > 500 ||
+      !/^[A-Za-z0-9:_\-]+$/.test(fcmToken)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid fcmToken format" },
+        { status: 400 },
+      );
+    }
     const db = getAdminFirestore();
     const docId = Buffer.from(fcmToken)
       .toString("base64")

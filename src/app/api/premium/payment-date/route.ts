@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const kakaoId = searchParams.get("kakaoId");
     if (!kakaoId) {
-      return NextResponse.json({ date: null });
+      return NextResponse.json({ error: "kakaoId 필수" }, { status: 400 });
     }
 
     // PP-E01: Firebase idToken 검증 (IDOR 방지)

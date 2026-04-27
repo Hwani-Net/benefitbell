@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
+
+export const dynamic = "force-dynamic";
 import {
   fetchAllWelfareSources,
   transformListItemToBenefit,
