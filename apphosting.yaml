@@ -68,4 +68,6 @@ env:
     secret: KAKAO_CLIENT_SECRET
   - variable: BIZINFO_API_KEY
     secret: BIZINFO_API_KEY
+  - variable: INDEXNOW_KEY
+    secret: INDEXNOW_KEY
 
