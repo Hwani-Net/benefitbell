@@ -1,7 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useApp } from "@/lib/context";
+import { getFirebaseAuth } from "@/lib/firebase";
 import styles from "./AiEligibilityCheck.module.css";
+
+// Returns Firebase idToken if logged in, null otherwise
+async function getIdToken(): Promise<string | null> {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth?.currentUser) return null;
+    return await auth.currentUser.getIdToken();
+  } catch {
+    return null;
+  }
+}
 
 interface Props {
   benefitId: string;
@@ -89,34 +101,41 @@ export default function AiEligibilityCheck({
 
     const controller = new AbortController();
     setInlineLoading(true);
-    fetch("/api/ai-check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ benefitId, benefitTitle, lang }),
-      signal: controller.signal,
-    })
-      .then(async (r) => {
+
+    // PP-G04: async IIFE so we can await idToken + use AbortController cleanup
+    (async () => {
+      try {
+        // attach Firebase idToken so server can verify premium status server-side
+        const idToken = await getIdToken();
+        const r = await fetch("/api/ai-check", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+          },
+          body: JSON.stringify({ benefitId, benefitTitle, lang }),
+          signal: controller.signal,
+        });
         const data: AiCheckResponse = await r.json();
         if (!r.ok) {
           if (data.code === "RATE_LIMIT_EXCEEDED") setRateLimited(true);
           throw new Error(data.error || "Error");
         }
-        return data;
-      })
-      .then((data) => {
         setInlineSummary(data.summary ?? []);
         setInlineVerdict(data.quickVerdict ?? "partial");
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify(data));
-        } catch {
-          /* storage full */
+        } catch (storageErr) {
+          console.warn("[AiEligibilityCheck] sessionStorage full:", storageErr);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("[AiEligibilityCheck] inline fetch failed:", err);
         setInlineVerdict("partial");
-      })
-      .finally(() => setInlineLoading(false));
+      } finally {
+        setInlineLoading(false);
+      }
+    })();
 
     return () => controller.abort();
   }, [variant, benefitId, benefitTitle, lang, hasProfile]);
@@ -127,9 +146,14 @@ export default function AiEligibilityCheck({
     setDetailError(null);
     setDetailResult(null);
     try {
+      // PP-G04: attach Firebase idToken so server can verify premium status
+      const idToken = await getIdToken();
       const res = await fetch("/api/ai-check", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({
           benefitId,
           benefitTitle,
