@@ -86,6 +86,7 @@ export default function DetailPage({
     toggleBookmark,
     isBookmarked,
     benefits: allBenefits,
+    benefitsLoading,
     kakaoUser,
   } = useApp();
   const [enrichedBenefit, setEnrichedBenefit] = useState<Benefit | null>(null);
@@ -103,8 +104,8 @@ export default function DetailPage({
   );
   // Final benefit: API-enriched version takes priority, then foundBenefit from list
   const benefit = enrichedBenefit ?? foundBenefit;
-  // Derive loading: still loading if allBenefits not loaded
-  const loading = allBenefits.length === 0;
+  // Derive loading: use context flag, not empty-list heuristic
+  const loading = benefitsLoading && !enrichedBenefit;
 
   // Web Share API 공유
   const handleShare = useCallback(async () => {
@@ -182,7 +183,7 @@ export default function DetailPage({
       }
     }
 
-    if (allBenefits.length > 0) {
+    if (!benefitsLoading) {
       fetchDetail(id);
     }
 
