@@ -73,6 +73,7 @@ export default function AiEligibilityCheck({
   const [inlineVerdict, setInlineVerdict] = useState<Verdict | null>(null);
   const [inlineLoading, setInlineLoading] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
+  const [inlineError, setInlineError] = useState(false);
 
   // ── Detail modal state ─────────────────────────────
   const [open, setOpen] = useState(false);
@@ -131,7 +132,9 @@ export default function AiEligibilityCheck({
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("[AiEligibilityCheck] inline fetch failed:", err);
-        setInlineVerdict("partial");
+        // 잘못된 노란 배지를 띄우지 말고 에러 상태로 명시 — 사용자에게는
+        // "AI가 partial 판정"이 아니라 "분석 일시 불가"임을 정직하게 표시
+        setInlineError(true);
       } finally {
         setInlineLoading(false);
       }
@@ -262,7 +265,7 @@ export default function AiEligibilityCheck({
                 {isKo ? "AI 자격 체크" : "AI Eligibility Check"}
               </span>
             </div>
-            {!inlineLoading && inlineVerdict && (
+            {!inlineLoading && inlineVerdict && !inlineError && (
               <span className={`${styles.inlineBadge} ${styles[v]}`}>
                 {vInfo.icon} {isKo ? vInfo.label.ko : vInfo.label.en}
               </span>
@@ -281,7 +284,20 @@ export default function AiEligibilityCheck({
             </div>
           ) : (
             <div className={styles.inlineBody}>
-              {inlineSummary.length > 0 ? (
+              {inlineError ? (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {isKo
+                    ? "AI 자동 요약이 일시적으로 사용 불가합니다. 아래 '자세히 확인' 버튼으로 분석을 직접 요청하실 수 있습니다."
+                    : "AI summary is temporarily unavailable. Tap the button below to run a manual check."}
+                </p>
+              ) : inlineSummary.length > 0 ? (
                 <ul className={styles.inlineSummaryList}>
                   {inlineSummary.map((line, i) => (
                     <li key={i}>{line}</li>
