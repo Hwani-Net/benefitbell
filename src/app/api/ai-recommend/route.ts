@@ -6,7 +6,7 @@ import {
   fetchAllWelfareSources,
   transformListItemToBenefit,
 } from "@/lib/welfare-api";
-import { getAdminFirestore } from "@/lib/firebase-admin";
+import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
 // In-memory cache for benefits context (expensive to rebuild every request)
@@ -17,41 +17,81 @@ let cacheTimestamp = 0;
 let fetching = false; // single-flight: stampede 방지
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// IP-based rate limiting — Firestore 기반 (Cloud Run 다중 인스턴스 안전)
-// 이전 in-memory Map 방식은 인스턴스별 독립 카운터로 실질적 rate limit 없음 → 교체
-const IP_RATE_LIMIT = 10; // 1분 내 최대 요청 수
-const IP_RATE_WINDOW_SEC = 60; // TTL (초)
+// =====================
+// Rate Limiting (free: 20 req/day, premium: unlimited) — Firestore 기반
+// docId prefix "recommend:" — ai-check("check:") 와 충돌 방지
+// =====================
+const FREE_DAILY_LIMIT = 20; // ai-check(10)보다 넉넉하게
 
-async function checkRateLimit(ip: string): Promise<boolean> {
-  const safeIp = ip.replace(/[^a-zA-Z0-9_.-]/g, "_");
-  const windowStart = Math.floor(Date.now() / (IP_RATE_WINDOW_SEC * 1000));
-  const docId = `rec:${safeIp}:${windowStart}`;
+async function checkRateLimit(
+  req: NextRequest,
+): Promise<{ allowed: boolean; remaining: number }> {
+  // Bearer 토큰이 있으면 Firebase uid로 식별 + 프리미엄 서버 확인
+  let identifier =
+    "ip:" +
+    (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
+  let isPremium = false; // 항상 서버에서 직접 검증, 요청 바디 신뢰 금지
+
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
+
+  if (bearerToken) {
+    try {
+      const decoded = await getAdminAuth().verifyIdToken(bearerToken);
+      if (decoded.uid) {
+        identifier = "uid:" + decoded.uid;
+        // 서버 사이드 프리미엄 상태 확인
+        try {
+          const userSnap = await getAdminFirestore()
+            .collection("users")
+            .doc(decoded.uid)
+            .get();
+          isPremium = userSnap.exists
+            ? userSnap.data()?.is_premium === true
+            : false;
+        } catch (fsErr) {
+          console.error(
+            "[ai-recommend] isPremium Firestore lookup failed — treating as free:",
+            fsErr instanceof Error ? fsErr.message : String(fsErr),
+          );
+        }
+      }
+    } catch (tokenErr) {
+      // 토큰 만료/무효 — IP 기반으로 폴백
+      console.warn(
+        "[ai-recommend] Bearer token verification failed:",
+        tokenErr instanceof Error ? tokenErr.message : String(tokenErr),
+      );
+    }
+  }
+
+  // 프리미엄 사용자는 무제한
+  if (isPremium) return { allowed: true, remaining: 999 };
+
+  // 로그인 없는 익명 사용자: IP 기반 일일 제한
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const safeId = identifier.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const docId = `recommend:${safeId}:${today}`;
 
   try {
     const db = getAdminFirestore();
     const ref = db.collection("ai_rate_limits").doc(docId);
+    const snap = await ref.get();
+    const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
 
-    // Firestore 트랜잭션으로 read-then-write 원자 처리 — 동시 요청 경쟁 방지
-    const allowed = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
-      if (count >= IP_RATE_LIMIT) return false;
+    if (count >= FREE_DAILY_LIMIT) return { allowed: false, remaining: 0 };
 
-      tx.set(
-        ref,
-        {
-          count: FieldValue.increment(1),
-          updated_at: FieldValue.serverTimestamp(),
-          // Firestore TTL 필드 — cleanup-welfare-dates cron 또는 Firestore TTL 정책 활용 가능
-          expires_at: new Date(
-            (windowStart + 1) * IP_RATE_WINDOW_SEC * 1000 + 60_000,
-          ),
-        },
-        { merge: true },
-      );
-      return true;
-    });
-    return allowed;
+    await ref.set(
+      {
+        count: FieldValue.increment(1),
+        date: today,
+        updated_at: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 };
   } catch (firestoreErr) {
     // Firestore 오류 시 허용 (availability > strict rate limit)
     console.error(
@@ -60,7 +100,7 @@ async function checkRateLimit(ip: string): Promise<boolean> {
         ? firestoreErr.message
         : String(firestoreErr),
     );
-    return true;
+    return { allowed: true, remaining: FREE_DAILY_LIMIT };
   }
 }
 
@@ -103,17 +143,19 @@ async function buildBenefitsContext(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  // IP-based rate limiting to prevent anonymous abuse
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
-  if (!(await checkRateLimit(ip))) {
+  // Rate limiting: 프리미엄 무제한 / 익명 IP 하루 20회
+  const { allowed, remaining } = await checkRateLimit(req);
+  if (!allowed) {
     return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
+      {
+        error: "오늘 AI 추천 횟수를 모두 사용했어요.",
+        code: "RATE_LIMIT_EXCEEDED",
+        remaining: 0,
+      },
       { status: 429 },
     );
   }
+  void remaining; // 현재 응답에 포함하지 않으나 향후 헤더 추가 시 활용
 
   try {
     const { userMessage, lang = "ko" } = await req.json();
