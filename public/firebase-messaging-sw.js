@@ -1,9 +1,9 @@
 // Firebase Cloud Messaging 서비스 워커 (public/firebase-messaging-sw.js)
 importScripts(
-  "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js",
 );
 importScripts(
-  "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js",
+  "https://www.gstatic.com/firebasejs/12.10.0/firebase-messaging-compat.js",
 );
 
 // NEXT_PUBLIC_* 값은 클라이언트 공개값이므로 SW에 직접 기재 가능
@@ -30,4 +30,29 @@ messaging.onBackgroundMessage((payload) => {
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click — open app and navigate to url
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  const url = event.notification.data?.url;
+  const targetUrl =
+    url && typeof url === "string" && url.startsWith("/")
+      ? self.location.origin + url
+      : self.location.origin + "/";
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(function (clientList) {
+        for (const client of clientList) {
+          if (client.url === targetUrl && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      }),
+  );
 });
