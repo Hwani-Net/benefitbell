@@ -254,7 +254,7 @@ async function handleCron(req: Request) {
     );
 
     const elapsed = Date.now() - startTime;
-    console.log(
+    console.info(
       `[enrich-dates] processed=${processed} skipped=${skipped} errors=${errors} nextIndex=${nextIndex} total=${total} elapsed=${elapsed}ms`,
     );
 

@@ -94,7 +94,7 @@ async function handleCron(req: Request) {
     const sent = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected").length;
 
-    console.log(
+    console.info(
       `[cron/notify] sent: ${sent}, failed: ${failed}, urgent: ${urgentBenefits.length}, expired-cleaned: ${toDelete.length}`,
     );
 

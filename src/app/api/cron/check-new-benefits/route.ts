@@ -220,7 +220,7 @@ async function handleCron(req: Request) {
       );
     }
 
-    console.log(`[cron] Sent: ${sent}, Failed: ${failed.length}`);
+    console.info(`[cron] Sent: ${sent}, Failed: ${failed.length}`);
     return NextResponse.json({
       sent,
       failed: failed.length,

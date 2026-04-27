@@ -100,7 +100,7 @@ async function handleCron(req: Request) {
     );
 
     const elapsed = Date.now() - startTime;
-    console.log(
+    console.info(
       `[cleanup-welfare-dates] deleted=${deleted} threshold=${threshold.toDate().toISOString()} maxAgeDays=${maxAgeDays} batchSize=${batchSize} elapsed=${elapsed}ms`,
     );
 
