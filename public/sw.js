@@ -1,4 +1,4 @@
-const CACHE_NAME = "hyetack-" + new Date().toISOString().slice(0, 10);
+const CACHE_NAME = "hyetack-v5";
 const STATIC_ASSETS = [
   "/",
   "/search",
@@ -110,8 +110,15 @@ self.addEventListener("notificationclick", (event) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if (client.url.includes(targetUrl) && "focus" in client)
-            return client.focus();
+          try {
+            const clientPath = new URL(client.url).pathname;
+            const targetPath = new URL(targetUrl, self.location.origin)
+              .pathname;
+            if (clientPath === targetPath && "focus" in client)
+              return client.focus();
+          } catch (err) {
+            console.error("[sw] notificationclick URL parse failed:", err);
+          }
         }
         return clients.openWindow(targetUrl);
       }),

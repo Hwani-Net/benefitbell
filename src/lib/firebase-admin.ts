@@ -27,7 +27,14 @@ function getAdminApp(): App {
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (keyPath) {
-    const fileContent = readFileSync(keyPath, "utf-8");
+    let fileContent: string;
+    try {
+      fileContent = readFileSync(keyPath, "utf-8");
+    } catch (err) {
+      console.error("[firebase-admin] Cannot read SA Key file:", keyPath, err);
+      adminApp = initializeApp({ credential: applicationDefault() });
+      return adminApp;
+    }
     const serviceAccount = JSON.parse(fileContent) as ServiceAccount;
     adminApp = initializeApp({ credential: cert(serviceAccount) });
     console.log("[firebase-admin] Using SA Key file");
@@ -40,7 +47,8 @@ function getAdminApp(): App {
       console.error(
         "[firebase-admin] FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON",
       );
-      return adminApp ?? initializeApp({ credential: applicationDefault() });
+      adminApp = initializeApp({ credential: applicationDefault() });
+      return adminApp;
     }
     adminApp = initializeApp({ credential: cert(serviceAccount) });
     console.log("[firebase-admin] Using SA Key JSON env var");

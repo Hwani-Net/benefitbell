@@ -419,7 +419,8 @@ export default function DetailPage({
         <div className={styles.heroCard}>
           <div className={styles.heroTop}>
             <span className="badge badge-purple-soft">{category}</span>
-            {benefit.dDay >= 0 && (benefit.dDay <= 30 || benefit.dDay >= 365) ? (
+            {benefit.dDay >= 0 &&
+            (benefit.dDay <= 30 || benefit.dDay >= 365) ? (
               <span className={`badge ${getDDayColor(benefit.dDay)}`}>
                 {getDDayText(benefit.dDay, lang === "ko" ? "ko" : "en")}
               </span>
@@ -587,8 +588,11 @@ export default function DetailPage({
                 <div>
                   <p className={styles.infoLabel}>{t.incomeLevel}</p>
                   <p className={styles.infoValue} style={{ fontSize: 13 }}>
-                    {benefit.incomeLevel ||
-                      apiDetail?.selectionCriteria?.substring(0, 80) + "..."}
+                    {benefit.incomeLevel || apiDetail?.selectionCriteria
+                      ? apiDetail.selectionCriteria.length > 80
+                        ? apiDetail.selectionCriteria.substring(0, 80) + "..."
+                        : apiDetail.selectionCriteria
+                      : undefined}
                   </p>
                 </div>
               </div>
