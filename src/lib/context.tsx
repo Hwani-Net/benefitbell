@@ -502,7 +502,7 @@ export interface UserProfile {
   // 시스템
   kakaoAlerts: boolean;
   alertDays: number[];
-  isPremium?: boolean;
+  isPremium: boolean;
 }
 
 const defaultProfile: UserProfile = {
