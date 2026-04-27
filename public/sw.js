@@ -69,7 +69,14 @@ self.addEventListener("fetch", (event) => {
 
 // Push 알림 수신
 self.addEventListener("push", (event) => {
-  const data = event.data?.json() ?? {};
+  let data = {};
+  try {
+    const text = event.data?.text();
+    if (text) data = JSON.parse(text);
+  } catch (err) {
+    console.error("[sw] push data parse failed:", err);
+    data = {};
+  }
   const title = data.title || "혜택알리미 🔔";
   const options = {
     body: data.body || "마감 임박 혜택이 있습니다!",

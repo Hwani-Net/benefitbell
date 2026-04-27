@@ -1,10 +1,23 @@
-'use client'
-import Script from 'next/script'
+"use client";
+import Script from "next/script";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export default function GoogleAnalytics() {
-  if (!GA_ID) return null
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!GA_ID || typeof window === "undefined") return;
+    const w = window as typeof window & { gtag?: (...args: unknown[]) => void };
+    if (typeof w.gtag !== "function") return;
+    w.gtag("config", GA_ID, {
+      page_path: pathname,
+    });
+  }, [pathname]);
+
+  if (!GA_ID) return null;
 
   return (
     <>
@@ -24,13 +37,16 @@ export default function GoogleAnalytics() {
         `}
       </Script>
     </>
-  )
+  );
 }
 
 // Track custom events
-export function trackEvent(eventName: string, params?: Record<string, string | number>) {
-  if (typeof window !== 'undefined' && 'gtag' in window) {
+export function trackEvent(
+  eventName: string,
+  params?: Record<string, string | number>,
+) {
+  if (typeof window !== "undefined" && "gtag" in window) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).gtag('event', eventName, params)
+    (window as any).gtag("event", eventName, params);
   }
 }
