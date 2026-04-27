@@ -1,7 +1,11 @@
 .hero {
   padding: 40px 20px 20px;
   text-align: left;
-  background: linear-gradient(180deg, rgba(238, 242, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(238, 242, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .title {
@@ -59,9 +63,5 @@
 .price {
   font-size: 20px;
   font-weight: 800;
-  color: #6E56CF;
-}
-
-.paymentContainer {
-  margin: 24px 0;
+  color: #6e56cf;
 }

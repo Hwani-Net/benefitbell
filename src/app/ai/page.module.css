@@ -28,8 +28,13 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .title {
@@ -167,7 +172,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error */
@@ -180,20 +187,20 @@
   font-size: 14px;
 }
 
-.errorHint {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-
 /* Results */
 .results {
   animation: fadeIn 0.4s ease;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .aiMessage {
@@ -246,7 +253,7 @@
 
 .benefitCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   border-color: var(--accent);
 }
 
@@ -255,18 +262,6 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-}
-
-.catBadge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.ddayBadge {
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .cardTitle {
@@ -295,7 +290,9 @@
   line-height: 1.5;
 }
 
-.aiReason p { margin: 0; }
+.aiReason p {
+  margin: 0;
+}
 
 /* Disclaimer */
 .disclaimer {
@@ -498,7 +495,7 @@
 
 /* ─── Profile CTA ─── */
 .profileCta {
-  background: linear-gradient(135deg, #0EA5E9 0%, #6366F1 50%, #A855F7 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%);
   border-radius: 20px;
   padding: 28px 24px;
   text-align: center;
@@ -542,38 +539,6 @@
 .profileCtaBtn:hover {
   background: rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
-}
-
-/* ─── AI Progress Bar ─── */
-.aiProgress {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.aiProgressBar {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.aiProgressFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), #7c3aed);
-  border-radius: 3px;
-  transition: width 0.5s ease;
-}
-
-.aiProgressText {
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
 }
 
 /* ─── Summary stats ─── */

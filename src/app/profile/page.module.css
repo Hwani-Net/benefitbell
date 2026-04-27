@@ -20,7 +20,9 @@
   margin-bottom: -2px;
 }
 
-.tabBtn:hover { color: var(--text-primary); }
+.tabBtn:hover {
+  color: var(--text-primary);
+}
 
 .tabActive {
   color: var(--color-coral, #f97316) !important;
@@ -38,8 +40,12 @@
   transition: background 0.15s;
 }
 
-.bookmarkItem:last-child { border-bottom: none; }
-.bookmarkItem:active { background: var(--bg-secondary); }
+.bookmarkItem:last-child {
+  border-bottom: none;
+}
+.bookmarkItem:active {
+  background: var(--bg-secondary);
+}
 
 .bookmarkContent {
   flex: 1;
@@ -88,7 +94,6 @@
 }
 
 .profileHero {
-
   display: flex;
   align-items: center;
   gap: 16px;
@@ -133,7 +138,11 @@
   flex-shrink: 0;
 }
 
-.profileInfo { display: flex; flex-direction: column; gap: 4px; }
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .profileName {
   font-size: 20px;
@@ -175,14 +184,18 @@
      iOS에서 space-between + overflow:clip 조합이 label 위치 계산 오류를 유발할 수 있음 */
 }
 
-.formRow:last-child { border-bottom: none; }
+.formRow:last-child {
+  border-bottom: none;
+}
 
 .formRowFull {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
-.formRowFull:last-child { border-bottom: none; }
+.formRowFull:last-child {
+  border-bottom: none;
+}
 
 .label {
   font-size: 14px;
@@ -266,7 +279,9 @@
   border: 1px solid var(--border-color);
 }
 
-.stepBtn:active { background: var(--color-coral-light); }
+.stepBtn:active {
+  background: var(--color-coral-light);
+}
 
 .stepValue {
   font-size: 16px;
@@ -354,49 +369,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-/* Premium Banner */
-.premiumBanner {
-  background: var(--gradient-premium);
-  border-radius: var(--border-radius-xl);
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.premiumLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.premiumTitle {
-  font-size: 13px;
-  color: rgba(255,255,255,0.9);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.premiumRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.premiumPrice {
-  font-size: 18px;
-  font-weight: 800;
-  color: #fff;
-}
-
-.premiumPrice small {
-  font-size: 12px;
-  font-weight: 400;
 }
 
 /* Coffee */
