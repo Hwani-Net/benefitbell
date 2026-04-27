@@ -195,8 +195,8 @@ const RETRYABLE_ERRORS = new Set([
   "NOT_FOUND_PAYMENT_SESSION",
 ]);
 
-function getTossErrorMessage(code: string, fallback: string): string {
-  return TOSS_ERROR_MESSAGES[code] || fallback || "결제 승인에 실패했습니다.";
+function getTossErrorMessage(code: string, _fallback: string): string {
+  return TOSS_ERROR_MESSAGES[code] || "결제 승인에 실패했습니다.";
 }
 
 function isRetryableError(code: string): boolean {

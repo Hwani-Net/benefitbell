@@ -46,6 +46,7 @@ export const KAKAO_CHANNEL_ID = "_IdDIX";
 export function initKakao() {
   if (typeof window === "undefined") return;
   if (!window.Kakao) return;
+  if (!KAKAO_JS_KEY) return;
   if (window.Kakao.isInitialized()) return;
   window.Kakao.init(KAKAO_JS_KEY);
 }

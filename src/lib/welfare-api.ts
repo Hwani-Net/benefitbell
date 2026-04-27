@@ -651,8 +651,8 @@ export function transformDetailToBenefit(item: WelfareDetailItem): Benefit {
   );
   const labels = CATEGORY_LABELS[category];
 
-  const startDate = item.applyBgnDt || "";
-  const endDate = item.applyEndDt || "";
+  const startDate = normalizeDateStr(item.applyBgnDt);
+  const endDate = normalizeDateStr(item.applyEndDt);
   const dDay = calculateDDay(endDate);
   const status = getStatus(startDate, endDate);
 

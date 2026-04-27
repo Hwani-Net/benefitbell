@@ -219,13 +219,6 @@ export function computeRuleScore(
     }
   }
 
-  // ── 14. 장애 여부 매칭 (기존 specialStatus 보완) ───
-  // 개인정보 최소화: 등급 숫자 미수집, 장애 여부(boolean)만 사용
-  if (text.includes("장애") && profile.hasDisability) {
-    // specialStatus에 'disability'가 있으면 이미 +20 반영됨 (섹션 8)
-    // 중복 가점 없이 hasDisability 확인만으로 충분
-  }
-
   // ── 15. 자녀 연령대 상세 매칭 (기존 가족 매칭 보완) ───
   if (effectiveChildrenCount > 0 && effectiveChildrenAgeGroup.length > 0) {
     if (
