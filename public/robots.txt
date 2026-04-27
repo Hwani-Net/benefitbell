@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /profile
-Disallow: /premium/success
-Disallow: /premium/fail
-Disallow: /consent
-
-Sitemap: https://benefitbell.kr/sitemap.xml
