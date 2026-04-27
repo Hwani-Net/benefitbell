@@ -705,38 +705,172 @@ export default function DetailPage({
             </div>
           </section>
         ) : (
-          // 신청 방법 데이터 없음 — 복지로 도움말 링크 표시
+          // 신청 방법 데이터 없음 — 일반 신청 절차 + 차별 가치 안내
           <section className="section">
-            <h2 className="section-title mb-12">{t.howToApply}</h2>
-            <div
+            <h2 className="section-title mb-12">
+              {lang === "ko" ? "📝 신청 안내" : "📝 How to Apply"}
+            </h2>
+
+            {/* 일반 신청 절차 4단계 — 사용자가 막막하지 않도록 우리가 정리 */}
+            <ol
               style={{
-                padding: "16px",
-                background: "var(--bg-secondary)",
-                borderRadius: 12,
-                textAlign: "center",
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
               }}
             >
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "var(--text-secondary)",
-                  marginBottom: 12,
-                }}
-              >
-                {lang === "ko"
-                  ? "신청 방법 상세 정보는 복지로에서 확인하세요"
-                  : "Check how to apply on Bokjiro"}
-              </p>
-              <a
-                href={benefit.applyUrl || "https://www.bokjiro.go.kr"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-                style={{ display: "inline-block", fontSize: 14 }}
-              >
-                복지로에서 신청 하기 →
-              </a>
+              {(lang === "ko"
+                ? [
+                    {
+                      n: "1",
+                      t: "자격 확인",
+                      d: "위 'AI 자격 체크'에서 본인 해당 여부를 먼저 확인하세요.",
+                    },
+                    {
+                      n: "2",
+                      t: "필요 서류 준비",
+                      d: "아래 '필요 서류' 섹션의 체크리스트로 빠짐없이 준비하세요.",
+                    },
+                    {
+                      n: "3",
+                      t: "신청서 작성·제출",
+                      d: "복지로(온라인) 또는 관할 주민센터(방문)에서 신청합니다.",
+                    },
+                    {
+                      n: "4",
+                      t: "결과 통보",
+                      d: "심사 후 14~30일 내 결과 통보. 결과는 문자/우편으로 전달됩니다.",
+                    },
+                  ]
+                : [
+                    {
+                      n: "1",
+                      t: "Check eligibility",
+                      d: "Use the AI Eligibility Check above to confirm.",
+                    },
+                    {
+                      n: "2",
+                      t: "Prepare documents",
+                      d: "See the Required Documents checklist below.",
+                    },
+                    {
+                      n: "3",
+                      t: "Submit application",
+                      d: "Apply online via Bokjiro or in person at your local office.",
+                    },
+                    {
+                      n: "4",
+                      t: "Wait for result",
+                      d: "Notification within 14–30 days by SMS or mail.",
+                    },
+                  ]
+              ).map((s) => (
+                <li
+                  key={s.n}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: "12px 14px",
+                    background: "var(--bg-secondary)",
+                    borderRadius: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      flex: "none",
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      background: "var(--primary)",
+                      color: "#fff",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {s.n}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                        margin: 0,
+                      }}
+                    >
+                      {s.t}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-secondary)",
+                        margin: "2px 0 0",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {s.d}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            {/* 차별 가치 강조: 우리만 제공하는 기능 */}
+            <div
+              style={{
+                padding: "12px 14px",
+                background:
+                  "linear-gradient(135deg, rgba(255,107,74,0.08), rgba(255,107,74,0.02))",
+                border: "1px solid rgba(255,107,74,0.2)",
+                borderRadius: 10,
+                marginBottom: 12,
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: "var(--text-primary)",
+              }}
+            >
+              {lang === "ko" ? (
+                <>
+                  🔔 <strong>마감 임박 시 알림 자동 발송</strong> — D-7 / D-3 /
+                  D-1 푸시 알림으로 놓치지 않게 챙겨드려요.
+                  <br />
+                  💬 <strong>카카오톡 1:1 문의</strong> — 채널 친구 추가 후
+                  궁금한 점을 바로 물어보세요.
+                </>
+              ) : (
+                <>
+                  🔔 <strong>Deadline alerts</strong> — auto push at D-7 / D-3 /
+                  D-1.
+                  <br />
+                  💬 <strong>1:1 KakaoTalk support</strong> via our channel.
+                </>
+              )}
             </div>
+
+            {/* 보조 링크 — 복지로 공식 페이지 (참고용) */}
+            <a
+              href={benefit.applyUrl || "https://www.bokjiro.go.kr"}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "block",
+                textAlign: "center",
+                fontSize: 12,
+                color: "var(--text-secondary)",
+                textDecoration: "underline",
+              }}
+            >
+              {lang === "ko"
+                ? "복지로 공식 페이지에서 추가 정보 보기 →"
+                : "View on Bokjiro (official) →"}
+            </a>
           </section>
         )}
 
