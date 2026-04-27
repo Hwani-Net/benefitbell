@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, callAI } from "@/lib/ai-client";
+import { callAI } from "@/lib/ai-client";
 import { fetchWelfareDetail } from "@/lib/welfare-api";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -134,8 +134,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client = createAIClient();
-
     const servId = extractServId(benefitId);
     const detail = await fetchWelfareDetail(servId);
 
@@ -196,7 +194,6 @@ Respond in JSON:
     `;
 
     const text = await callAI(
-      client,
       [
         {
           role: "system",
@@ -304,7 +301,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const client = createAIClient();
     const servId = extractServId(benefitId);
     const detail = await fetchWelfareDetail(servId);
 
@@ -385,7 +381,6 @@ Respond in JSON:
     `;
 
     const text = await callAI(
-      client,
       [
         {
           role: "system",

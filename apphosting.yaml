@@ -49,8 +49,18 @@ env:
     secret: DATA_GO_KR_SERVICE_KEY
   - variable: PUBLIC_DATA_API_KEY
     secret: DATA_GO_KR_SERVICE_KEY
+  # AI provider fallback chain: Gemini → OpenAI → Anthropic.
+  # 미등록 키는 자동 skip — 적어도 1개만 살아있으면 동작.
+  # GEMINI/ANTHROPIC 키 발급 후 등록:
+  #   echo -n "<key>" | gcloud secrets create GEMINI_API_KEY --data-file=- --project=ai-project-ce41f
+  #   firebase apphosting:secrets:grantaccess GEMINI_API_KEY --backend benefitbell-web
+  # 등록 완료 후 아래 주석 해제하고 재배포.
+  # - variable: GEMINI_API_KEY
+  #   secret: GEMINI_API_KEY
   - variable: OPENAI_API_KEY
     secret: OPENAI_API_KEY
+  # - variable: ANTHROPIC_API_KEY
+  #   secret: ANTHROPIC_API_KEY
   - variable: TOSS_SECRET_KEY
     secret: TOSS_SECRET_KEY
   - variable: VAPID_PRIVATE_KEY
