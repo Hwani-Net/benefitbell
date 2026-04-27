@@ -19,6 +19,9 @@ const ENDPOINTS = [
 ];
 
 export async function POST(request: Request) {
+  const authError = verifyCron(request);
+  if (authError) return authError;
+
   if (!INDEXNOW_KEY) {
     return NextResponse.json(
       { success: false, error: "INDEXNOW_KEY not configured" },
@@ -27,11 +30,20 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json().catch(() => null);
-    const urls: string[] = body?.urls ?? [];
+    const rawUrls: unknown[] = body?.urls ?? [];
+
+    // Only allow URLs on this host (prevent external domain submission)
+    const allowedHost = new URL(BASE_URL).host;
+    const urls: string[] = rawUrls
+      .filter(
+        (u): u is string =>
+          typeof u === "string" && new URL(u).host === allowedHost,
+      )
+      .slice(0, 10000);
 
     if (urls.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No URLs provided" },
+        { success: false, error: "No valid URLs provided" },
         { status: 400 },
       );
     }

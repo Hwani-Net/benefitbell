@@ -1397,7 +1397,7 @@ export default function ProfilePage() {
                         </option>
                       )}
                       {Array.from(
-                        { length: new Date().getFullYear() - 1924 },
+                        { length: new Date().getFullYear() - 1923 },
                         (_, i) => {
                           const year = new Date().getFullYear() - i;
                           return (

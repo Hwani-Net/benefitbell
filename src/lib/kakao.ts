@@ -1,6 +1,4 @@
 // Kakao SDK utility
-// JavaScript Key: d935363352a0781e5d6ff7fada8b5b3d
-// App ID: 1391024 (혜택알리미)
 
 declare global {
   interface Window {
@@ -38,8 +36,7 @@ interface KakaoShareParams {
   }>;
 }
 
-const KAKAO_JS_KEY =
-  process.env.NEXT_PUBLIC_KAKAO_JS_KEY || "c66527c2112a3c696c719e3fe0c9e108";
+const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "";
 const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
