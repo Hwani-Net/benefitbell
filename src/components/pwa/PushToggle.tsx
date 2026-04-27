@@ -103,6 +103,8 @@ export default function PushToggle() {
       const sub = await reg.pushManager.getSubscription();
       if (sub) await sub.unsubscribe();
 
+      // fcm_token localStorage 정리 (profile 페이지의 카테고리 업데이트에서 참조)
+      try { localStorage.removeItem("fcm_token"); } catch { /* ignore */ }
       // 서버에도 알림 (선택적) - 현재는 서버 API가 없으므로 생략
       setStatus("unsubscribed");
     } catch (err) {
