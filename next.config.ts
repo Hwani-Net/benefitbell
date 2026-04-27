@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.tosspayments.com https://t1.kakaocdn.net",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.tosspayments.com https://t1.kakaocdn.net https://www.gstatic.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "connect-src 'self' https://firestore.googleapis.com https://fcm.googleapis.com https://www.google-analytics.com https://kapi.kakao.com https://kauth.kakao.com wss://*.firebaseio.com",
