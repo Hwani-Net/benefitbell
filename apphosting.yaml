@@ -64,6 +64,8 @@ env:
     secret: KAKAO_CLIENT_SECRET
   - variable: BIZINFO_API_KEY
     secret: BIZINFO_API_KEY
+  - variable: DATA_GO_KR_SUBSIDY_KEY
+    secret: DATA_GO_KR_SUBSIDY_KEY
   - variable: INDEXNOW_KEY
     secret: INDEXNOW_KEY
   # 어드민 전용: 결제 입금 확인 후 X-Admin-Secret 헤더로 즉시 활성화 시 사용

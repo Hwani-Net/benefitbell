@@ -799,19 +799,21 @@ export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
 }
 
 // =====================
-// Source 3: 보조금24 API (행정안전부)
+// Source 3: 보조금24 API (행정안전부 통계연보)
 // =====================
-// ⚠️ 별도 서비스키 필요: DATA_GO_KR_SUBSIDY_KEY
-// data.go.kr에서 "보조금24" 검색 → 활용신청
-
-const SUBSIDY_BASE = "https://apis.data.go.kr/1741000/SubsidyService";
+// 발급 endpoint: https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24
+// 데이터포맷: XML (기본). _type=json 미지원 가능.
+// 주의: 이 API는 "보조금 서비스 목록"이 아닌 "보조금24 이용 통계"입니다.
+// 따라서 복지 혜택 카드 표시용 데이터로는 부적합. 응답 매핑이 일치하지 않으면
+// 빈 배열 반환 (graceful no-op). 통계 대시보드 등 별도 용도로 확장 시 별도 함수로 분리할 것.
+const SUBSIDY_BASE = "https://apis.data.go.kr/1741000/Subsidy24";
 
 export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
   const subsidyKey = process.env.DATA_GO_KR_SUBSIDY_KEY;
   if (!subsidyKey) return []; // 키 없으면 조용히 스킵
 
   try {
-    const url = `${SUBSIDY_BASE}/getSubsidyList?serviceKey=${subsidyKey}&pageNo=1&numOfRows=500&type=json`;
+    const url = `${SUBSIDY_BASE}/getSubsidy24?serviceKey=${subsidyKey}&pageNo=1&numOfRows=500&_type=json`;
     const res = await fetch(url, FETCH_OPTS);
 
     if (res.status === 403 || res.status === 401 || res.status === 500) {
@@ -822,25 +824,58 @@ export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
     }
     if (!res.ok) return [];
 
-    const data = await res.json();
-    const items = data?.response?.body?.items?.item;
-    if (!items || !Array.isArray(items)) return [];
+    const text = await res.text();
 
+    // JSON 응답 우선 시도
+    let items: Record<string, string>[] = [];
+    if (text.trim().startsWith("{")) {
+      try {
+        const data = JSON.parse(text);
+        const raw = data?.response?.body?.items?.item;
+        items = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      } catch (parseErr) {
+        console.error(
+          "[welfare-api] 보조금24 JSON parse failed:",
+          parseErr,
+          "head:",
+          text.slice(0, 200),
+        );
+        items = [];
+      }
+    } else if (text.includes("<item>") || text.includes("<servList>")) {
+      // XML fallback — 실제 응답 필드 확인되면 추후 매핑 정밀화
+      const blocks = text.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+      items = blocks.map((block) => ({
+        servId: xmlGet(block, "servId"),
+        servNm: xmlGet(block, "servNm"),
+        servDgst: xmlGet(block, "servDgst"),
+        jurOrgNm: xmlGet(block, "jurOrgNm"),
+        servDtlLink: xmlGet(block, "servDtlLink"),
+        inqNum: xmlGet(block, "inqNum"),
+        lastModYmd: xmlGet(block, "lastModYmd"),
+      }));
+    }
+
+    if (items.length === 0) return [];
     console.info(`[welfare-api] 보조금24: ${items.length} items fetched`);
 
-    return items.map((item: Record<string, string>) => ({
-      servId: `SUB-${item.servId || item.서비스ID || ""}`,
-      servNm: item.servNm || item.서비스명 || "",
-      servDgst: item.servDgst || item.서비스요약 || "",
-      jurOrgNm: item.jurOrgNm || item.소관기관명 || "행정안전부",
-      lifeNmArray: "",
-      intrsThemNmArray: "",
-      trgterIndvdlArray: "",
-      servDtlLink: item.servDtlLink || "",
-      inqNum: Number(item.inqNum) || 0,
-      svcfrstRegTs: "",
-      lastModYmd: item.lastModYmd || "",
-    }));
+    // 통계 API라 servNm이 비어있을 수 있음 → 매핑 실패 시 빈 배열로 graceful 반환
+    const mapped = items
+      .map((item: Record<string, string>) => ({
+        servId: `SUB-${item.servId || ""}`,
+        servNm: item.servNm || "",
+        servDgst: item.servDgst || "",
+        jurOrgNm: item.jurOrgNm || "행정안전부",
+        lifeNmArray: "",
+        intrsThemNmArray: "",
+        trgterIndvdlArray: "",
+        servDtlLink: item.servDtlLink || "",
+        inqNum: Number(item.inqNum) || 0,
+        svcfrstRegTs: "",
+        lastModYmd: item.lastModYmd || "",
+      }))
+      .filter((m) => m.servNm); // 서비스명 없는 통계 row 제외
+    return mapped;
   } catch (err) {
     console.warn("[welfare-api] 보조금24 fetch error:", err);
     return [];
