@@ -14,6 +14,7 @@ import { FieldValue } from "firebase-admin/firestore";
 //       RAG context는 읽기 전용이므로 인스턴스별 캐시도 안전.
 let cachedContext: string | null = null;
 let cacheTimestamp = 0;
+let fetching = false; // single-flight: stampede 방지
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // IP-based rate limiting — Firestore 기반 (Cloud Run 다중 인스턴스 안전)
@@ -69,28 +70,36 @@ async function buildBenefitsContext(): Promise<string> {
   if (cachedContext && now - cacheTimestamp < CACHE_TTL) {
     return cachedContext;
   }
+  // single-flight: 동시 갱신 요청 시 stale-while-revalidate 반환
+  if (fetching) {
+    return cachedContext ?? "";
+  }
+  fetching = true;
+  try {
+    const items = await fetchAllWelfareSources();
+    if (items.length === 0) return "(혜택 데이터를 불러오지 못했습니다)";
+    // Use first 100 items for context window (too many items = too many tokens)
+    const context = items
+      .slice(0, 100)
+      .map((item, i) => {
+        const b = transformListItemToBenefit(item, i);
+        return JSON.stringify({
+          id: b.id,
+          title: b.title,
+          category: b.category,
+          amount: b.amount,
+          description: b.description.substring(0, 100),
+          ministry: b.ministry,
+        });
+      })
+      .join("\n");
 
-  const items = await fetchAllWelfareSources();
-  if (items.length === 0) return "(혜택 데이터를 불러오지 못했습니다)";
-  // Use first 100 items for context window (too many items = too many tokens)
-  const context = items
-    .slice(0, 100)
-    .map((item, i) => {
-      const b = transformListItemToBenefit(item, i);
-      return JSON.stringify({
-        id: b.id,
-        title: b.title,
-        category: b.category,
-        amount: b.amount,
-        description: b.description.substring(0, 100),
-        ministry: b.ministry,
-      });
-    })
-    .join("\n");
-
-  cachedContext = context;
-  cacheTimestamp = now;
-  return context;
+    cachedContext = context;
+    cacheTimestamp = Date.now();
+    return cachedContext;
+  } finally {
+    fetching = false;
+  }
 }
 
 export async function POST(req: NextRequest) {
