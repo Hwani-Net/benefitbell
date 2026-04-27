@@ -104,7 +104,14 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   if (event.action === "dismiss") return;
 
-  const targetUrl = event.notification.data?.url || "/";
+  const rawUrl = event.notification.data?.url || "/";
+  // Only allow same-origin relative paths — block javascript: and external URLs
+  const targetUrl =
+    typeof rawUrl === "string" &&
+    rawUrl.startsWith("/") &&
+    !rawUrl.startsWith("//")
+      ? rawUrl
+      : "/";
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
