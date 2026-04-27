@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const { paymentKey, orderId, amount } = await req.json();
@@ -29,35 +31,33 @@ export async function POST(req: Request) {
     // PP-C01-c: Firebase idToken으로 호출자 신원 확인 + orderId의 kakaoId와 대조
     // 공격자가 victim kakaoId를 orderId에 심어 결제 확인하는 것을 방지.
     const adminAuth = getAdminAuth();
-    if (adminAuth) {
-      const authHeader = req.headers.get("Authorization");
-      const idToken = authHeader?.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : null;
-      if (!idToken) {
+    const authHeader = req.headers.get("Authorization");
+    const idToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
+    if (!idToken) {
+      return NextResponse.json(
+        { error: "인증이 필요합니다." },
+        { status: 401 },
+      );
+    }
+    try {
+      const decoded = await adminAuth.verifyIdToken(idToken);
+      const tokenKakaoId = decoded.uid.startsWith("kakao_")
+        ? decoded.uid.slice(6)
+        : decoded.uid;
+      if (String(tokenKakaoId) !== String(kakaoId)) {
         return NextResponse.json(
-          { error: "인증이 필요합니다." },
-          { status: 401 },
-        );
-      }
-      try {
-        const decoded = await adminAuth.verifyIdToken(idToken);
-        const tokenKakaoId = decoded.uid.startsWith("kakao_")
-          ? decoded.uid.slice(6)
-          : decoded.uid;
-        if (String(tokenKakaoId) !== String(kakaoId)) {
-          return NextResponse.json(
-            { error: "orderId의 사용자와 인증 사용자가 일치하지 않습니다." },
-            { status: 403 },
-          );
-        }
-      } catch (authErr) {
-        console.error("[payments/confirm] verifyIdToken failed:", authErr);
-        return NextResponse.json(
-          { error: "유효하지 않은 인증 토큰입니다." },
+          { error: "orderId의 사용자와 인증 사용자가 일치하지 않습니다." },
           { status: 403 },
         );
       }
+    } catch (authErr) {
+      console.error("[payments/confirm] verifyIdToken failed:", authErr);
+      return NextResponse.json(
+        { error: "유효하지 않은 인증 토큰입니다." },
+        { status: 403 },
+      );
     }
 
     // PP-C02: 서버 측 결제 금액 검증 (클라이언트 조작 방지)
