@@ -96,7 +96,10 @@ export default function TopBar() {
         {/* 프로필 아바타 / 로그인 버튼 */}
         {kakaoUser ? (
           <div className={styles.avatar}>
-            {kakaoUser.profile_image ? (
+            {kakaoUser.profile_image &&
+            /^https:\/\/[^/]*\.kakaocdn\.net\//.test(
+              kakaoUser.profile_image,
+            ) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={kakaoUser.profile_image}
