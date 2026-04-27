@@ -27,23 +27,28 @@ async function checkRateLimit(ip: string): Promise<boolean> {
   try {
     const db = getAdminFirestore();
     const ref = db.collection("ai_rate_limits").doc(docId);
-    const snap = await ref.get();
-    const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
 
-    if (count >= IP_RATE_LIMIT) return false;
+    // Firestore 트랜잭션으로 read-then-write 원자 처리 — 동시 요청 경쟁 방지
+    const allowed = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
+      if (count >= IP_RATE_LIMIT) return false;
 
-    await ref.set(
-      {
-        count: FieldValue.increment(1),
-        updated_at: FieldValue.serverTimestamp(),
-        // Firestore TTL 필드 — cleanup-welfare-dates cron 또는 Firestore TTL 정책 활용 가능
-        expires_at: new Date(
-          (windowStart + 1) * IP_RATE_WINDOW_SEC * 1000 + 60_000,
-        ),
-      },
-      { merge: true },
-    );
-    return true;
+      tx.set(
+        ref,
+        {
+          count: FieldValue.increment(1),
+          updated_at: FieldValue.serverTimestamp(),
+          // Firestore TTL 필드 — cleanup-welfare-dates cron 또는 Firestore TTL 정책 활용 가능
+          expires_at: new Date(
+            (windowStart + 1) * IP_RATE_WINDOW_SEC * 1000 + 60_000,
+          ),
+        },
+        { merge: true },
+      );
+      return true;
+    });
+    return allowed;
   } catch (firestoreErr) {
     // Firestore 오류 시 허용 (availability > strict rate limit)
     console.error(

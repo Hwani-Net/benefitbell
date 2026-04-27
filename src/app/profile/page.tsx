@@ -526,7 +526,7 @@ function PremiumStatusCard({
                 {
                   icon: "✨",
                   text: "Unlimited AI Analysis",
-                  sub: "Currently limited to 3/day",
+                  sub: "Currently limited to 10/day",
                 },
                 {
                   icon: "🚫",
