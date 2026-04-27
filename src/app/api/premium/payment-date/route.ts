@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 
+export const dynamic = "force-dynamic";
+
 // 프리미엄 결제일 조회 (Firestore payment_logs 컬렉션)
 export async function GET(req: Request) {
   try {
@@ -20,12 +22,6 @@ export async function GET(req: Request) {
     }
     const idToken = authHeader.slice(7);
     const adminAuth = getAdminAuth();
-    if (!adminAuth) {
-      return NextResponse.json(
-        { error: "Auth service unavailable" },
-        { status: 503 },
-      );
-    }
     try {
       const decoded = await adminAuth.verifyIdToken(idToken);
       const tokenKakaoId = decoded.uid.startsWith("kakao_")

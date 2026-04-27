@@ -25,12 +25,6 @@ export async function POST(req: Request) {
 
     const idToken = authHeader.slice(7);
     const adminAuth = getAdminAuth();
-    if (!adminAuth) {
-      return NextResponse.json(
-        { error: "서버 인증 초기화 실패" },
-        { status: 500 },
-      );
-    }
 
     let decodedToken;
     try {

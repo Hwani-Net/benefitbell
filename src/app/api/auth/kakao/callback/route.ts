@@ -17,6 +17,8 @@ function getPublicOrigin(request: Request): string {
     : `${forwardedProto}://${host}`;
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const origin = getPublicOrigin(request);
   const requestUrl = new URL(request.url);

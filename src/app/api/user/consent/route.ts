@@ -25,13 +25,6 @@ export async function POST(req: Request) {
     const idToken = authHeader.slice(7);
 
     const adminAuth = getAdminAuth();
-    // PP-F01: getAdminAuth() null 가드
-    if (!adminAuth) {
-      return NextResponse.json(
-        { error: "Auth service unavailable" },
-        { status: 503 },
-      );
-    }
     let decoded;
     try {
       decoded = await adminAuth.verifyIdToken(idToken);

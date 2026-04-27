@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
+export const dynamic = "force-dynamic";
+
 async function verifyKakaoIdFromAuth(
   req: Request,
   requestedKakaoId: string,
@@ -12,9 +14,6 @@ async function verifyKakaoIdFromAuth(
   }
   const idToken = authHeader.slice(7);
   const adminAuth = getAdminAuth();
-  if (!adminAuth) {
-    return { ok: false, status: 500, error: "서버 인증 초기화 실패" };
-  }
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
     const tokenKakaoId = decoded.uid.startsWith("kakao_")

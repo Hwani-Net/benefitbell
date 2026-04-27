@@ -65,7 +65,6 @@ export default function AiEligibilityCheck({
 }: Props) {
   const { lang, userProfile } = useApp();
   const isKo = lang === "ko";
-  const isPremium = !!userProfile?.isPremium;
   const hasProfile = !!(userProfile?.birthYear && userProfile?.region);
 
   // ── Inline variant state ───────────────────────────
@@ -500,7 +499,11 @@ export default function AiEligibilityCheck({
             </p>
             <h2 className={styles.modalTitle}>{benefitTitle}</h2>
           </div>
-          <button className={styles.closeBtn} onClick={closeDetail}>
+          <button
+            className={styles.closeBtn}
+            onClick={closeDetail}
+            aria-label={isKo ? "닫기" : "Close"}
+          >
             ✕
           </button>
         </div>
