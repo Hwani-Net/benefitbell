@@ -319,25 +319,26 @@ export default function PremiumPage() {
                       )}
                     </>
                   ) : (
-                    <button
+                    <a
+                      href="/api/auth/kakao"
                       className="btn btn-full btn-lg"
-                      disabled
                       style={{
-                        background: "var(--bg-secondary)",
-                        color: "var(--text-tertiary)",
+                        display: "block",
+                        background: "var(--color-primary)",
+                        color: "#fff",
                         fontWeight: 700,
                         fontSize: 16,
                         borderRadius: 14,
                         padding: "16px 0",
-                        cursor: "not-allowed",
-                        border: "1px dashed var(--border-color)",
+                        textAlign: "center",
+                        textDecoration: "none",
                         width: "100%",
                       }}
                     >
                       {isKo
-                        ? "🔒 로그인 후 결제할 수 있어요"
-                        : "🔒 Login to continue"}
-                    </button>
+                        ? "🔒 카카오로 로그인 후 결제하기"
+                        : "🔒 Login with Kakao to continue"}
+                    </a>
                   )}
                 </>
               )}
