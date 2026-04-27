@@ -591,11 +591,12 @@ export default function DetailPage({
                 <div>
                   <p className={styles.infoLabel}>{t.incomeLevel}</p>
                   <p className={styles.infoValue} style={{ fontSize: 13 }}>
-                    {benefit.incomeLevel || apiDetail?.selectionCriteria
-                      ? apiDetail.selectionCriteria.length > 80
-                        ? apiDetail.selectionCriteria.substring(0, 80) + "..."
-                        : apiDetail.selectionCriteria
-                      : undefined}
+                    {benefit.incomeLevel ||
+                      (apiDetail?.selectionCriteria
+                        ? apiDetail.selectionCriteria.length > 80
+                          ? apiDetail.selectionCriteria.substring(0, 80) + "..."
+                          : apiDetail.selectionCriteria
+                        : undefined)}
                   </p>
                 </div>
               </div>
