@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     description:
       "108건 이상의 정부 복지서비스를 실시간으로 확인하세요. 기초생활, 청년, 노인, 의료, 주거 등 맞춤형 혜택 알림.",
     type: "website",
+    url: "https://benefitbell.kr",
     locale: "ko_KR",
     siteName: "혜택알리미 BenefitBell",
     images: [

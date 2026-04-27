@@ -1,7 +1,18 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
 
-export default function Error({ reset }: { reset: () => void }) {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Log to console in development; replace with error reporting (Sentry etc.) in production
+    console.error("[error-boundary]", error);
+  }, [error]);
   return (
     <div style={{ textAlign: "center", padding: "60px 20px" }}>
       <p style={{ fontSize: 48, marginBottom: 16 }}>😵</p>

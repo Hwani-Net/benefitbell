@@ -358,6 +358,12 @@ function xmlParseItems(
 // API Fetching
 // =====================
 
+/** Shared fetch options: ISR 1h cache + 15s timeout to prevent server hang */
+const FETCH_OPTS = {
+  next: { revalidate: 3600 },
+  signal: AbortSignal.timeout(15000),
+} as const;
+
 /**
  * Fetch welfare service list from data.go.kr
  */
@@ -376,7 +382,7 @@ export async function fetchWelfareList(
   const url = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=${pageNo}&numOfRows=${numOfRows}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } }); // ISR 1h cache
+    const res = await fetch(url, FETCH_OPTS); // ISR 1h cache
     if (!res.ok) {
       console.error(`[welfare-api] List fetch failed: ${res.status}`);
       return [];
@@ -468,7 +474,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
   try {
     // First page to get totalCount
     const firstUrl = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=1&numOfRows=${numOfRows}`;
-    const firstRes = await fetch(firstUrl, { next: { revalidate: 3600 } });
+    const firstRes = await fetch(firstUrl, FETCH_OPTS);
     if (!firstRes.ok) return [];
 
     const firstText = await firstRes.text();
@@ -492,7 +498,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
       const results = await Promise.all(
         pageNums.map(async (page) => {
           const url = `${BASE_URL}/NationalWelfarelistV001?serviceKey=${serviceKey}&callTp=L&srchKeyCode=001&pageNo=${page}&numOfRows=${numOfRows}`;
-          const res = await fetch(url, { next: { revalidate: 3600 } });
+          const res = await fetch(url, FETCH_OPTS);
           if (!res.ok) return [];
           const text = await res.text();
           return remapItems(xmlParseItems(text, RAW_FIELDS));
@@ -521,7 +527,7 @@ export async function fetchWelfareDetail(
   const url = `${BASE_URL}/NationalWelfaredetailedV001?serviceKey=${serviceKey}&callTp=D&servId=${servId}&_type=json`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, FETCH_OPTS);
     if (!res.ok) return null;
 
     const text = await res.text();
@@ -733,7 +739,7 @@ export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
   try {
     // Test with first page
     const firstUrl = `${LOCAL_GOV_BASE}/LcgvWelfarelist?serviceKey=${serviceKey}&callTp=L&pageNo=1&numOfRows=${numOfRows}&srchKeyCode=001`;
-    const firstRes = await fetch(firstUrl, { next: { revalidate: 3600 } });
+    const firstRes = await fetch(firstUrl, FETCH_OPTS);
 
     if (firstRes.status === 403 || firstRes.status === 401) {
       console.warn(
@@ -766,7 +772,7 @@ export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
         pageNums.map(async (page) => {
           try {
             const url = `${LOCAL_GOV_BASE}/LcgvWelfarelist?serviceKey=${serviceKey}&callTp=L&pageNo=${page}&numOfRows=${numOfRows}&srchKeyCode=001`;
-            const res = await fetch(url, { next: { revalidate: 3600 } });
+            const res = await fetch(url, FETCH_OPTS);
             if (!res.ok) return [];
             const text = await res.text();
             return remapItems(xmlParseItems(text, RAW_FIELDS));
@@ -800,7 +806,7 @@ export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
 
   try {
     const url = `${SUBSIDY_BASE}/getSubsidyList?serviceKey=${subsidyKey}&pageNo=1&numOfRows=500&type=json`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, FETCH_OPTS);
 
     if (res.status === 403 || res.status === 401 || res.status === 500) {
       console.warn(
@@ -849,7 +855,7 @@ export async function fetchBizinfoList(): Promise<WelfareListItem[]> {
 
   try {
     const url = `${BIZINFO_URL}?crtfcKey=${bizKey}&dataType=json&searchCnt=1000`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, FETCH_OPTS);
 
     if (!res.ok) {
       console.warn(`[welfare-api] 기업마당 API error: ${res.status}`);
@@ -906,7 +912,7 @@ export async function fetchKStartupList(): Promise<WelfareListItem[]> {
   try {
     // 사업공고 API — 최신 500건 가져오기
     const url = `${KSTARTUP_BASE}/getAnnouncementInformation01?serviceKey=${encodeURIComponent(serviceKey)}&pageNo=1&numOfRows=500`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, FETCH_OPTS);
 
     if (res.status === 403 || res.status === 401) {
       console.warn(
