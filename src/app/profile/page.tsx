@@ -2171,7 +2171,7 @@ export default function ProfilePage() {
                 },
                 { href: "/refund-policy", ko: "환불정책", en: "Refund Policy" },
               ].map(({ href, ko, en }) => (
-                <a
+                <Link
                   key={href}
                   href={href}
                   style={{
@@ -2181,7 +2181,7 @@ export default function ProfilePage() {
                   }}
                 >
                   {lang === "ko" ? ko : en}
-                </a>
+                </Link>
               ))}
             </div>
 
