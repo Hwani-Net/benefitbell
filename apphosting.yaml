@@ -64,9 +64,15 @@ env:
     secret: KAKAO_CLIENT_SECRET
   - variable: BIZINFO_API_KEY
     secret: BIZINFO_API_KEY
-  - variable: INDEXNOW_KEY
-    secret: INDEXNOW_KEY
-  # 어드민 전용: 결제 입금 확인 후 X-Admin-Secret 헤더로 즉시 활성화 시 사용
-  - variable: ADMIN_ACTIVATION_SECRET
-    secret: ADMIN_ACTIVATION_SECRET
+  # Optional secrets — uncomment after registering in Cloud Secret Manager:
+  #   gcloud secrets create INDEXNOW_KEY --data-file=- --project=ai-project-ce41f
+  #   gcloud secrets create ADMIN_ACTIVATION_SECRET --data-file=- --project=ai-project-ce41f
+  #   firebase apphosting:secrets:grantaccess INDEXNOW_KEY,ADMIN_ACTIVATION_SECRET \
+  #     --backend benefitbell-web --project ai-project-ce41f
+  # Code degrades gracefully when these are absent (IndexNow returns 500 with clear
+  # message; premium activation falls back to pending_review-only mode).
+  # - variable: INDEXNOW_KEY
+  #   secret: INDEXNOW_KEY
+  # - variable: ADMIN_ACTIVATION_SECRET
+  #   secret: ADMIN_ACTIVATION_SECRET
 
