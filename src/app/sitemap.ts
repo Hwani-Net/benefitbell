@@ -1,9 +1,7 @@
 import { MetadataRoute } from "next";
 import { CATEGORY_INFO } from "@/data/benefits";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
 
 // All benefit categories for search page indexing
 const CATEGORIES = Object.keys(CATEGORY_INFO) as (keyof typeof CATEGORY_INFO)[];

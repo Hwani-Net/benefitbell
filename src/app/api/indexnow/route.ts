@@ -8,9 +8,7 @@ import { NextResponse } from "next/server";
 import { verifyCron } from "@/lib/cron-auth";
 
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
 
 // IndexNow endpoints — Naver + Bing (Bing shares with others)
 const ENDPOINTS = [

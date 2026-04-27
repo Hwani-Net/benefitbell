@@ -38,8 +38,7 @@ interface KakaoShareParams {
 
 const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "";
 const APP_BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
+  process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
 // 카카오톡 채널 ID (혜택알리미 @hyetack-alimi, 채널 내부 ID: _IdDIX)
 export const KAKAO_CHANNEL_ID = "_IdDIX";
 
