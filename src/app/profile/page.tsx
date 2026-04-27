@@ -282,16 +282,22 @@ function PremiumStatusCard({
   useEffect(() => {
     if (!isPremium || !kakaoUserId) return;
     setLoadingPayment(true);
-    // Firestore payment_logs 조회 via API
+    // Firestore payment_logs 조회 via API (PP-E01: Authorization 헤더 필수)
     (async () => {
       try {
+        const auth = getFirebaseAuth();
+        if (!auth?.currentUser) return;
+        const idToken = await auth.currentUser.getIdToken();
         const res = await fetch(
           `/api/premium/payment-date?kakaoId=${kakaoUserId}`,
+          { headers: { Authorization: `Bearer ${idToken}` } },
         );
         if (res.ok) {
           const { date } = await res.json();
           if (date) setPaymentDate(date);
         }
+      } catch (err) {
+        console.error("[PremiumStatusCard] payment-date fetch failed:", err);
       } finally {
         setLoadingPayment(false);
       }
