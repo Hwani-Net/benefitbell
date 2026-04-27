@@ -66,4 +66,7 @@ env:
     secret: BIZINFO_API_KEY
   - variable: INDEXNOW_KEY
     secret: INDEXNOW_KEY
+  # 어드민 전용: 결제 입금 확인 후 X-Admin-Secret 헤더로 즉시 활성화 시 사용
+  - variable: ADMIN_ACTIVATION_SECRET
+    secret: ADMIN_ACTIVATION_SECRET
 

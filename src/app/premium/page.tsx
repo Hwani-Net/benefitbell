@@ -12,9 +12,9 @@ export default function PremiumPage() {
   const { lang, userProfile, kakaoUser, setUserProfile } = useApp();
   const isKo = lang === "ko";
   const isPremium = userProfile?.isPremium;
-  const [step, setStep] = useState<"idle" | "paying" | "activating" | "done">(
-    "idle",
-  );
+  const [step, setStep] = useState<
+    "idle" | "paying" | "activating" | "pending" | "done"
+  >("idle");
   const [error, setError] = useState("");
 
   const handlePayClick = () => {
@@ -70,11 +70,18 @@ export default function PremiumPage() {
         return;
       }
 
-      // Update local state
-      if (userProfile) {
-        setUserProfile({ ...userProfile, isPremium: true });
+      // 서버 status에 따라 분기:
+      // - "activated" / "already_active": 어드민 즉시 활성화 또는 이미 프리미엄 → done
+      // - "pending_review" (기본): 결제 확인 대기 → pending. is_premium 로컬 설정 금지
+      const status = data?.status;
+      if (status === "activated" || status === "already_active") {
+        if (userProfile) {
+          setUserProfile({ ...userProfile, isPremium: true });
+        }
+        setStep("done");
+      } else {
+        setStep("pending");
       }
-      setStep("done");
     } catch (err) {
       console.error("[premium] activate error:", err);
       setError(
@@ -90,7 +97,50 @@ export default function PremiumPage() {
     <>
       <TopBar />
       <main className="page-content">
-        {isPremium || step === "done" ? (
+        {step === "pending" ? (
+          /* ===== 결제 확인 대기 ===== */
+          <section className={styles.hero}>
+            <span className="badge badge-purple-soft mb-12">
+              {isKo ? "결제 확인 중" : "Payment Pending"}
+            </span>
+            <h1 className={styles.title}>
+              {isKo ? "결제 확인 중입니다 ⏳" : "Verifying Payment ⏳"}
+            </h1>
+            <p className={styles.subtitle}>
+              {isKo
+                ? `${kakaoUser?.nickname || "회원"}님의 결제 클레임이 접수되었습니다. 입금 확인 후 1~24시간 내 프리미엄이 활성화됩니다.`
+                : `${kakaoUser?.nickname || "Member"}, your payment claim has been received. Premium will be activated within 1~24 hours after verification.`}
+            </p>
+            <div
+              style={{
+                marginTop: 20,
+                padding: "16px 20px",
+                background: "var(--color-yellow-light, #fff8e1)",
+                borderRadius: 16,
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: "var(--text-secondary)",
+              }}
+            >
+              {isKo ? (
+                <>
+                  💡 <strong>입금 확인 후 활성화됩니다</strong>
+                  <br />
+                  관리자가 카카오페이 입금 내역을 확인한 뒤 자동으로 프리미엄이
+                  적용됩니다. 활성화되면 다시 이 페이지에 접속하실 때 프리미엄
+                  상태로 표시됩니다.
+                </>
+              ) : (
+                <>
+                  💡 <strong>Activation after verification</strong>
+                  <br />
+                  An admin will verify the KakaoPay transfer and activate your
+                  premium automatically. Refresh this page after activation.
+                </>
+              )}
+            </div>
+          </section>
+        ) : isPremium || step === "done" ? (
           /* ===== 프리미엄 유저 ===== */
           <section className={styles.hero}>
             <span className="badge badge-purple-soft mb-12">Premium ✓</span>

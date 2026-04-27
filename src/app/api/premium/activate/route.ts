@@ -7,12 +7,20 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/premium/activate
  *
- * 보안 모델 (2026-03-10 BLOCK #1 수정):
- * - 구: NEXT_PUBLIC_PREMIUM_ACTIVATE_SECRET을 프론트에서 전송 → 브라우저 DevTools 노출 취약점
- * - 신: Firebase Auth idToken을 Authorization 헤더로 전송 → 서버에서 Admin SDK로 검증
+ * 결제 클레임 접수 엔드포인트.
  *
- * 클라이언트는 Authorization: Bearer <idToken> 헤더를 보내야 함.
- * idToken은 Firebase getIdToken()으로 얻으며, 서버단에서 verifyIdToken()으로 검증.
+ * 보안 모델:
+ * - 일반 호출: Firebase idToken으로 사용자 인증 → 결제 클레임을 "pending_review"로 로그만 기록.
+ *   is_premium은 서버가 자동 설정하지 않음. 어드민이 입금 확인 후 Firestore Console 또는
+ *   ADMIN_ACTIVATION_SECRET을 사용한 별도 호출로 수동 활성화.
+ * - 어드민 활성화: X-Admin-Secret 헤더가 ADMIN_ACTIVATION_SECRET과 일치하면 즉시 is_premium=true로 활성화.
+ *
+ * 어드민이 입금 확인 후 활성화하는 예시:
+ *   curl -X POST https://benefitbell.kr/api/premium/activate \
+ *     -H "Authorization: Bearer <USER_ID_TOKEN>" \
+ *     -H "X-Admin-Secret: <ADMIN_ACTIVATION_SECRET>" \
+ *     -H "Content-Type: application/json" \
+ *     -d '{"nickname":"홍길동"}'
  */
 export async function POST(req: Request) {
   try {
@@ -45,6 +53,13 @@ export async function POST(req: Request) {
       ? firebaseUid.replace("kakao_", "")
       : firebaseUid;
 
+    // ── 어드민 시크릿 검증 ─────────────────────────────────
+    const adminSecret = (process.env.ADMIN_ACTIVATION_SECRET || "").trim();
+    const adminHeader = req.headers.get("X-Admin-Secret");
+    const isAdminActivate = Boolean(
+      adminSecret && adminHeader && adminHeader === adminSecret,
+    );
+
     // ── Body 파싱 (nickname 선택적) ──────────────────────────
     let nickname = "";
     try {
@@ -60,22 +75,25 @@ export async function POST(req: Request) {
     if (userDoc.exists && userDoc.data()?.is_premium) {
       return NextResponse.json({
         success: true,
+        status: "already_active",
         message: "이미 프리미엄 회원입니다.",
       });
     }
 
-    // ── 결제 클레임 로그 ─────────────────────────────────────
+    // ── 결제 클레임 로그 (어드민 모드에 따라 상태 분기) ──────
     await db.collection("payment_logs").add({
       kakao_id: kakaoId,
       firebase_uid: firebaseUid,
       nickname: nickname || decodedToken.name || "",
       amount: 4900,
       method: "kakaopay_transfer",
-      status: "claimed",
+      status: isAdminActivate ? "verified" : "pending_review",
       created_at: FieldValue.serverTimestamp(),
     });
 
-    // ── 프리미엄 활성화 ──────────────────────────────────────
+    // ── 사용자 문서 업데이트 ─────────────────────────────────
+    // 일반 호출: nickname/uid 만 기록, is_premium은 손대지 않음 (어드민 검증 후 활성화).
+    // 어드민 호출: is_premium=true로 즉시 활성화.
     await db
       .collection("users")
       .doc(String(kakaoId))
@@ -84,15 +102,24 @@ export async function POST(req: Request) {
           kakao_id: kakaoId,
           firebase_uid: firebaseUid,
           nickname: nickname || decodedToken.name || "",
-          is_premium: true,
+          ...(isAdminActivate ? { is_premium: true } : {}),
           updated_at: FieldValue.serverTimestamp(),
         },
         { merge: true },
       );
 
+    if (isAdminActivate) {
+      return NextResponse.json({
+        success: true,
+        status: "activated",
+        message: "프리미엄이 활성화되었습니다!",
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      message: "프리미엄이 활성화되었습니다!",
+      status: "pending_review",
+      message: "결제 확인 중입니다. 입금 확인 후 1~24시간 내 활성화됩니다.",
     });
   } catch (error) {
     console.error("Premium activate exception:", error);
