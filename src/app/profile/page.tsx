@@ -2050,33 +2050,33 @@ export default function ProfilePage() {
                   <div className={styles.alertDays}>
                     <p className={styles.notifLabel}>{t.notifyBefore}</p>
                     <div className={styles.chipRow}>
-                      {[14, 7, 3, 1].map((d) => (
-                        <button
-                          key={d}
-                          className={`chip ${profile.alertDays.includes(d) ? "active-blue" : ""}`}
-                          onClick={() => toggleAlertDay(d)}
-                        >
-                          {d === 1
-                            ? lang === "ko"
-                              ? "당일"
-                              : "Today"
-                            : `D-${d}`}
-                        </button>
-                      ))}
+                      {[14, 7, 3, 1].map((d) => {
+                        const isPremiumOnly = d === 14;
+                        const disabled = isPremiumOnly && !isPremium;
+                        return (
+                          <button
+                            key={d}
+                            className={`chip ${profile.alertDays.includes(d) ? "active-blue" : ""}`}
+                            onClick={() => !disabled && toggleAlertDay(d)}
+                            disabled={disabled}
+                            style={
+                              disabled
+                                ? { opacity: 0.5, cursor: "not-allowed" }
+                                : undefined
+                            }
+                          >
+                            {d === 1
+                              ? lang === "ko"
+                                ? "당일"
+                                : "Today"
+                              : `D-${d}`}
+                            {isPremiumOnly && " 👑"}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-                <div className={styles.notifRow}>
-                  <div>
-                    <p className={styles.notifLabel}>⭐ {t.personalizedRec}</p>
-                    <p className={styles.notifDesc}>
-                      {lang === "ko"
-                        ? "프로필 기반 맞춤 혜택을 추천받습니다"
-                        : "Get personalized benefit recommendations"}
-                    </p>
-                  </div>
-                  <div className="toggle on" />
-                </div>
               </div>
             </section>
 
