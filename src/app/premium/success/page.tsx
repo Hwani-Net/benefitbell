@@ -64,7 +64,10 @@ function SuccessContent() {
     }
 
     confirm();
-    // Only run once on mount — searchParams is stable from useSearchParams()
+    // confirmedRef prevents double-invocation; intentionally excluding userProfile/setUserProfile/isKo
+    // to avoid re-running confirm on unrelated state changes. userProfile snapshot is taken at
+    // call time — if null at mount, the isPremium flag update is skipped (acceptable: context
+    // will reload on next navigation anyway).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
