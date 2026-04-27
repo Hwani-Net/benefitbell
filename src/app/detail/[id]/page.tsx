@@ -932,7 +932,8 @@ function normalizeApplyMethod(raw: string): string {
 /** 복지로 API에서 오는 상대 경로를 절대 URL로 변환. 유효하지 않으면 "" 반환 */
 function resolveWelfareUrl(raw: string): string {
   if (!raw) return "";
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("http://")) return raw.replace("http://", "https://");
+  if (raw.startsWith("https://")) return raw;
   if (raw.startsWith("/")) return `${BOKJIRO_ORIGIN}${raw}`;
   return "";
 }
