@@ -11,6 +11,8 @@
 
 import { NextResponse } from "next/server";
 import { getAdminFirestore, getAdminMessaging } from "@/lib/firebase-admin";
+
+export const dynamic = "force-dynamic";
 import {
   fetchAllWelfareSources,
   transformListItemToBenefit,

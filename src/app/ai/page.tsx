@@ -92,7 +92,13 @@ function FilterCard({
 }
 
 export default function AiPage() {
-  const { lang, userProfile, kakaoUser, benefits: allBenefits } = useApp();
+  const {
+    lang,
+    userProfile,
+    kakaoUser,
+    benefits: allBenefits,
+    benefitsLoading,
+  } = useApp();
   const [activeTab, setActiveTab] = useState<"filter" | "chat">("filter");
   const [showUnlikely, setShowUnlikely] = useState(false);
 
@@ -268,6 +274,18 @@ export default function AiPage() {
               </div>
             ) : (
               <>
+                {/* Benefits loading skeleton */}
+                {benefitsLoading && allBenefits.length === 0 && (
+                  <div className={styles.loadingState}>
+                    <div className={styles.spinner} />
+                    <p>
+                      {isKo
+                        ? "혜택 데이터를 불러오는 중..."
+                        : "Loading benefits..."}
+                    </p>
+                  </div>
+                )}
+
                 {/* Stats Row */}
                 {filtered && (
                   <div className={styles.statsRow}>
