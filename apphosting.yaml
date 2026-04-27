@@ -33,6 +33,10 @@ env:
   - variable: NEXT_PUBLIC_TOSS_CLIENT_KEY
     value: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
 
+  # ─── 카카오 JavaScript SDK 공개키 (클라이언트) ───────────────────────
+  - variable: NEXT_PUBLIC_KAKAO_JS_KEY
+    value: c66527c2112a3c696c719e3fe0c9e108
+
   # ─── 푸시 알림 VAPID 공개키 ──────────────────────────────────────────
   - variable: NEXT_PUBLIC_VAPID_PUBLIC_KEY
     value: BPz8ovSj10yHojFgCbxzhGU8DziC7xhuhW5G6RfYy2y9lcdbTUfUeufgOpSbkDlGp4rxoGX0P3L0twZKChz7A7E

@@ -616,7 +616,12 @@ export default function ProfilePage() {
     if (typeof window !== "undefined") {
       try {
         return JSON.parse(localStorage.getItem("push_categories") || "[]");
-      } catch (_e) {}
+      } catch (e) {
+        console.error(
+          "[profile] Failed to parse push_categories from localStorage:",
+          e,
+        );
+      }
     }
     return [];
   });
