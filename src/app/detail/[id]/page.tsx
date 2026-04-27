@@ -419,8 +419,7 @@ export default function DetailPage({
         <div className={styles.heroCard}>
           <div className={styles.heroTop}>
             <span className="badge badge-purple-soft">{category}</span>
-            {(benefit.dDay >= 0 && benefit.dDay <= 30) ||
-            benefit.dDay >= 365 ? (
+            {benefit.dDay >= 0 && (benefit.dDay <= 30 || benefit.dDay >= 365) ? (
               <span className={`badge ${getDDayColor(benefit.dDay)}`}>
                 {getDDayText(benefit.dDay, lang === "ko" ? "ko" : "en")}
               </span>
