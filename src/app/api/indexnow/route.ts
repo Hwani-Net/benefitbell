@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server";
 import { verifyCron } from "@/lib/cron-auth";
 
-const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "benefitbell2026";
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
@@ -19,6 +19,12 @@ const ENDPOINTS = [
 ];
 
 export async function POST(request: Request) {
+  if (!INDEXNOW_KEY) {
+    return NextResponse.json(
+      { success: false, error: "INDEXNOW_KEY not configured" },
+      { status: 500 },
+    );
+  }
   try {
     const body = await request.json().catch(() => null);
     const urls: string[] = body?.urls ?? [];
@@ -72,6 +78,13 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const authError = verifyCron(request);
   if (authError) return authError;
+
+  if (!INDEXNOW_KEY) {
+    return NextResponse.json(
+      { success: false, error: "INDEXNOW_KEY not configured" },
+      { status: 500 },
+    );
+  }
 
   try {
     // Fetch current sitemap URLs
