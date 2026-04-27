@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * - 어드민 활성화: X-Admin-Secret 헤더가 ADMIN_ACTIVATION_SECRET과 일치하면 즉시 is_premium=true로 활성화.
  *
  * 어드민이 입금 확인 후 활성화하는 예시:
- *   curl -X POST https://benefitbell.kr/api/premium/activate \
+ *   curl -X POST https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app/api/premium/activate \
  *     -H "Authorization: Bearer <USER_ID_TOKEN>" \
  *     -H "X-Admin-Secret: <ADMIN_ACTIVATION_SECRET>" \
  *     -H "Content-Type: application/json" \

@@ -10,7 +10,9 @@ import { verifyCron } from "@/lib/cron-auth";
 export const dynamic = "force-dynamic";
 
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
 
 // IndexNow endpoints — Naver + Bing (Bing shares with others)
 const ENDPOINTS = [

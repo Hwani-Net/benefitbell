@@ -6,6 +6,12 @@ import WebVitals from "@/components/analytics/WebVitals";
 import PushMessageReceiver from "@/components/pwa/PushMessageReceiver";
 import "@/styles/globals.css";
 
+// SEO/structured data canonical URL — set via NEXT_PUBLIC_APP_URL in apphosting.yaml.
+// Fallback is the Firebase App Hosting hosted.app URL until a custom domain is purchased.
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
+
 export const metadata: Metadata = {
   title: {
     default: "혜택알리미 - 나에게 맞는 정부 지원금·복지 혜택, 한눈에",
@@ -16,7 +22,7 @@ export const metadata: Metadata = {
   keywords:
     "지원금, 혜택, 기초생활수급, 차상위, 청년지원금, 노인복지, 장애인지원, 의료급여, 에너지바우처, 복지, 알림, 신청일정, 보조금24, 복지로, 정부지원금",
   manifest: "/manifest.json",
-  metadataBase: new URL("https://benefitbell.kr"),
+  metadataBase: new URL(APP_URL),
   alternates: {
     canonical: "/",
   },
@@ -34,12 +40,12 @@ export const metadata: Metadata = {
     description:
       "108건 이상의 정부 복지서비스를 실시간으로 확인하세요. 기초생활, 청년, 노인, 의료, 주거 등 맞춤형 혜택 알림.",
     type: "website",
-    url: "https://benefitbell.kr",
+    url: APP_URL,
     locale: "ko_KR",
     siteName: "혜택알리미 BenefitBell",
     images: [
       {
-        url: "https://benefitbell.kr/og-image.png",
+        url: `${APP_URL}/og-image.png`,
         width: 1200,
         height: 630,
         alt: "혜택알리미 - 정부 지원금 한눈에",
@@ -99,7 +105,7 @@ export default function RootLayout({
                 alternateName: "BenefitBell",
                 description:
                   "정부 지원금·복지 혜택 실시간 알림 서비스. 기초생활수급, 청년, 장년, 노인 등 모든 계층의 혜택을 한 곳에서 확인하세요.",
-                url: "https://benefitbell.kr",
+                url: APP_URL,
                 applicationCategory: "GovernmentService",
                 operatingSystem: "Web, iOS, Android",
                 offers: {
@@ -110,7 +116,7 @@ export default function RootLayout({
                 author: {
                   "@type": "Organization",
                   name: "BenefitBell",
-                  url: "https://benefitbell.kr",
+                  url: APP_URL,
                 },
               },
               {

@@ -24,10 +24,11 @@ env:
     value: 1:287186253524:web:98d9a50c0d48dabafa2d41
 
   # ─── 앱 공개 URL (SEO sitemap/robots, Kakao share, IndexNow) ──────────
-  # benefitbell.kr 커스텀 도메인이 재연결되면 *.hosted.app → benefitbell.kr 로 유지됨
+  # 커스텀 도메인 (예: benefitbell.kr) 구매 후 App Hosting Domains에 연결 시
+  # 이 값을 https://<custom-domain> 으로 변경 후 재배포.
   # Kakao OAuth redirect_uri는 x-forwarded-host 동적 구성이므로 이 값과 무관
   - variable: NEXT_PUBLIC_APP_URL
-    value: https://benefitbell.kr
+    value: https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app
 
   # ─── 카카오 JavaScript SDK 공개키 (클라이언트) ───────────────────────
   - variable: NEXT_PUBLIC_KAKAO_JS_KEY

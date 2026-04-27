@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://benefitbell.kr";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://benefitbell-web--ai-project-ce41f.asia-east1.hosted.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
