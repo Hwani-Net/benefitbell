@@ -45,7 +45,7 @@ async function checkRateLimit(
             .doc(decoded.uid)
             .get();
           isPremium = userSnap.exists
-            ? userSnap.data()?.isPremium === true
+            ? userSnap.data()?.is_premium === true
             : false;
         } catch (fsErr) {
           console.error(
