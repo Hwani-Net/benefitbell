@@ -47,6 +47,10 @@ export const translations = {
     medical: "의료 지원",
     education: "교육 지원",
     employment: "취업 지원",
+    smallBiz: "소상공인 지원",
+    startup: "창업 지원",
+    closureRestart: "폐업·재창업",
+    debtRelief: "채무조정·회생",
     allCategories: "전체",
 
     // Search
@@ -246,6 +250,10 @@ export const translations = {
     medical: "Medical",
     education: "Education",
     employment: "Employment",
+    smallBiz: "Small Biz",
+    startup: "Startup",
+    closureRestart: "Closure & Restart",
+    debtRelief: "Debt Relief",
     allCategories: "All",
     searchPlaceholder: "Search for benefits",
     searchByCategory: "Browse by Category",
@@ -592,9 +600,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [benefitsLoading, setBenefitsLoading] = useState(true);
 
-  // ─── 공통: Firestore 프로필 복원 함수 ───
+  // ─── 공통: Firestore 프로필 복원 함수 (중복 호출 방지) ───
+  const restoringRef = React.useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const restoreProfileFromApi = async (kakaoId: string | number) => {
+    // 경로 1(onAuthStateChanged) + 경로 2(kakaoUser.id) 동시 발화 방지
+    if (restoringRef.current) return false;
+    restoringRef.current = true;
     try {
       const auth = getFirebaseAuth();
       if (!auth?.currentUser) return false;
@@ -695,6 +707,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn("[context] restoreProfileFromApi failed:", e);
       return false;
+    } finally {
+      restoringRef.current = false;
     }
   };
 

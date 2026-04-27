@@ -16,7 +16,23 @@ import {
   calculateDDay,
 } from "@/lib/welfare-api";
 import { getAdminFirestore } from "@/lib/firebase-admin";
-import type { Benefit } from "@/data/benefits";
+import type { Benefit, BenefitCategory } from "@/data/benefits";
+
+const VALID_CATEGORIES = new Set<string>([
+  "basic-living",
+  "near-poverty",
+  "youth",
+  "middle-aged",
+  "senior",
+  "housing",
+  "medical",
+  "education",
+  "employment",
+  "small-biz",
+  "startup",
+  "closure-restart",
+  "debt-relief",
+]);
 
 // Force dynamic to use in-memory cache (ISR cache fails for >2MB responses)
 export const dynamic = "force-dynamic";
@@ -152,7 +168,15 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (category && category !== "all") {
-      benefits = benefits.filter((b) => b.category === category);
+      if (!VALID_CATEGORIES.has(category)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid category parameter" },
+          { status: 400 },
+        );
+      }
+      benefits = benefits.filter(
+        (b) => b.category === (category as BenefitCategory),
+      );
     }
     if (keyword) {
       benefits = benefits.filter(
@@ -166,7 +190,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: benefits,
-      source: cachedBenefits.length > 0 ? "cache" : "api",
+      source: Date.now() - cacheTimestamp < CACHE_TTL ? "cache" : "api",
       totalCount: benefits.length,
     });
   } catch (error) {
