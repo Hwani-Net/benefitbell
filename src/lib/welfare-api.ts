@@ -337,7 +337,8 @@ function getStatus(
 
 /** Get single XML tag value */
 function xmlGet(text: string, tag: string): string {
-  const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\/${tag}>`));
+  const safeTag = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = text.match(new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`));
   return m ? m[1].trim() : "";
 }
 
@@ -558,13 +559,18 @@ export async function fetchWelfareDetail(
         servId: extract("servId") || servId,
         servNm: extract("servNm"),
         servDgst: extract("servDgst"),
+        jurOrgNm: extract("jurOrgNm"),
         trgterIndvdl: extract("trgterIndvdl"),
         slctCriteria: extract("slctCriteria"),
         alwServCn: extract("alwServCn"),
         aplyMtdCn: extract("aplWayContent") || extract("aplyMtdCn"),
         applyBgnDt: extract("applyBgnDt"),
         applyEndDt: extract("applyEndDt"),
-      } as unknown as WelfareDetailItem;
+        lifeNmArray: extract("lifeNmArray"),
+        intrsThemNmArray: extract("intrsThemNmArray"),
+        servDtlLink: extract("servDtlLink"),
+        inqNum: 0,
+      };
     }
 
     return null;
