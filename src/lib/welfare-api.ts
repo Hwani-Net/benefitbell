@@ -249,6 +249,10 @@ export function normalizeDateStr(dateStr: string | null | undefined): string {
   const mNum = Number(month);
   const dNum = Number(day);
   if (mNum < 1 || mNum > 12 || dNum < 1 || dNum > 31) return "";
+  // Overflow check — JS Date rolls over non-existent days (e.g. Feb 31 → Mar 3)
+  // If getMonth() shifts, the original day didn't exist in that month
+  const yNum = Number(year);
+  if (new Date(yNum, mNum - 1, dNum).getMonth() !== mNum - 1) return "";
   return `${year}.${month}.${day}`;
 }
 
@@ -261,12 +265,12 @@ export function isValidDateRange(
   start: string | null | undefined,
   end: string | null | undefined,
 ): boolean {
-  if (!start || !end) return true;
+  if (!start || !end) return false;
   if (start === "상시" || end === "상시") return true;
   // Both should be YYYY.MM.DD format after normalizeDateStr
   const s = start.replace(/\./g, "");
   const e = end.replace(/\./g, "");
-  if (s.length !== 8 || e.length !== 8) return true; // can't judge
+  if (s.length !== 8 || e.length !== 8) return false; // malformed → invalid
   return s <= e;
 }
 

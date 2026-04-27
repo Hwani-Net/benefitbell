@@ -62,6 +62,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ date: createdAt });
   } catch (err) {
     console.error("[premium/payment-date] Error:", err);
-    return NextResponse.json({ date: null });
+    return NextResponse.json(
+      { error: "서버 오류가 발생했습니다." },
+      { status: 500 },
+    );
   }
 }

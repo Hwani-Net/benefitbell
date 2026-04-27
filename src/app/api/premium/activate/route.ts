@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     let decodedToken;
     try {
       decodedToken = await adminAuth.verifyIdToken(idToken);
-    } catch {
+    } catch (err) {
+      console.error("[premium/activate] verifyIdToken failed:", err);
       return NextResponse.json(
         { error: "유효하지 않은 인증 토큰입니다." },
         { status: 403 },
