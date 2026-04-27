@@ -162,6 +162,9 @@ export default function DetailPage({
   useEffect(() => {
     // 비동기: API 상세 정보 보강 (백그라운드)
     async function fetchDetail(benefitId: string) {
+      // Whitelist validation — mirrors server-side benefits/[id] check
+      if (!/^[A-Za-z0-9_\-]{1,50}$/.test(benefitId)) return;
+
       // 비중앙부처 혜택은 상세 API가 없으므로 스킵
       if (
         benefitId.startsWith("LG-") ||
