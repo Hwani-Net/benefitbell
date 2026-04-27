@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useApp } from "@/lib/context";
 import { getFirebaseAuth } from "@/lib/firebase";
 import styles from "./AiEligibilityCheck.module.css";
@@ -306,11 +307,11 @@ export default function AiEligibilityCheck({
           {!inlineLoading && (
             <div className={styles.inlineFooter}>
               {rateLimited ? (
-                <a href="/premium" className={styles.upgradeBtn}>
+                <Link href="/premium" className={styles.upgradeBtn}>
                   {isKo
                     ? "⭐ 프리미엄으로 무제한 AI 분석"
                     : "⭐ Upgrade for Unlimited AI Checks"}
-                </a>
+                </Link>
               ) : hasProfile ? (
                 <button
                   className={styles.inlineDetailBtn}
