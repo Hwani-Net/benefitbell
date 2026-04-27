@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
+import { createAIClient, callAI } from "@/lib/ai-client";
 
 export const dynamic = "force-dynamic";
 import {
@@ -155,7 +155,7 @@ Analyze the user's situation and:
 Respond ONLY in this JSON format:
 {"benefitIds": ["id1", "id2"], "message": "explanation", "reasons": {"id1": "reason1", "id2": "reason2"}}`;
 
-    const text = await callAIWithFallback(
+    const text = await callAI(
       client,
       [
         { role: "system", content: systemPrompt },

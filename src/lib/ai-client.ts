@@ -14,7 +14,7 @@ export function createAIClient(): OpenAI {
   return new OpenAI({ apiKey, timeout: AI_TIMEOUT_MS });
 }
 
-export async function callAIWithFallback(
+export async function callAI(
   client: OpenAI,
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
   options?: {

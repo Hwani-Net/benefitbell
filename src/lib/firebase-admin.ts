@@ -35,7 +35,14 @@ function getAdminApp(): App {
       adminApp = initializeApp({ credential: applicationDefault() });
       return adminApp;
     }
-    const serviceAccount = JSON.parse(fileContent) as ServiceAccount;
+    let serviceAccount: ServiceAccount;
+    try {
+      serviceAccount = JSON.parse(fileContent) as ServiceAccount;
+    } catch {
+      throw new Error(
+        `[firebase-admin] Invalid JSON in service account file: ${keyPath}`,
+      );
+    }
     adminApp = initializeApp({ credential: cert(serviceAccount) });
     console.info("[firebase-admin] Using SA Key file");
   } else if (keyJson) {

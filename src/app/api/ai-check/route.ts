@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, callAIWithFallback } from "@/lib/ai-client";
+import { createAIClient, callAI } from "@/lib/ai-client";
 import { fetchWelfareDetail } from "@/lib/welfare-api";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -204,7 +204,7 @@ Respond in JSON:
 }
     `;
 
-    const text = await callAIWithFallback(
+    const text = await callAI(
       client,
       [
         {
@@ -402,7 +402,7 @@ Respond in JSON:
 }
     `;
 
-    const text = await callAIWithFallback(
+    const text = await callAI(
       client,
       [
         {
