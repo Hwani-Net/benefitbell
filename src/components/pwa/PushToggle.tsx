@@ -28,11 +28,10 @@ export default function PushToggle() {
       return;
     }
     // Check if already subscribed via Service Worker
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setStatus(sub ? "subscribed" : "unsubscribed");
-      });
-    });
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setStatus(sub ? "subscribed" : "unsubscribed"))
+      .catch(() => setStatus("unsubscribed"));
   }, []);
 
   const subscribe = async () => {

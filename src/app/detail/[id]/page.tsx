@@ -199,7 +199,7 @@ export default function DetailPage({
         { benefit_id: id },
       );
     }
-  }, [id, allBenefits, foundBenefit]);
+  }, [id, allBenefits, foundBenefit, benefitsLoading]);
 
   if (loading) {
     return (

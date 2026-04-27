@@ -1,6 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/layout/BottomNav";
 import { useApp } from "@/lib/context";
@@ -30,21 +31,28 @@ function FailContent() {
           Error Code: {code}
         </p>
       )}
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        <a
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
           href="/premium"
           className="btn btn-outline"
           style={{ display: "inline-block", textDecoration: "none" }}
         >
           {isKo ? "다시 시도하기" : "Try Again"}
-        </a>
-        <a
+        </Link>
+        <Link
           href="/"
           className="btn btn-primary"
           style={{ display: "inline-block", textDecoration: "none" }}
         >
           {isKo ? "홈으로" : "Go Home"}
-        </a>
+        </Link>
       </div>
     </div>
   );
