@@ -30,15 +30,22 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json().catch(() => null);
-    const rawUrls: unknown[] = body?.urls ?? [];
+    const rawUrls: unknown[] = Array.isArray(body?.urls) ? body.urls : [];
 
     // Only allow URLs on this host (prevent external domain submission)
     const allowedHost = new URL(BASE_URL).host;
     const urls: string[] = rawUrls
-      .filter(
-        (u): u is string =>
-          typeof u === "string" && new URL(u).host === allowedHost,
-      )
+      .filter((u): u is string => {
+        if (typeof u !== "string") return false;
+        let parsed: URL;
+        try {
+          parsed = new URL(u);
+        } catch (urlErr) {
+          console.error("[indexnow] skipping malformed URL:", u, urlErr);
+          return false;
+        }
+        return parsed.host === allowedHost;
+      })
       .slice(0, 10000);
 
     if (urls.length === 0) {
