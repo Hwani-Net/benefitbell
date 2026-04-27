@@ -115,6 +115,14 @@ export async function GET(
     );
   }
 
+  // Whitelist check — prevent path traversal in external API calls
+  if (!/^[A-Za-z0-9_\-]{1,50}$/.test(servId)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid benefit ID format" },
+      { status: 400 },
+    );
+  }
+
   // ─── 0. In-memory cache (fastest) ───
   const memCached = detailCache.get(servId);
   if (memCached && Date.now() - memCached.timestamp < MEM_CACHE_TTL) {
@@ -336,8 +344,9 @@ export async function GET(
   }
 
   // 3회 모두 실패
+  const maskedUrl = apiUrl.replace(/(serviceKey=)[^&]+/, "$1***");
   console.error(
-    `[/api/benefits/${servId}] All 3 attempts failed. Last: ${lastError}`,
+    `[/api/benefits/${servId}] All 3 attempts failed. Last: ${lastError}. URL: ${maskedUrl}`,
   );
   return NextResponse.json(
     { success: false, error: `Failed after 3 attempts: ${lastError}` },

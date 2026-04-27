@@ -126,17 +126,16 @@ async function getCachedBenefits(): Promise<Benefit[]> {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
-  const keyword = searchParams.get("keyword");
+  const rawKeyword = searchParams.get("keyword") || "";
+  const keyword = rawKeyword.slice(0, 100); // ReDoS / memory abuse 방지
 
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
 
   if (!serviceKey || serviceKey === "placeholder") {
-    return NextResponse.json({
-      success: false,
-      data: [],
-      source: "no_key",
-      message: "DATA_GO_KR_SERVICE_KEY is not configured",
-    });
+    return NextResponse.json(
+      { success: false, error: "Service temporarily unavailable" },
+      { status: 503 },
+    );
   }
 
   try {
