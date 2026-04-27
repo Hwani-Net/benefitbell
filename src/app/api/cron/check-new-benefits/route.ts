@@ -7,6 +7,8 @@ import {
 } from "@/lib/welfare-api";
 import { verifyCron } from "@/lib/cron-auth";
 
+export const dynamic = "force-dynamic";
+
 // PP-005: Bearer 검사를 메서드 가드보다 먼저 수행하기 위해 POST/GET 모두 동일 핸들러로 라우팅
 async function handleCron(req: Request) {
   const authError = verifyCron(req);
@@ -56,11 +58,23 @@ async function handleCron(req: Request) {
       });
     }
 
-    let sent = 0;
+    // 3. 구독자별 메시지 빌드 (동기)
+    type SendJob = {
+      sub: (typeof subscribers)[0];
+      message: Parameters<typeof messaging.send>[0];
+    };
+
+    const jobs: SendJob[] = [];
+    // fcmToken 없는 구독자는 즉시 삭제 대상으로 분류 (기존 throw 로직과 동일 효과)
+    const toDelete: string[] = [];
     const failed: string[] = [];
 
-    // 3. 구독자별 매칭 혜택 찾아 푸시 발송
     for (const sub of subscribers) {
+      if (!sub.fcmToken) {
+        toDelete.push(sub.docId);
+        continue;
+      }
+
       const subCategories: string[] = sub.categories ?? [];
       const matched =
         subCategories.length === 0
@@ -70,7 +84,6 @@ async function handleCron(req: Request) {
       if (matched.length === 0) continue;
 
       const top = matched[0];
-
       const isEn = sub.lang === "en";
       const categoryMessages: Record<
         string,
@@ -160,43 +173,51 @@ async function handleCron(req: Request) {
             ? "Check if you're eligible"
             : "내가 받을 수 있는지 확인해보세요");
 
-      try {
-        if (sub.fcmToken) {
-          const message = {
-            token: sub.fcmToken,
-            notification: {
-              title: notifTitle,
-              body: notifBody,
-            },
-            webpush: {
-              fcmOptions: {
-                link: `/detail/${top.id}`,
-              },
-              notification: {
-                icon: "/icons/icon-192.png",
-              },
-            },
-            data: {
-              url: `/detail/${top.id}`,
-            },
-          };
-          await messaging.send(message);
-          sent++;
-        } else {
-          throw { code: "messaging/registration-token-not-registered" };
-        }
-      } catch (err: unknown) {
-        const errCode = (err as { code?: string })?.code;
+      jobs.push({
+        sub,
+        message: {
+          token: sub.fcmToken,
+          notification: { title: notifTitle, body: notifBody },
+          webpush: {
+            fcmOptions: { link: `/detail/${top.id}` },
+            notification: { icon: "/icons/icon-192.png" },
+          },
+          data: { url: `/detail/${top.id}` },
+        },
+      });
+    }
+
+    // 4. 병렬 발송
+    const results = await Promise.allSettled(
+      jobs.map(({ message }) => messaging.send(message)),
+    );
+
+    let sent = 0;
+
+    results.forEach((result, i) => {
+      const { sub } = jobs[i];
+      if (result.status === "fulfilled") {
+        sent++;
+      } else {
+        const errCode = (result.reason as { code?: string })?.code;
         if (
           errCode === "messaging/registration-token-not-registered" ||
           errCode === "messaging/invalid-registration-token"
         ) {
-          await db.collection("push_subscriptions").doc(sub.docId).delete();
-          // Expired token cleanup is a normal path — don't count as failure
+          toDelete.push(sub.docId);
         } else {
-          failed.push(sub.fcmToken || sub.docId);
+          failed.push(sub.fcmToken ?? sub.docId);
         }
       }
+    });
+
+    // 5. 만료 토큰 일괄 삭제 (병렬)
+    if (toDelete.length > 0) {
+      await Promise.allSettled(
+        toDelete.map((docId) =>
+          db.collection("push_subscriptions").doc(docId).delete(),
+        ),
+      );
     }
 
     console.log(`[cron] Sent: ${sent}, Failed: ${failed.length}`);
