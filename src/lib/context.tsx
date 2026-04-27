@@ -4,6 +4,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type SetStateAction,
 } from "react";
 import { getFirebaseAuth } from "@/lib/firebase";
@@ -603,114 +604,127 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ─── 공통: Firestore 프로필 복원 함수 (중복 호출 방지) ───
   const restoringRef = React.useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const restoreProfileFromApi = async (kakaoId: string | number) => {
-    // 경로 1(onAuthStateChanged) + 경로 2(kakaoUser.id) 동시 발화 방지
-    if (restoringRef.current) return false;
-    restoringRef.current = true;
-    try {
-      const auth = getFirebaseAuth();
-      if (!auth?.currentUser) return false;
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/user/profile?kakaoId=${kakaoId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      if (!res.ok) return false;
-      const json = await res.json();
-      if (!json.data) return false;
-      const d = json.data;
-
-      // 프로필 복원 (Firestore에 저장된 값이 있는 필드만)
-      setUserProfile((prev) => ({
-        ...prev,
-        // Step 1: 기본
-        ...(d.name ? { name: d.name } : {}),
-        ...(d.birthYear != null ? { birthYear: d.birthYear } : {}),
-        ...(d.gender ? { gender: d.gender } : {}),
-        ...(d.region ? { region: d.region } : {}),
-        ...(d.householdSize != null ? { householdSize: d.householdSize } : {}),
-        ...(d.incomePercent != null ? { incomePercent: d.incomePercent } : {}),
-        ...(d.housingType ? { housingType: d.housingType } : {}),
-        ...(d.employmentStatus ? { employmentStatus: d.employmentStatus } : {}),
-        // Step 2: 가족
-        ...(d.maritalStatus ? { maritalStatus: d.maritalStatus } : {}),
-        ...(d.hasChildren != null ? { hasChildren: d.hasChildren } : {}),
-        ...(d.childrenCount != null ? { childrenCount: d.childrenCount } : {}),
-        ...(d.childrenAgeGroup?.length
-          ? { childrenAgeGroup: d.childrenAgeGroup }
-          : {}),
-        ...(d.isPregnant != null ? { isPregnant: d.isPregnant } : {}),
-        // Step 3: 상세
-        ...(d.isBasicLivingRecipient != null
-          ? { isBasicLivingRecipient: d.isBasicLivingRecipient }
-          : {}),
-        // 신규 필드: isMedicalAidRecipient (구 healthInsuranceType 마이그레이션 포함)
-        ...(d.isMedicalAidRecipient != null
-          ? { isMedicalAidRecipient: d.isMedicalAidRecipient }
-          : d.healthInsuranceType === "medicalAid"
-            ? { isMedicalAidRecipient: true }
-            : {}),
-        // 신규 필드: hasDisability (구 disabilityGrade 마이그레이션 포함)
-        ...(d.hasDisability != null
-          ? { hasDisability: d.hasDisability }
-          : d.disabilityGrade && d.disabilityGrade !== "none"
-            ? { hasDisability: true }
-            : {}),
-        ...(d.specialStatus?.length ? { specialStatus: d.specialStatus } : {}),
-        // Step 4: 사업자
-        ...(d.isBusinessOwner != null
-          ? { isBusinessOwner: d.isBusinessOwner }
-          : {}),
-        ...(d.businessType && d.businessType !== "none"
-          ? { businessType: d.businessType }
-          : {}),
-        ...(d.businessAge && d.businessAge !== "none"
-          ? { businessAge: d.businessAge }
-          : {}),
-        ...(d.annualRevenue && d.annualRevenue !== "none"
-          ? { annualRevenue: d.annualRevenue }
-          : {}),
-        ...(d.employeeCount && d.employeeCount !== "none"
-          ? { employeeCount: d.employeeCount }
-          : {}),
-        ...(d.industryType ? { industryType: d.industryType } : {}),
-        // 시스템
-        ...(d.kakaoAlerts != null ? { kakaoAlerts: d.kakaoAlerts } : {}),
-        ...(d.alertDays?.length ? { alertDays: d.alertDays } : {}),
-        isPremium: !!d.isPremium,
-      }));
-
-      // 북마크 복원
-      if (d.bookmarks?.length) {
-        setBookmarks((prev) => {
-          const merged = [...new Set([...prev, ...d.bookmarks])];
-          return merged;
+  const restoreProfileFromApi = useCallback(
+    async (kakaoId: string | number) => {
+      // 경로 1(onAuthStateChanged) + 경로 2(kakaoUser.id) 동시 발화 방지
+      if (restoringRef.current) return false;
+      restoringRef.current = true;
+      try {
+        const auth = getFirebaseAuth();
+        if (!auth?.currentUser) return false;
+        const idToken = await auth.currentUser.getIdToken();
+        const res = await fetch(`/api/user/profile?kakaoId=${kakaoId}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
         });
-      }
+        if (!res.ok) return false;
+        const json = await res.json();
+        if (!json.data) return false;
+        const d = json.data;
 
-      // 푸시 카테고리 복원
-      if (d.categories?.length) {
-        try {
-          const local = JSON.parse(
-            localStorage.getItem("push_categories") || "[]",
-          );
-          if (!local.length) {
-            localStorage.setItem(
-              "push_categories",
-              JSON.stringify(d.categories),
-            );
-          }
-        } catch {
-          /* ignore */
+        // 프로필 복원 (Firestore에 저장된 값이 있는 필드만)
+        setUserProfile((prev) => ({
+          ...prev,
+          // Step 1: 기본
+          ...(d.name ? { name: d.name } : {}),
+          ...(d.birthYear != null ? { birthYear: d.birthYear } : {}),
+          ...(d.gender ? { gender: d.gender } : {}),
+          ...(d.region ? { region: d.region } : {}),
+          ...(d.householdSize != null
+            ? { householdSize: d.householdSize }
+            : {}),
+          ...(d.incomePercent != null
+            ? { incomePercent: d.incomePercent }
+            : {}),
+          ...(d.housingType ? { housingType: d.housingType } : {}),
+          ...(d.employmentStatus
+            ? { employmentStatus: d.employmentStatus }
+            : {}),
+          // Step 2: 가족
+          ...(d.maritalStatus ? { maritalStatus: d.maritalStatus } : {}),
+          ...(d.hasChildren != null ? { hasChildren: d.hasChildren } : {}),
+          ...(d.childrenCount != null
+            ? { childrenCount: d.childrenCount }
+            : {}),
+          ...(d.childrenAgeGroup?.length
+            ? { childrenAgeGroup: d.childrenAgeGroup }
+            : {}),
+          ...(d.isPregnant != null ? { isPregnant: d.isPregnant } : {}),
+          // Step 3: 상세
+          ...(d.isBasicLivingRecipient != null
+            ? { isBasicLivingRecipient: d.isBasicLivingRecipient }
+            : {}),
+          // 신규 필드: isMedicalAidRecipient (구 healthInsuranceType 마이그레이션 포함)
+          ...(d.isMedicalAidRecipient != null
+            ? { isMedicalAidRecipient: d.isMedicalAidRecipient }
+            : d.healthInsuranceType === "medicalAid"
+              ? { isMedicalAidRecipient: true }
+              : {}),
+          // 신규 필드: hasDisability (구 disabilityGrade 마이그레이션 포함)
+          ...(d.hasDisability != null
+            ? { hasDisability: d.hasDisability }
+            : d.disabilityGrade && d.disabilityGrade !== "none"
+              ? { hasDisability: true }
+              : {}),
+          ...(d.specialStatus?.length
+            ? { specialStatus: d.specialStatus }
+            : {}),
+          // Step 4: 사업자
+          ...(d.isBusinessOwner != null
+            ? { isBusinessOwner: d.isBusinessOwner }
+            : {}),
+          ...(d.businessType && d.businessType !== "none"
+            ? { businessType: d.businessType }
+            : {}),
+          ...(d.businessAge && d.businessAge !== "none"
+            ? { businessAge: d.businessAge }
+            : {}),
+          ...(d.annualRevenue && d.annualRevenue !== "none"
+            ? { annualRevenue: d.annualRevenue }
+            : {}),
+          ...(d.employeeCount && d.employeeCount !== "none"
+            ? { employeeCount: d.employeeCount }
+            : {}),
+          ...(d.industryType ? { industryType: d.industryType } : {}),
+          // 시스템
+          ...(d.kakaoAlerts != null ? { kakaoAlerts: d.kakaoAlerts } : {}),
+          ...(d.alertDays?.length ? { alertDays: d.alertDays } : {}),
+          isPremium: !!d.isPremium,
+        }));
+
+        // 북마크 복원
+        if (d.bookmarks?.length) {
+          setBookmarks((prev) => {
+            const merged = [...new Set([...prev, ...d.bookmarks])];
+            return merged;
+          });
         }
+
+        // 푸시 카테고리 복원
+        if (d.categories?.length) {
+          try {
+            const local = JSON.parse(
+              localStorage.getItem("push_categories") || "[]",
+            );
+            if (!local.length) {
+              localStorage.setItem(
+                "push_categories",
+                JSON.stringify(d.categories),
+              );
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        return true;
+      } catch (e) {
+        console.warn("[context] restoreProfileFromApi failed:", e);
+        return false;
+      } finally {
+        restoringRef.current = false;
       }
-      return true;
-    } catch (e) {
-      console.warn("[context] restoreProfileFromApi failed:", e);
-      return false;
-    } finally {
-      restoringRef.current = false;
-    }
-  };
+    },
+    [setUserProfile, setBookmarks],
+  );
 
   // Global benefits fetch (single load, shared across all pages)
   useEffect(() => {
@@ -758,8 +772,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await restoreProfileFromApi(kakaoId);
     });
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [restoreProfileFromApi]);
 
   // ★ Kakao 쿠키 기반 프로필 직접 로드 (경로 2 — Firebase Auth 실패 fallback)
   // kakaoUser.id가 있으면 Firebase Auth 무관하게 즉시 Firestore에서 프로필 로드
@@ -767,8 +780,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!kakaoUser?.id) return;
     // 즉시 로드 — Firebase Auth보다 빠름 (signInWithCustomToken 대기 불필요)
     restoreProfileFromApi(String(kakaoUser.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kakaoUser?.id]);
+  }, [kakaoUser?.id, restoreProfileFromApi]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
