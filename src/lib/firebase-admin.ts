@@ -37,7 +37,7 @@ function getAdminApp(): App {
     }
     const serviceAccount = JSON.parse(fileContent) as ServiceAccount;
     adminApp = initializeApp({ credential: cert(serviceAccount) });
-    console.log("[firebase-admin] Using SA Key file");
+    console.info("[firebase-admin] Using SA Key file");
   } else if (keyJson) {
     // 인라인 JSON (로컬 .env.local 또는 Vercel env)
     let serviceAccount: ServiceAccount;
@@ -51,10 +51,10 @@ function getAdminApp(): App {
       return adminApp;
     }
     adminApp = initializeApp({ credential: cert(serviceAccount) });
-    console.log("[firebase-admin] Using SA Key JSON env var");
+    console.info("[firebase-admin] Using SA Key JSON env var");
   } else {
     // 프로덕션 (Firebase App Hosting): ADC 자동 인증
-    console.log("[firebase-admin] Using ADC (same project)");
+    console.info("[firebase-admin] Using ADC (same project)");
     adminApp = initializeApp({ credential: applicationDefault() });
   }
 

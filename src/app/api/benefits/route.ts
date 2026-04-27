@@ -116,7 +116,7 @@ async function getCachedBenefits(): Promise<Benefit[]> {
         }
 
         if (enriched > 0) {
-          console.log(
+          console.info(
             `[/api/benefits] Enriched ${enriched} benefits with Firestore dates`,
           );
         }
@@ -127,7 +127,7 @@ async function getCachedBenefits(): Promise<Benefit[]> {
 
       cachedBenefits = benefits;
       cacheTimestamp = Date.now();
-      console.log(
+      console.info(
         `[/api/benefits] Cached ${benefits.length} benefits in ${Date.now() - start}ms`,
       );
       return benefits;

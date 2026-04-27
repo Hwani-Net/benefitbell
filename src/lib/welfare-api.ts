@@ -487,7 +487,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
     const totalCount = parseInt(xmlGet(firstText, "totalCount") || "0", 10);
     allItems.push(...remapItems(xmlParseItems(firstText, RAW_FIELDS)));
 
-    console.log(
+    console.info(
       `[welfare-api] Total: ${totalCount}, fetched page 1 (${allItems.length})`,
     );
 
@@ -507,7 +507,7 @@ export async function fetchAllWelfareList(): Promise<WelfareListItem[]> {
       results.forEach((items) => allItems.push(...items));
     }
 
-    console.log(`[welfare-api] Total fetched: ${allItems.length} items`);
+    console.info(`[welfare-api] Total fetched: ${allItems.length} items`);
     return allItems;
   } catch (err) {
     console.error("[welfare-api] fetchAllWelfareList error:", err);
@@ -760,7 +760,7 @@ export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
     const totalCount = parseInt(xmlGet(firstText, "totalCount") || "0", 10);
     allItems.push(...remapItems(xmlParseItems(firstText, RAW_FIELDS)));
 
-    console.log(
+    console.info(
       `[welfare-api] 지자체: ${totalCount} total, page 1 (${allItems.length})`,
     );
 
@@ -784,7 +784,7 @@ export async function fetchLocalGovWelfareList(): Promise<WelfareListItem[]> {
       results.forEach((items) => allItems.push(...items));
     }
 
-    console.log(`[welfare-api] 지자체 total fetched: ${allItems.length}`);
+    console.info(`[welfare-api] 지자체 total fetched: ${allItems.length}`);
     return allItems;
   } catch (err) {
     console.warn("[welfare-api] 지자체 fetch error:", err);
@@ -820,7 +820,7 @@ export async function fetchSubsidy24List(): Promise<WelfareListItem[]> {
     const items = data?.response?.body?.items?.item;
     if (!items || !Array.isArray(items)) return [];
 
-    console.log(`[welfare-api] 보조금24: ${items.length} items fetched`);
+    console.info(`[welfare-api] 보조금24: ${items.length} items fetched`);
 
     return items.map((item: Record<string, string>) => ({
       servId: `SUB-${item.servId || item.서비스ID || ""}`,
@@ -866,7 +866,7 @@ export async function fetchBizinfoList(): Promise<WelfareListItem[]> {
     const items = data?.jsonArray;
     if (!items || !Array.isArray(items)) return [];
 
-    console.log(
+    console.info(
       `[welfare-api] 기업마당: ${items.length} items (totCnt: ${items[0]?.totCnt || "?"})`,
     );
 
@@ -988,7 +988,7 @@ export async function fetchKStartupList(): Promise<WelfareListItem[]> {
       });
     }
 
-    console.log(
+    console.info(
       `[welfare-api] K-Startup: ${items.length} recruiting / ${totalCount} total`,
     );
     return items;
@@ -1153,7 +1153,7 @@ export async function fetchAllWelfareSources(): Promise<WelfareListItem[]> {
   );
   stats.filtered = beforeFilter - benefits.length;
   stats.total = benefits.length;
-  console.log(
+  console.info(
     `[welfare-api] 📊 Sources: 중앙부처=${stats.national}, 지자체=${stats.local}, 보조금24=${stats.subsidy}, 기업마당=${stats.bizinfo}, K-Startup=${stats.kstartup}, 민간복지=${stats.privateWelfare} → 통합 ${beforeFilter}건 → 기관/인프라 ${stats.filtered}건 제외 → 최종 ${stats.total}건`,
   );
 

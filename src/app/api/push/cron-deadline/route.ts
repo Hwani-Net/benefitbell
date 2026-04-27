@@ -216,12 +216,12 @@ export async function GET(request: Request) {
         db.collection("push_subscriptions").doc(docId).delete(),
       ),
     );
-    console.log(
+    console.info(
       `[cron-deadline] Removed ${toDelete.length} expired subscriptions`,
     );
   }
 
-  console.log(
+  console.info(
     `[cron-deadline] Done — sent: ${totalSent}, dedup-skipped: ${totalSkippedDedup}, filter-skipped: ${totalSkippedFilter}, expired-cleaned: ${toDelete.length}`,
   );
 
