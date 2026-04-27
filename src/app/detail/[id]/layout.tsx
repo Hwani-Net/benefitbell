@@ -140,7 +140,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
   } catch (e) {
-    console.warn("[detail layout] generateMetadata failed:", e);
+    console.error("[detail layout] generateMetadata failed:", e);
   }
 
   return defaultMeta;
