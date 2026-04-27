@@ -4,12 +4,14 @@
 import OpenAI from "openai";
 
 const AI_MODEL = "gpt-4o-mini";
+// 25s timeout — Cloud Run 기본 60s 이내, Next.js route handler 30s 이내에서 응답 보장
+const AI_TIMEOUT_MS = 25000;
 
 export function createAIClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
-  return new OpenAI({ apiKey });
+  return new OpenAI({ apiKey, timeout: AI_TIMEOUT_MS });
 }
 
 export async function callAIWithFallback(

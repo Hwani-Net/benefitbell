@@ -4,27 +4,56 @@ import {
   fetchAllWelfareSources,
   transformListItemToBenefit,
 } from "@/lib/welfare-api";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 // In-memory cache for benefits context (expensive to rebuild every request)
+// NOTE: Cloud Run 다중 인스턴스에서 각 인스턴스마다 warm-up 비용 발생하지만
+//       RAG context는 읽기 전용이므로 인스턴스별 캐시도 안전.
 let cachedContext: string | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// IP-based rate limiting (anonymous users)
-const IP_RATE_LIMIT = 10; // max requests per window
-const IP_RATE_WINDOW = 60 * 1000; // 1 minute
-const ipCounters = new Map<string, { count: number; windowStart: number }>();
+// IP-based rate limiting — Firestore 기반 (Cloud Run 다중 인스턴스 안전)
+// 이전 in-memory Map 방식은 인스턴스별 독립 카운터로 실질적 rate limit 없음 → 교체
+const IP_RATE_LIMIT = 10; // 1분 내 최대 요청 수
+const IP_RATE_WINDOW_SEC = 60; // TTL (초)
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = ipCounters.get(ip);
-  if (!entry || now - entry.windowStart > IP_RATE_WINDOW) {
-    ipCounters.set(ip, { count: 1, windowStart: now });
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const safeIp = ip.replace(/[^a-zA-Z0-9_.-]/g, "_");
+  const windowStart = Math.floor(Date.now() / (IP_RATE_WINDOW_SEC * 1000));
+  const docId = `rec:${safeIp}:${windowStart}`;
+
+  try {
+    const db = getAdminFirestore();
+    const ref = db.collection("ai_rate_limits").doc(docId);
+    const snap = await ref.get();
+    const count = snap.exists ? (snap.data()?.count ?? 0) : 0;
+
+    if (count >= IP_RATE_LIMIT) return false;
+
+    await ref.set(
+      {
+        count: FieldValue.increment(1),
+        updated_at: FieldValue.serverTimestamp(),
+        // Firestore TTL 필드 — cleanup-welfare-dates cron 또는 Firestore TTL 정책 활용 가능
+        expires_at: new Date(
+          (windowStart + 1) * IP_RATE_WINDOW_SEC * 1000 + 60_000,
+        ),
+      },
+      { merge: true },
+    );
+    return true;
+  } catch (firestoreErr) {
+    // Firestore 오류 시 허용 (availability > strict rate limit)
+    console.error(
+      "[ai-recommend] Firestore rate limit check failed — allowing request:",
+      firestoreErr instanceof Error
+        ? firestoreErr.message
+        : String(firestoreErr),
+    );
     return true;
   }
-  if (entry.count >= IP_RATE_LIMIT) return false;
-  entry.count += 1;
-  return true;
 }
 
 // Build a compact summary of all benefits for RAG context (from real API)
@@ -63,7 +92,7 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     req.headers.get("x-real-ip") ??
     "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(ip))) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
       { status: 429 },
@@ -135,13 +164,35 @@ Respond ONLY in this JSON format:
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error(
+        "[ai-recommend] 파싱 실패 - AI 원본 응답:",
+        text.substring(0, 500),
+      );
       return NextResponse.json(
         { error: "Invalid AI response format" },
         { status: 500 },
       );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed: {
+      benefitIds?: string[];
+      message?: string;
+      reasons?: Record<string, string>;
+    };
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      console.error(
+        "[ai-recommend] JSON 파싱 오류:",
+        parseErr,
+        "\n원본:",
+        jsonMatch[0].substring(0, 300),
+      );
+      return NextResponse.json(
+        { error: "Invalid AI response format" },
+        { status: 500 },
+      );
+    }
     return NextResponse.json({
       benefitIds: parsed.benefitIds ?? [],
       message: parsed.message ?? "",
