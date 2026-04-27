@@ -175,6 +175,13 @@ export default function AiPage() {
               : "AI service is temporarily unavailable.",
           );
         }
+        if (res.status === 429 || err.code === "RATE_LIMIT_EXCEEDED") {
+          throw new Error(
+            isKo
+              ? "오늘 AI 추천 횟수를 모두 사용했어요. 내일 다시 시도해주세요."
+              : "Daily AI limit reached. Please try again tomorrow.",
+          );
+        }
         throw new Error(
           err.error || (isKo ? "AI 서비스 오류" : "AI service error"),
         );
@@ -224,7 +231,12 @@ export default function AiPage() {
         <div className={styles.tabNav}>
           <button
             className={`${styles.tabBtn} ${activeTab === "filter" ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab("filter")}
+            onClick={() => {
+              setActiveTab("filter");
+              setChatResult(null);
+              setChatError(null);
+              setChatLoading(false);
+            }}
           >
             🎯 {isKo ? "내 맞춤 혜택" : "My Benefits"}
           </button>
@@ -657,6 +669,21 @@ export default function AiPage() {
                     ? `${chatResult.benefitIds.length}개의 맞춤 혜택을 찾았어요`
                     : `Found ${chatResult.benefitIds.length} matching benefits`}
                 </p>
+
+                {chatResult.benefitIds.length === 0 && (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "32px",
+                      color: "var(--text-secondary)",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {isKo
+                      ? "조건에 맞는 혜택을 찾지 못했어요. 다른 조건으로 다시 시도해주세요."
+                      : "No benefits found. Try different criteria."}
+                  </div>
+                )}
 
                 <div className={styles.benefitList}>
                   {chatResult.benefitIds.map((id) => {
