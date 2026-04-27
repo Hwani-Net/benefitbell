@@ -64,9 +64,10 @@ export default function AiEligibilityCheck({
   benefitTitle,
   variant = "modal",
 }: Props) {
-  const { lang, userProfile } = useApp();
+  const { lang } = useApp();
   const isKo = lang === "ko";
-  const hasProfile = !!(userProfile?.birthYear && userProfile?.region);
+  // 개인정보 최소화 정책: 사용자 프로필을 외부 AI에 전송하지 않음.
+  // AI는 혜택 텍스트만 분석해 일반론적 자격 안내를 제공한다.
 
   // ── Inline variant state ───────────────────────────
   const [inlineSummary, setInlineSummary] = useState<string[]>([]);
@@ -84,8 +85,8 @@ export default function AiEligibilityCheck({
   // ── Auto-load for inline variant (with sessionStorage cache) ──
   useEffect(() => {
     if (variant !== "inline") return;
-    // C안: 프로필 없으면 API 호출 안 함 (과금 방지 + 정직한 UX)
-    if (!hasProfile) return;
+    // 개인정보 최소화: 모든 사용자에게 동일한 일반 분석을 제공.
+    // 프로필 강요·전송 없음.
 
     const cacheKey = `ai_check_${benefitId}_${lang}`;
     try {
@@ -141,7 +142,7 @@ export default function AiEligibilityCheck({
     })();
 
     return () => controller.abort();
-  }, [variant, benefitId, benefitTitle, lang, hasProfile]);
+  }, [variant, benefitId, benefitTitle, lang]);
 
   // ── Load detailed analysis (no questions!) ─────────
   async function loadDetailedAnalysis() {
@@ -162,18 +163,8 @@ export default function AiEligibilityCheck({
           benefitTitle,
           lang,
           mode: "detailed",
-          // C안: 프로필 데이터 전달 → 맞춤 분석
-          ...(hasProfile
-            ? {
-                profile: {
-                  age: new Date().getFullYear() - userProfile.birthYear,
-                  region: userProfile.region,
-                  employmentStatus: userProfile.employmentStatus,
-                  incomePercent: userProfile.incomePercent,
-                  specialStatus: userProfile.specialStatus,
-                },
-              }
-            : {}),
+          // 개인정보 최소화: 사용자 프로필을 외부 AI에 전송하지 않음.
+          // 분석은 혜택 텍스트만 기반으로 일반론적 자격 안내를 제공.
         }),
       });
       const data = await res.json();
@@ -217,40 +208,7 @@ export default function AiEligibilityCheck({
   // INLINE VARIANT RENDER
   // ══════════════════════════════════════════════════
   if (variant === "inline") {
-    // 프로필 없으면 프로필 입력 CTA 표시
-    if (!hasProfile) {
-      return (
-        <div className={styles.inlineCard}>
-          <div className={styles.inlineHeader}>
-            <div className={styles.inlineHeaderLeft}>
-              <span>🤖</span>
-              <span className={styles.inlineLabel}>
-                {isKo ? "AI 자격 체크" : "AI Eligibility Check"}
-              </span>
-            </div>
-          </div>
-          <div className={styles.inlineBody}>
-            <p className={styles.inlineSummaryItem}>
-              {isKo
-                ? "프로필을 입력하면 이 혜택에 해당되는지 AI가 맞춤 분석해드립니다."
-                : "Enter your profile to get personalized AI eligibility analysis."}
-            </p>
-          </div>
-          <div className={styles.inlineFooter}>
-            <a
-              href="/profile"
-              className={styles.inlineDetailBtn}
-              style={{ textDecoration: "none", textAlign: "center" }}
-            >
-              {isKo
-                ? "📝 30초 프로필 입력하고 맞춤 분석 받기"
-                : "📝 Enter Profile for AI Analysis"}
-            </a>
-          </div>
-        </div>
-      );
-    }
-
+    // 개인정보 최소화: 프로필 입력 CTA 제거 — 모든 사용자에게 동일한 일반 분석.
     const v = inlineVerdict ?? "partial";
     const vInfo = verdictInfo[v];
 
@@ -328,26 +286,16 @@ export default function AiEligibilityCheck({
                     ? "⭐ 프리미엄으로 무제한 AI 분석"
                     : "⭐ Upgrade for Unlimited AI Checks"}
                 </Link>
-              ) : hasProfile ? (
+              ) : (
                 <button
                   className={styles.inlineDetailBtn}
                   onClick={openDetail}
                   id={`ai-check-inline-btn-${benefitId}`}
                 >
                   {isKo
-                    ? "🔍 내가 해당되는지 자세히 확인하기"
-                    : "🔍 Check My Eligibility in Detail"}
+                    ? "🔍 자격 조건 자세히 보기"
+                    : "🔍 View Eligibility Details"}
                 </button>
-              ) : (
-                <a
-                  href="/profile"
-                  className={styles.inlineDetailBtn}
-                  style={{ textDecoration: "none", textAlign: "center" }}
-                >
-                  {isKo
-                    ? "📝 프로필 입력 후 맞춤 분석 받기"
-                    : "📝 Enter Profile for Personalized Check"}
-                </a>
               )}
             </div>
           )}
@@ -474,22 +422,7 @@ export default function AiEligibilityCheck({
   // MODAL VARIANT RENDER (버튼 → 바로 상세 분석)
   // ══════════════════════════════════════════════════
   if (!open) {
-    // 프로필 없으면 프로필 입력 CTA 표시 (과금 방지 + 정직한 UX)
-    if (!hasProfile) {
-      return (
-        <a
-          href="/profile"
-          className={styles.trigger}
-          style={{ textDecoration: "none", textAlign: "center" }}
-          id={`ai-check-btn-${benefitId}`}
-        >
-          📝{" "}
-          {isKo
-            ? "프로필 입력 후 AI 맞춤 자격 체크"
-            : "Enter Profile for AI Eligibility Check"}
-        </a>
-      );
-    }
+    // 개인정보 최소화: 프로필 입력 CTA 분기 제거 — 모든 사용자에게 동일한 trigger 표시.
     return (
       <button
         className={styles.trigger}

@@ -4,15 +4,6 @@ import { fetchWelfareDetail } from "@/lib/welfare-api";
 import { getAdminFirestore, getAdminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
-// ── PP-G03: sanitize user-supplied strings before prompt injection ──
-function sanitizeForPrompt(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replace(/[\n\r\[\]{}<>]/g, "")
-    .replace(/ignore\s+previous\s+instructions?/gi, "")
-    .slice(0, 100);
-}
-
 // =====================
 // Rate Limiting (free: 3 req/day, premium: unlimited) — Firestore 기반
 // =====================
@@ -290,7 +281,8 @@ Respond in JSON:
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { benefitId, benefitTitle = "", lang = "ko", profile } = body;
+    // 개인정보 최소화 정책: profile 필드를 받지 않음. 클라이언트가 보내도 서버는 무시한다.
+    const { benefitId, benefitTitle = "", lang = "ko" } = body;
 
     if (!benefitId) {
       return NextResponse.json(
@@ -332,19 +324,9 @@ export async function PUT(req: NextRequest) {
       ? detail.servDgst || "정보 없음"
       : "정보 없음";
 
-    // ── C안: 프로필 기반 맞춤 분석 or 일반 분석 ──
-    // PP-G03: sanitize all profile fields before prompt injection
-    const hasProfile = profile && profile.age && profile.region;
-    const profileSection = hasProfile
-      ? `
-## 사용자 프로필
-- 나이: ${sanitizeForPrompt(profile.age)}세
-- 거주지: ${sanitizeForPrompt(profile.region)}
-- 고용상태: ${sanitizeForPrompt(profile.employmentStatus) || "미입력"}
-- 소득수준: 중위소득 ${sanitizeForPrompt(profile.incomePercent) || "미입력"}% 이하
-- 특이사항: ${profile.specialStatus?.length > 0 ? (profile.specialStatus as unknown[]).map((s) => sanitizeForPrompt(s)).join(", ") : "없음"}
-`
-      : "";
+    // 개인정보 최소화 정책: 항상 일반론적 자격 분석을 수행한다.
+    const hasProfile = false;
+    const profileSection = "";
 
     const analysisTarget = hasProfile
       ? "아래 사용자 프로필 기준으로 이 혜택에 해당되는지 맞춤 분석해주세요."
