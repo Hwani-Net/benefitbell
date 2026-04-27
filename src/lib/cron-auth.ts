@@ -39,18 +39,24 @@ export function verifyCron(req: Request): Response | null {
   const auth = req.headers.get("authorization") ?? "";
   const cronHeader = req.headers.get("x-cron-secret") ?? "";
 
-  // Use timing-safe comparison to prevent timing attacks
-  const secretBuf = Buffer.from(secret);
+  // Use timing-safe comparison to prevent timing attacks.
+  // Compare buffer byte lengths (not JS string code-unit lengths) to avoid
+  // a crash if the secret ever contains multi-byte UTF-8 characters.
+  const secretBuf = Buffer.from(secret, "utf-8");
   const bearerPrefix = "Bearer ";
-  const authValue = auth.startsWith(bearerPrefix) ? auth.slice(bearerPrefix.length) : "";
+  const authValue = auth.startsWith(bearerPrefix)
+    ? auth.slice(bearerPrefix.length)
+    : "";
+  const authBuf = Buffer.from(authValue, "utf-8");
   const authMatch =
-    authValue.length === secret.length &&
-    authValue.length > 0 &&
-    timingSafeEqual(Buffer.from(authValue), secretBuf);
+    authBuf.length === secretBuf.length &&
+    authBuf.length > 0 &&
+    timingSafeEqual(authBuf, secretBuf);
+  const cronBuf = Buffer.from(cronHeader, "utf-8");
   const headerMatch =
-    cronHeader.length === secret.length &&
-    cronHeader.length > 0 &&
-    timingSafeEqual(Buffer.from(cronHeader), secretBuf);
+    cronBuf.length === secretBuf.length &&
+    cronBuf.length > 0 &&
+    timingSafeEqual(cronBuf, secretBuf);
 
   if (!authMatch && !headerMatch) {
     return new Response("Unauthorized", { status: 401 });

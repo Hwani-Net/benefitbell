@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useApp } from "@/lib/context";
+import { getFirebaseAuth } from "@/lib/firebase";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/layout/BottomNav";
 
@@ -31,9 +32,18 @@ function SuccessContent() {
     async function confirm() {
       setStatus("loading");
       try {
+        const auth = getFirebaseAuth();
+        const idToken = auth?.currentUser
+          ? await auth.currentUser.getIdToken()
+          : null;
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
         const res = await fetch("/api/payments/confirm", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ paymentKey, orderId, amount }),
         });
 
