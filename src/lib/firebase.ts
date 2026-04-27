@@ -57,6 +57,7 @@ export function getFirebaseApp(): FirebaseApp | null {
 export async function getFirebaseMessaging(): Promise<Messaging | null> {
   if (messagingInstance) return messagingInstance;
   if (typeof window === "undefined") return null;
+  if (!firebaseConfig.messagingSenderId || !firebaseConfig.appId) return null;
   const supported = await isSupported();
   if (!supported) return null;
   const a = getApp();

@@ -58,7 +58,7 @@ export async function GET(request: Request) {
       const errDesc = tokenData.error_description || "unknown_error";
       console.error("[Kakao Token Error]", { code: errCode, desc: errDesc });
       return NextResponse.redirect(
-        `${origin}/profile?error=token_failed&code=${errCode}&msg=${encodeURIComponent(errDesc)}`,
+        `${origin}/profile?error=token_failed&code=${encodeURIComponent(errCode)}&msg=${encodeURIComponent(errDesc)}`,
       );
     }
 
