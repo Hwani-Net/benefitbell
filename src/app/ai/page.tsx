@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useApp } from "@/lib/context";
+import { shareUrl } from "@/lib/share-utils";
 import { getDDayColor, getDDayText, bText } from "@/data/benefits";
 import { getFilteredBenefits, FilteredBenefit } from "@/lib/recommendation";
 import TopBar from "@/components/layout/TopBar";
@@ -187,20 +188,8 @@ export default function AiPage() {
       const text = isKo
         ? `💡 ${title} — 혜택알리미에서 확인하세요!`
         : `💡 ${title} — Check on BenefitBell!`;
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        } catch (err) {
-          if ((err as { name?: string })?.name !== "AbortError") {
-            await navigator.clipboard?.writeText(url);
-            setSharedId(benefitId);
-            setTimeout(() => setSharedId(null), 2500);
-          }
-        }
-      } else {
-        await navigator.clipboard?.writeText(url);
+      const ok = await shareUrl({ title, text, url });
+      if (ok) {
         setSharedId(benefitId);
         setTimeout(() => setSharedId(null), 2500);
       }

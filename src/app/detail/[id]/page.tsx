@@ -45,6 +45,7 @@ import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import AdBanner from "@/components/ads/AdBanner";
 import { shareKakaoBenefit } from "@/lib/kakao";
+import { shareUrl } from "@/lib/share-utils";
 import { matchDocuments } from "@/data/document-urls";
 
 // Extended detail from the public API
@@ -108,32 +109,15 @@ export default function DetailPage({
   // Web Share API 공유
   const handleShare = useCallback(async () => {
     const url = window.location.href;
-    // Use native Web Share API (Samsung Browser, Chrome, etc.)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: document.title,
-          text:
-            lang === "ko"
-              ? `💡 ${benefit?.title ?? ""} — 혜택알리미에서 확인하세요!`
-              : `💡 ${benefit?.title ?? ""} — Check on BenefitBell!`,
-          url,
-        });
-        setShared(true);
-        setTimeout(() => setShared(false), 3000);
-      } catch (err) {
-        // AbortError = user cancelled — no-op
-        if ((err as { name?: string })?.name !== "AbortError") {
-          // Fallback: copy to clipboard
-          navigator.clipboard?.writeText(url).then(() => {
-            setShared(true);
-            setTimeout(() => setShared(false), 3000);
-          });
-        }
-      }
-    } else {
-      // Desktop fallback: copy link
-      await navigator.clipboard?.writeText(url);
+    const ok = await shareUrl({
+      title: document.title,
+      text:
+        lang === "ko"
+          ? `💡 ${benefit?.title ?? ""} — 혜택알리미에서 확인하세요!`
+          : `💡 ${benefit?.title ?? ""} — Check on BenefitBell!`,
+      url,
+    });
+    if (ok) {
       setShared(true);
       setTimeout(() => setShared(false), 3000);
     }

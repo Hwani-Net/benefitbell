@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useApp, UserProfile } from "@/lib/context";
+import { shareUrl } from "@/lib/share-utils";
 import {
   getDDayColor,
   getDDayStyleColor,
@@ -645,20 +646,8 @@ export default function ProfilePage() {
         lang === "ko"
           ? `💡 ${title} — 혜택알리미에서 확인하세요!`
           : `💡 ${title} — Check on BenefitBell!`;
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-          setSharedId(benefitId);
-          setTimeout(() => setSharedId(null), 2500);
-        } catch (err) {
-          if ((err as { name?: string })?.name !== "AbortError") {
-            await navigator.clipboard?.writeText(url);
-            setSharedId(benefitId);
-            setTimeout(() => setSharedId(null), 2500);
-          }
-        }
-      } else {
-        await navigator.clipboard?.writeText(url);
+      const ok = await shareUrl({ title, text, url });
+      if (ok) {
         setSharedId(benefitId);
         setTimeout(() => setSharedId(null), 2500);
       }
@@ -1094,8 +1083,8 @@ export default function ProfilePage() {
           >
             ❤️{" "}
             {lang === "ko"
-              ? `저장한 혜택 ${bookmarks.length > 0 ? `(${bookmarks.length})` : ""}`
-              : `Saved ${bookmarks.length > 0 ? `(${bookmarks.length})` : ""}`}
+              ? `저장한 혜택 ${savedBenefits.length > 0 ? `(${savedBenefits.length})` : ""}`
+              : `Saved ${savedBenefits.length > 0 ? `(${savedBenefits.length})` : ""}`}
           </button>
           <button
             className={`${styles.tabBtn} ${activeTab === "settings" ? styles.tabActive : ""}`}
