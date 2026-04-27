@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,19 @@ export async function GET(request: Request) {
     : `${forwardedProto}://${host}`;
   const REDIRECT_URI = `${origin}/api/auth/kakao/callback`;
 
-  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code`;
+  // CSRF 방어: 무작위 state 생성 후 httpOnly 쿠키에 저장
+  const state = randomBytes(16).toString("hex");
 
-  return NextResponse.redirect(kakaoAuthUrl);
+  const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&state=${state}`;
+
+  const response = NextResponse.redirect(kakaoAuthUrl);
+  response.cookies.set("oauth_state", state, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 300, // 5분
+    secure: !isDev,
+    path: "/",
+  });
+
+  return response;
 }

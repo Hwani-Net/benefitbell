@@ -28,6 +28,23 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/profile`);
   }
 
+  // CSRF 방어: state 파라미터와 쿠키 값 비교
+  const stateParam = requestUrl.searchParams.get("state");
+  const cookieHeader = request.headers.get("cookie") || "";
+  const oauthStateCookie = cookieHeader
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("oauth_state="))
+    ?.split("=")[1];
+
+  if (!stateParam || !oauthStateCookie || stateParam !== oauthStateCookie) {
+    console.error("[Kakao OAuth] CSRF state mismatch", {
+      stateParam,
+      hasCookie: !!oauthStateCookie,
+    });
+    return new Response("Invalid state parameter", { status: 400 });
+  }
+
   // .trim() — GCP Secret Manager trailing newline 방어 (PITFALLS #15)
   const KAKAO_CLIENT_ID = (process.env.KAKAO_CLIENT_ID || "").trim();
   const KAKAO_CLIENT_SECRET = (process.env.KAKAO_CLIENT_SECRET || "").trim();
@@ -120,6 +137,14 @@ export async function GET(request: Request) {
 
     const redirectPath = needsConsent ? "/consent?redirect=/" : "/profile";
     const response = NextResponse.redirect(`${origin}${redirectPath}`);
+
+    // CSRF state 쿠키 즉시 만료 (일회성)
+    response.cookies.set("oauth_state", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
 
     // 기존 kakao_profile 쿠키 (하위 호환 유지)
     const profileData = {
