@@ -132,32 +132,21 @@ export default function AiPage() {
     // race condition where rapid clicks bypass the daily usage limit.
     if (!userProfile?.isPremium) {
       const today = new Date().toDateString();
-      const latestUsageStr = localStorage.getItem("ai_usage_limit");
-      const latestUsage = latestUsageStr
-        ? JSON.parse(latestUsageStr)
-        : { date: today, count: 0 };
-      const latestCount =
-        latestUsage.date === today ? (latestUsage.count as number) : 0;
-      if (latestCount >= 10) {
-        setShowUsageLimit(true);
-        return;
-      }
-    }
-
-    if (!userProfile?.isPremium) {
-      const today = new Date().toDateString();
       const usageStr = localStorage.getItem("ai_usage_limit");
-      let usage = usageStr ? JSON.parse(usageStr) : { date: today, count: 0 };
-      if (usage.date !== today) usage = { date: today, count: 0 };
-      if (usage.count >= 10) {
+      const usageParsed = usageStr
+        ? JSON.parse(usageStr)
+        : { date: today, count: 0 };
+      const todayCount: number =
+        usageParsed.date === today ? (usageParsed.count as number) : 0;
+      if (todayCount >= 10) {
         setShowUsageLimit(true);
         return;
       }
       localStorage.setItem(
         "ai_usage_limit",
-        JSON.stringify({ date: today, count: usage.count + 1 }),
+        JSON.stringify({ date: today, count: todayCount + 1 }),
       );
-      setUsageCount(usage.count + 1);
+      setUsageCount(todayCount + 1);
     }
 
     setChatLoading(true);
