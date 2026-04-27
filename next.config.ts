@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
+              // TODO: verify if unsafe-eval can be removed - Firebase SDK dependency (signInWithCustomToken, FCM SW) and Next.js HMR both use eval; remove only after staging smoke test confirms no breakage
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.tosspayments.com https://t1.kakaocdn.net https://www.gstatic.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",

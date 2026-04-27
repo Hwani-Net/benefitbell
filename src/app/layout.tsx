@@ -154,7 +154,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#FF6B4A" />
         <meta name="msapplication-TileColor" content="#FF6B4A" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        <link rel="mask-icon" href="/icons/icon-192.png" color="#FF6B4A" />
+        {/* mask-icon requires SVG — PNG is invalid here; removed until icon.svg is added to public/icons/ */}
       </head>
       <body>
         {/* AdSense — afterInteractive prevents SSR/client script-order hydration mismatch */}
