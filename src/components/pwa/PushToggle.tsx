@@ -104,13 +104,24 @@ export default function PushToggle() {
       const sub = await reg.pushManager.getSubscription();
       if (sub) await sub.unsubscribe();
 
-      // fcm_token localStorage 정리 (profile 페이지의 카테고리 업데이트에서 참조)
+      // fcm_token localStorage 정리 + 서버 Firestore에서도 토큰 삭제
       try {
-        localStorage.removeItem("fcm_token");
+        const storedToken = localStorage.getItem("fcm_token");
+        if (storedToken) {
+          try {
+            await fetch("/api/push/subscribe", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fcmToken: storedToken }),
+            });
+          } catch (err) {
+            console.error("[PushToggle] unsubscribe DELETE failed:", err);
+          }
+          localStorage.removeItem("fcm_token");
+        }
       } catch {
-        /* ignore */
+        /* ignore localStorage errors */
       }
-      // 서버에도 알림 (선택적) - 현재는 서버 API가 없으므로 생략
       setStatus("unsubscribed");
     } catch (err) {
       console.error("[FCM Push unsubscribe]", err);

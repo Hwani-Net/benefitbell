@@ -39,7 +39,16 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   // ── 1. 혜택 데이터 로드 ──────────────────────────
-  const apiItems = await fetchAllWelfareSources();
+  let apiItems: Awaited<ReturnType<typeof fetchAllWelfareSources>>;
+  try {
+    apiItems = await fetchAllWelfareSources();
+  } catch (err) {
+    console.error("[cron-deadline] fetchAllWelfareSources failed:", err);
+    return NextResponse.json(
+      { error: "welfare_api_unavailable" },
+      { status: 500 },
+    );
+  }
   const allBenefits = apiItems
     .map((item, i) => transformListItemToBenefit(item, i))
     .map((b) => ({ ...b, dDay: calculateDDay(b.applicationEnd) }))
