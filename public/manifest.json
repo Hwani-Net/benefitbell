@@ -66,14 +66,6 @@
     }
   ],
   "categories": ["finance", "government", "utilities"],
-  "iarc_rating_id": "",
-  "prefer_related_applications": false,
-  "related_applications": [
-    {
-      "platform": "play",
-      "id": "com.nuvolabs.benefitbell"
-    }
-  ],
   "lang": "ko",
   "dir": "ltr"
 }
