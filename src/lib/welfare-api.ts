@@ -561,7 +561,7 @@ export async function fetchWelfareDetail(
         trgterIndvdl: extract("trgterIndvdl"),
         slctCriteria: extract("slctCriteria"),
         alwServCn: extract("alwServCn"),
-        aplWayContent: extract("aplWayContent"),
+        aplyMtdCn: extract("aplWayContent") || extract("aplyMtdCn"),
         applyBgnDt: extract("applyBgnDt"),
         applyEndDt: extract("applyEndDt"),
       } as unknown as WelfareDetailItem;
