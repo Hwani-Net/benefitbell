@@ -13,10 +13,8 @@ export default function PushMessageReceiver() {
     function handleMessage(event: MessageEvent) {
       if (event.data?.type === "PUSH_RECEIVED") {
         try {
-          const current = parseInt(
-            localStorage.getItem("push_unread_count") || "0",
-            10,
-          );
+          const current =
+            parseInt(localStorage.getItem("push_unread_count") || "0", 10) || 0;
           localStorage.setItem("push_unread_count", String(current + 1));
           window.dispatchEvent(new Event("push_unread_changed"));
         } catch (e) {
